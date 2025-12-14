@@ -1,0 +1,29 @@
+<view class="modal-overlay" wx:if="{{visible}}">
+  <view class="modal-container">
+    <view class="modal-header">
+      <text class="modal-title">完善信息</text>
+      <text class="modal-subtitle">请设置您的头像和昵称以继续</text>
+    </view>
+    
+    <view class="modal-body">
+      <view class="avatar-section">
+        <button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+          <image class="avatar" src="{{avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
+          <view class="camera-icon">📷</view>
+        </button>
+        <text class="tip-text">点击头像修改</text>
+      </view>
+
+      <view class="input-section">
+        <view class="input-group">
+          <text class="input-label">昵称</text>
+          <input type="nickname" class="nickname-input" placeholder="请输入昵称" placeholder-class="placeholder" bindchange="onNicknameChange" bindinput="onNicknameInput" value="{{nickName}}"/>
+        </view>
+      </view>
+    </view>
+
+    <view class="modal-footer">
+      <button class="btn-confirm" bindtap="onConfirm" disabled="{{!canSubmit}}" loading="{{submitting}}">确认进入</button>
+    </view>
+  </view>
+</view>

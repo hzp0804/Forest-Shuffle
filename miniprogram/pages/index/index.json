@@ -1,3 +1,5 @@
 {
-  "usingComponents": {}
+  "usingComponents": {
+    "UserInfoModal": "../../components/UserInfoModal/UserInfoModal"
+  }
 }

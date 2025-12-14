@@ -9,25 +9,19 @@
     </view>
     <view class="user-actions">
       <button
-        wx:if="{{!loggedIn}}"
-        class="mini-btn"
-        size="mini"
-        type="primary"
-        bindtap="onLoginTap"
-        open-type="getUserProfile"
-        bindgetuserinfo="onGetUserProfile"
-        loading="{{loginLoading}}"
-        disabled="{{loginLoading}}"
-      >
-        微信登录
-      </button>
-      <button
-        wx:else
+        wx:if="{{isSeated}}"
         class="mini-btn ghost"
         size="mini"
-        bindtap="onLogout"
+        bindtap="onExitRoom"
       >
-        注销
+        退出
+      </button>
+      <button
+        class="mini-btn ghost"
+        size="mini"
+        bindtap="onBack"
+      >
+        返回
       </button>
     </view>
   </view>
@@ -39,7 +33,7 @@
       <button size="mini" bindtap="onCopyRoomCode" class="mini-btn">复制</button>
     </view>
     <view class="room-line">
-      <text class="label">席位</text>
+      <text class="label">座位</text>
       <view class="seat-grid">
         <block wx:for="{{seats}}" wx:key="id">
           <view class="seat" data-id="{{item.id}}" bindtap="onSelectSeat">
@@ -74,7 +68,7 @@
       <input class="input" type="number" placeholder="牌堆底部前多少张内开始随机抽取" value="{{createForm.winterStartOffset}}" bindinput="onWinterStartInput" />
     </view>
 
-    <button class="action-btn primary" bindtap="onCreateRoom" loading="{{loginLoading}}" disabled="{{loginLoading}}">
+    <button class="action-btn primary" bindtap="onCreateRoom">
       开始游戏
     </button>
     <text class="hint">房间号将自动生成，可复制给朋友</text>
@@ -88,10 +82,10 @@
 
     <view class="join-row">
       <input class="join-input" placeholder="请输入房间号" value="{{joinRoomCode}}" bindinput="onJoinInput" />
-      <button class="action-btn ghost" bindtap="onJoinRoom" loading="{{loginLoading}}" disabled="{{loginLoading}}">
+      <button class="action-btn ghost" bindtap="onJoinRoom">
         加入
       </button>
     </view>
-    <text class="hint">确保房间号正确后再加入</text>
+    <text class="hint">确认房间号正确后再加入</text>
   </view>
 </view>

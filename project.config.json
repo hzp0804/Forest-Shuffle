@@ -36,5 +36,6 @@
   "cloudfunctionRoot": "cloudfunctions/",
   "description": "Forest Shuffle Mini Program",
   "editorSetting": {},
-  "libVersion": "3.12.1"
+  "libVersion": "3.12.1",
+  "cloudfunctionTemplateRoot": "cloudfunctionTemplate/"
 }

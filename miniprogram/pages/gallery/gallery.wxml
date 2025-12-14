@@ -63,51 +63,68 @@
   <!-- Fullscreen preview -->
   <view class="preview-mask" wx:if="{{previewCard}}" bindtap="onClosePreview">
     <view class="preview-card" catchtap="noop">
-      <view class="card-sprite-viewport preview">
-        <image src="{{previewCard.img}}" class="card-sprite-img" style="{{previewCard.spriteStyle}}" mode="aspectFill" />
+      <view class="preview-header">
+        <view class="card-sprite-viewport preview">
+          <image src="{{previewCard.img}}" class="card-sprite-img" style="{{previewCard.spriteStyle}}" mode="aspectFill" />
+        </view>
       </view>
-      <scroll-view scroll-y class="preview-meta">
 
-        <block wx:for="{{previewCard.speciesDetails}}" wx:key="key">
-          <view class="preview-section">
-            
-            <view class="section-row">
-              <text class="section-label">名称</text>
-              <text class="section-value">{{item.displayName}}</text>
+      <view class="preview-content">
+        <!-- Tabs for Split Cards -->
+        <view class="species-tabs" wx:if="{{previewCard.speciesDetails.length > 1}}">
+          <block wx:for="{{previewCard.speciesDetails}}" wx:key="key">
+            <view class="tab-item {{activeTab === index ? 'active' : ''}}" bindtap="onTabChange" data-index="{{index}}">
+              {{item.displayName}}
             </view>
+          </block>
+        </view>
 
-            <view class="section-row" wx:if="{{item.tags && item.tags.length}}">
-              <text class="section-label">标签</text>
-              <text class="section-value">{{item.tags.join(' / ')}}</text>
-            </view>
+        <scroll-view scroll-y class="details-scroll">
+          <block wx:for="{{previewCard.speciesDetails}}" wx:key="key">
+            <view class="detail-panel" hidden="{{activeTab !== index}}">
+              
+              <view class="detail-header" wx:if="{{previewCard.speciesDetails.length === 1}}">
+                <text class="detail-title">{{item.displayName}}</text>
+              </view>
 
-             <view class="section-row" wx:if="{{item.nb}}">
-              <text class="section-label">总张数</text>
-              <text class="section-value">{{item.nb}}</text>
-            </view>
+              <view class="info-grid">
+                <view class="info-row" wx:if="{{item.tags && item.tags.length}}">
+                  <view class="info-label">🏷️ 标签</view>
+                  <view class="info-value">
+                     <view class="tag-pill" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</view>
+                  </view>
+                </view>
 
-            <view class="section-row" wx:if="{{item.cost || item.cost === 0}}">
-              <text class="section-label">费用</text>
-              <text class="section-value">{{item.cost}}</text>
-            </view>
+                <view class="info-row" wx:if="{{item.nb}}">
+                  <view class="info-label">🔢 数量</view>
+                  <view class="info-value">{{item.nb}} 张</view>
+                </view>
 
-            <view class="section-row" wx:if="{{item.effect}}">
-              <text class="section-label">效果</text>
-              <text class="section-value">{{item.effect}}</text>
-            </view>
+                <view class="info-row" wx:if="{{item.cost || item.cost === 0}}">
+                  <view class="info-label">💰 费用</view>
+                  <view class="info-value highlight">{{item.cost}}</view>
+                </view>
 
-            <view class="section-row" wx:if="{{item.bonus}}">
-              <text class="section-label">奖金</text>
-              <text class="section-value">{{item.bonus}}</text>
-            </view>
+                <view class="info-block" wx:if="{{item.effect}}">
+                  <view class="info-label">✨ 效果</view>
+                  <view class="info-value-text">{{item.effect}}</view>
+                </view>
 
-            <view class="section-row" wx:if="{{item.points}}">
-              <text class="section-label">计分</text>
-              <text class="section-value">{{item.points}}</text>
+                <view class="info-block" wx:if="{{item.bonus}}">
+                  <view class="info-label">🎁 奖励</view>
+                  <view class="info-value-text">{{item.bonus}}</view>
+                </view>
+
+                <view class="info-block" wx:if="{{item.points}}">
+                  <view class="info-label">🏆 计分</view>
+                  <view class="info-value-text">{{item.points}}</view>
+                </view>
+              </view>
+
             </view>
-          </view>
-        </block>
-      </scroll-view>
+          </block>
+        </scroll-view>
+      </view>
     </view>
   </view>
 </view>

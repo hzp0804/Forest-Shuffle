@@ -20,4 +20,6 @@
   <view class="footer">
     <text>Developed using WeChat Cloud</text>
   </view>
+
+  <UserInfoModal id="userInfoModal" bind:submit="onUserInfoSubmit" />
 </view>

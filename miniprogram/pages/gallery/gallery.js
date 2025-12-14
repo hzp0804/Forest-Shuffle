@@ -6,7 +6,8 @@ Page({
   data: {
     cards: [],
     viewMode: 'image',
-    previewCard: null
+    previewCard: null,
+    activeTab: 0
   },
 
   onLoad: function (options) {
@@ -173,9 +174,10 @@ Page({
         // Map tags to Chinese if available in map, otherwise keep original
         const tags = rawTags.map(t => {
           const key = (t || '').trim();
+          if (!key) return null; // Filter empty source tags
           const lowerKey = key.toLowerCase();
           return tagMap[key] || tagMap[lowerKey] || key;
-        });
+        }).filter(t => t && t.trim()); // Filter out empty results
 
         return {
           key: code,
@@ -225,6 +227,16 @@ Page({
       return acc;
     }, { list: [], map: new Map() }).list;
 
+    // Move mountain/winter cards to the end
+    cards.sort((a, b) => {
+      const isWinterA = (a.img || '').toLowerCase().includes('mountain');
+      const isWinterB = (b.img || '').toLowerCase().includes('mountain');
+      
+      if (isWinterA && !isWinterB) return 1;
+      if (!isWinterA && isWinterB) return -1;
+      return 0; // Keep original relative order
+    });
+
     this.setData({
       cards: cards,
       viewMode: 'image'
@@ -235,8 +247,16 @@ Page({
     const id = e.currentTarget.dataset.id;
     const card = this.data.cards.find(c => String(c.id) === String(id));
     if (card) {
-      this.setData({ previewCard: card });
+      this.setData({ 
+        previewCard: card,
+        activeTab: 0
+      });
     }
+  },
+
+  onTabChange: function(e) {
+    const index = e.currentTarget.dataset.index;
+    this.setData({ activeTab: index });
   },
 
   onClosePreview: function() {
