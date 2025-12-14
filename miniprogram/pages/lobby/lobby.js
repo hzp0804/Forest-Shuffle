@@ -42,6 +42,8 @@ Page({
     userProfile: null,
     defaultAvatar: 'https://res.wx.qq.com/a/wx_fed/wechat_applets/default-user-avatar.png',
     isSeated: false,
+    isInRoom: false,
+    isHost: false,
     baseDeckSize: BASE_DECK_SIZE,
     roomCode: '',
     joinRoomCode: '',
@@ -56,7 +58,9 @@ Page({
       { id: 4, label: '座位4', occupant: null },
       { id: 5, label: '座位5', occupant: null },
       { id: 6, label: '座位6', occupant: null }
-    ]
+    ],
+    roomList: [],
+    roomSettings: null
   },
 
   onLoad() {
@@ -75,11 +79,28 @@ Page({
       }, 1500);
       return;
     }
-    this.ensureRoomCode();
+    // this.ensureRoomCode(); // 移除自动生成，改为创建时生成
+    this.fetchRoomList();
+  },
+
+  onShow() {
+    this.fetchRoomList();
+  },
+
+  onPullDownRefresh() {
+    this.fetchRoomList().then(() => {
+      wx.stopPullDownRefresh();
+    });
+  },
+
+  onUnload() {
+    if (this.roomWatcher) {
+      this.roomWatcher.close();
+    }
   },
 
   ensureProfileOrBack() {
-    if (this.data.userProfile && this.data.userProfile.uid) {
+    if (this.data.userProfile && (this.data.userProfile.uid || this.data.userProfile.openId)) {
       return true;
     }
     wx.showToast({ title: '请返回首页登录', icon: 'none' });
@@ -121,22 +142,91 @@ Page({
 
   onCreateRoom() {
     if (!this.ensureProfileOrBack()) return;
-    const { createForm } = this.data;
+    const { createForm, userProfile } = this.data;
     const setCount = Number(createForm.setCount) || 1;
-    const totalCards = Math.max(0, setCount) * BASE_DECK_SIZE;
     const winterStartOffset = Number(createForm.winterStartOffset) || 0;
 
     this.ensureRoomCode();
+    const roomCode = this.data.roomCode; // generated unique code
 
-    wx.showModal({
-      title: '房间已创建',
-      content: `房间号：${this.data.roomCode}\n套数：${setCount}（共 ${totalCards} 张）\n冬季卡从牌堆底部前 ${winterStartOffset} 张起抽`,
-      confirmText: '复制房号',
-      cancelText: '知道了',
-      success: (res) => {
-        if (res.confirm) {
-          wx.setClipboardData({ data: this.data.roomCode });
-        }
+    wx.showLoading({ title: '创建房间中...', mask: true });
+
+    const db = wx.cloud.database();
+    const _ = db.command;
+
+    // 清理该用户已创建的其他未开始房间（进行中不删）
+    db.collection('rooms').where({
+      hostOpenId: userProfile.openId,
+      status: 'waiting'
+    }).get()
+    .then(res => {
+      // 将之前的等待房间状态改为 closed
+      const closePromises = (res.data || []).map(r => 
+        db.collection('rooms').doc(r._id).update({
+          data: { status: 'closed' }
+        })
+      );
+      return Promise.all(closePromises);
+    })
+    .then(() => {
+      // 初始座位数据：6个位置，第一个是房主
+      const initialSeats = Array(6).fill(null);
+      initialSeats[0] = {
+        uid: userProfile.uid || userProfile.openId, // 兼容逻辑
+        openId: userProfile.openId,
+        nickName: userProfile.nickName,
+        avatarUrl: userProfile.avatarUrl,
+        seatId: 1, // 这里的ID对应界面显示的1-6
+        ready: true
+      };
+  
+      // 构建房间数据
+      const roomData = {
+        roomCode: roomCode,
+        hostOpenId: userProfile.openId, // 记录房主OpenID权限
+        status: 'waiting',
+        players: initialSeats,
+        settings: {
+          setCount,
+          winterStartOffset,
+          baseDeckSize: BASE_DECK_SIZE,
+          totalCards: Math.max(0, setCount) * BASE_DECK_SIZE
+        },
+        createTime: db.serverDate(),
+        updateTime: db.serverDate()
+      };
+  
+      return db.collection('rooms').add({ data: roomData });
+    })
+    .then(res => {
+      console.log('Room created:', res);
+      wx.hideLoading();
+      
+      // 更新本地状态，进入房间视图
+      this.setData({
+        isInRoom: true,
+        isHost: true,
+        roomId: res._id,
+        roomCode: roomCode,
+        // seats: displaySeats // 由 watcher 更新
+      });
+      
+      wx.showToast({ title: '创建成功', icon: 'success' });
+      
+      // 开启监听
+      this.initRoomWatcher(res._id);
+    })
+    .catch(err => {
+      wx.hideLoading();
+      console.error('Create room failed:', err);
+      if (err.errMsg && (err.errMsg.includes('not exists') || err.errMsg.includes('not found'))) {
+        wx.showModal({
+          title: '提示',
+          content: '请在云开发控制台创建 "rooms" 集合，并在"数据权限"中设置为"所有用户可读，创建者可写"（开发阶段）或使用云函数创建。',
+          showCancel: false
+        });
+      } else {
+        wx.showToast({ title: '创建失败', icon: 'none' });
       }
     });
   },
@@ -156,64 +246,422 @@ Page({
   onSelectSeat(e) {
     const seatId = Number(e.currentTarget.dataset.id);
     if (!this.ensureProfileOrBack()) return;
-    const { seats, userProfile } = this.data;
-    const myIndex = this.findMySeatIndex();
+    const { seats, userProfile, roomId } = this.data;
+    
+    // 1. 本地预检查
     const targetIndex = seats.findIndex((s) => s.id === seatId);
     if (targetIndex < 0) return;
 
     const target = seats[targetIndex];
-    if (target.occupant && target.occupant.uid !== userProfile.uid) {
+    // 检查是否被别人占用
+    if (target.occupant && target.occupant.uid !== userProfile.uid && target.occupant.uid !== userProfile.openId) {
       wx.showToast({ title: '座位已被占用', icon: 'none' });
       return;
     }
 
-    const updated = seats.map((s) => ({ ...s }));
-    if (myIndex >= 0) {
-      updated[myIndex].occupant = null;
+    // 点击自己：不做反应
+    if (target.occupant && (target.occupant.uid === userProfile.uid || target.occupant.uid === userProfile.openId)) {
+      return;
     }
-    updated[targetIndex].occupant = {
-      uid: userProfile.uid,
-      nickName: userProfile.nickName || '玩家',
-      avatarUrl: userProfile.avatarUrl || this.data.defaultAvatar
-    };
 
-    this.setData({ 
-      seats: updated,
-      isSeated: true
+    // 2. 也是为了"及时同步数据"，在操作前拉最新的房间数据检查
+    wx.showLoading({ title: '请求中...', mask: true });
+    const db = wx.cloud.database();
+    
+    db.collection('rooms').doc(roomId).get().then(res => {
+        const remoteRoom = res.data;
+        if (!remoteRoom) {
+             wx.hideLoading();
+             wx.showToast({ title: '房间不存在', icon: 'none' });
+             return;
+        }
+        
+        let players = remoteRoom.players || [];
+        // 确保数组长度为 6
+        if (players.length < 6) {
+           players = players.concat(Array(6 - players.length).fill(null));
+        }
+
+        // 检查目标位置是否真的为空
+        // remoteRoom.players[targetIndex] 对应 targetIndex
+        const remotePlayer = players[targetIndex];
+        if (remotePlayer && remotePlayer.openId && remotePlayer.openId !== userProfile.openId) {
+             wx.hideLoading();
+             wx.showToast({ title: '位置已被人抢了', icon: 'none' });
+             // 触发一次 update 刷新界面
+             this.updateSeatsFromPlayers(players);
+             return;
+        }
+
+        // 构造更新数据
+        // 直接修改整个 players 数组，避免 dot notation 更新 null 元素时的报错
+        const nextPlayers = [...players];
+        
+        // 如果我已经入座了，需要把原来的位置清空 (换位)
+        const myRemoteIndex = nextPlayers.findIndex(p => p && p.openId === userProfile.openId);
+        
+        if (myRemoteIndex !== -1 && myRemoteIndex !== targetIndex) {
+            nextPlayers[myRemoteIndex] = null;
+        }
+
+        nextPlayers[targetIndex] = {
+           openId: userProfile.openId,
+           nickName: userProfile.nickName || '玩家',
+           avatarUrl: userProfile.avatarUrl || this.data.defaultAvatar,
+           seatId: seatId,
+           ready: false
+        };
+
+        return db.collection('rooms').doc(roomId).update({
+            data: {
+              players: nextPlayers
+            }
+        }).then(() => {
+            wx.hideLoading();
+            // 成功后，手动刷新一次，polling 也会接手
+            this.fetchRoomInfo();
+        });
+    }).catch(err => {
+        wx.hideLoading();
+        console.error('Seat op failed:', err);
+        wx.showToast({ title: '操作失败，请重试', icon: 'none' });
     });
   },
 
   onExitRoom() {
-    const { seats } = this.data;
-    const myIndex = this.findMySeatIndex();
+    const { roomId, userProfile } = this.data;
+    if (!roomId) {
+      this.setData({ isInRoom: false, isHost: false, roomCode: '' });
+      return;
+    }
+
+    const db = wx.cloud.database();
     
-    if (myIndex >= 0) {
-      const updated = seats.map((s) => ({ ...s }));
-      updated[myIndex].occupant = null;
-      
-      this.setData({
-        seats: updated,
-        isSeated: false
-      });
-      wx.showToast({ title: '已退出房间', icon: 'none' });
+    // 查找自己的位置（稍微有点麻烦，需要拿最新的数据，这里简单起见假设本地 seats 是准的，或者重新查一遍）
+    // 为了稳妥，可以直接用 update 操作，但不知道索引。
+    // 我们先假设本地 seats 同步了最新的 players
+    const mySeatIndex = this.findMySeatIndex(); // 这个方法是基于 seats 的，需要确保 seats 和 players 映射对齐
+
+    if (mySeatIndex === -1) {
+       // 没在座位上？直接退
+       this.leaveRoomLocal();
+       return;
+    }
+
+    // 数据库更新：将对应位置置空
+    // 注意：update 数组元素需要用 `players.${mySeatIndex}` 这种 key
+    const updateKey = `players.${mySeatIndex}`;
+    
+    db.collection('rooms').doc(roomId).update({
+      data: {
+        [updateKey]: null
+      },
+      success: () => {
+        wx.showToast({ title: '已退出', icon: 'none' });
+        this.leaveRoomLocal();
+      },
+      fail: (err) => {
+        console.error('Exit room failed:', err);
+        wx.showToast({ title: '退出失败', icon: 'none' });
+      }
+    });
+  },
+
+  onRoomContainerLeave() {
+    console.log('Page container leaving...');
+    if (this.data.isInRoom) {
+      // 这里的逻辑稍微 tricky：如果是用户点击“退出房间”按钮，会先调用 onExitRoom，然后 update db，然后 leaveRoomLocal -> isInRoom=false -> page-container hide -> trigger leave again?
+      // 不，page-container 的 show 属性如果变为 false，也会触发 leave 吗？或者只在手势/返回时触发？
+      // 官方文档：bindleave "如果是通过 setData 改变 show 属性隐藏的，也会触发"。
+      // 所以我们必须防止无限循环。
+      // 但其实这里只调用 onExitRoom 即可。onExitRoom 内部会判断。
+      // 为防止死循环，我们可以在 leaveRoomLocal 里把 isInRoom 设为 false，这样下次 check 就跳过了。
+      // 不过这里直接调 onExitRoom 可能会导致重复 toast，或者如果正在退出中？
+      // 简单起见，如果此时 isInRoom 还是 true，说明还没完成退出流程（亦或是手势触发的），我们尝试退出。
+      // 但 onExitRoom 是发请求 update db。
+      this.onExitRoom();
     }
   },
 
-  onJoinRoom() {
+  leaveRoomLocal() {
+    if (this.roomWatcher) {
+      this.roomWatcher.close();
+      this.roomWatcher = null;
+    }
+    this.setData({
+      isInRoom: false,
+      isHost: false,
+      roomCode: '',
+      roomId: '',
+      seats: this.data.seats.map(s => ({ ...s, occupant: null })), // 清空座位
+      isSeated: false
+    });
+    this.fetchRoomList();
+    this.stopRoomPolling();
+    this.fetchRoomList();
+  },
+
+  startRoomPolling(roomId) {
+    this.stopRoomPolling(); // 防止重复
+    console.log('Start polling room:', roomId);
+    this.pollingTimer = setInterval(() => {
+        this.fetchRoomInfo(roomId);
+    }, 1000); // 每秒刷新
+  },
+
+  stopRoomPolling() {
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = null;
+    }
+  },
+
+  fetchRoomInfo(roomId) {
+      const id = roomId || this.data.roomId;
+      if (!id) return;
+      const db = wx.cloud.database();
+      db.collection('rooms').doc(id).get().then(res => {
+          if (res.data) {
+              const room = res.data;
+              if (room.status === 'closed') {
+                wx.showToast({ title: '房间已关闭', icon: 'none' });
+                this.leaveRoomLocal();
+                return;
+              }
+              this.updateSeatsFromPlayers(room.players);
+              if (room.settings) {
+                  this.setData({ roomSettings: room.settings });
+              }
+          }
+      }).catch(err => {
+          console.error('Poll room failed:', err);
+          // 如果是找不到，说明房间解散了
+          if (err.errMsg && (err.errMsg.includes('not exists') || err.errMsg.includes('not found'))) {
+               this.leaveRoomLocal();
+          }
+      });
+  },
+
+  onJoinRoom(e) {
     if (!this.ensureProfileOrBack()) return;
-    const code = (this.data.joinRoomCode || '').trim();
+    const code = (e.currentTarget.dataset.code || this.data.joinRoomCode || '').trim();
     if (!code) {
       wx.showToast({ title: '请输入房间号', icon: 'none' });
       return;
     }
-    if (code.length < 4) {
-      wx.showToast({ title: '房间号格式不正确', icon: 'none' });
-      return;
-    }
 
-    wx.showToast({ title: '加入房间成功', icon: 'success' });
-    wx.navigateTo({
-      url: `/pages/score/score?room=${code}`
+    wx.showLoading({ title: '查找房间...', mask: true });
+    
+    const db = wx.cloud.database();
+    const _ = db.command;
+
+    // 1. 查询房间是否存在
+    db.collection('rooms').where({
+      roomCode: code
+    }).get({
+      success: (res) => {
+        if (!res.data || res.data.length === 0) {
+          wx.hideLoading();
+          wx.showToast({ title: '房间不存在', icon: 'none' });
+          return;
+        }
+
+        const room = res.data[0];
+        const players = room.players || [];
+        
+        // 检查是否已经在房间里
+        const myUid = this.data.userProfile.openId;
+        const alreadyInIndex = players.findIndex(p => p && p.openId === myUid);
+        
+        // 场景A: 游戏已开始/已结束，或者是等待中但自己已在列
+        // 允许重新进入的条件：我在名单里
+        if (alreadyInIndex !== -1) {
+           wx.hideLoading();
+           if (room.status === 'closed') {
+             wx.showToast({ title: '房间已关闭', icon: 'none' });
+             return;
+           }
+           // 无论 playing 还是 waiting，只要在名单里都允许回房
+           // TODO: 如果是 playing，可能需要跳转到游戏页？目前先回房间页，等待 watcher 同步状态
+           this.enterRoomLocal(room);
+           return;
+        }
+
+        // 场景B: 新玩家加入
+        // 前提：房间必须是 waiting
+        if (room.status !== 'waiting') {
+           wx.hideLoading();
+           wx.showToast({ title: '游戏已开始或房间已关闭', icon: 'none' });
+           return;
+        }
+
+        // 找空位
+        const emptyIndex = players.findIndex(p => !p);
+        if (emptyIndex === -1) {
+          wx.hideLoading();
+          wx.showToast({ title: '房间已满', icon: 'none' });
+          return;
+        }
+
+        // 2. 占位更新 (自动落座)
+        const updateKey = `players.${emptyIndex}`;
+        const newPlayer = {
+          openId: myUid,
+          nickName: this.data.userProfile.nickName,
+          avatarUrl: this.data.userProfile.avatarUrl,
+          seatId: emptyIndex + 1,
+          ready: false
+        };
+
+        db.collection('rooms').doc(room._id).update({
+          data: {
+            [updateKey]: newPlayer
+          },
+          success: (updateRes) => {
+            wx.hideLoading();
+            console.log('Join success', updateRes);
+            
+            // 乐观更新本地数据，实际会由 watcher 修正
+            room.players[emptyIndex] = newPlayer;
+            this.enterRoomLocal(room);
+          },
+          fail: (err) => {
+            wx.hideLoading();
+            console.error('Join failed:', err); // 可能是并发导致的位置冲突
+            wx.showToast({ title: '加入失败，请重试', icon: 'none' });
+          }
+        });
+      },
+      fail: (err) => {
+        wx.hideLoading();
+        console.error('Query room failed:', err);
+        wx.showToast({ title: '查询失败', icon: 'none' });
+      }
     });
+  },
+
+  enterRoomLocal(roomData) {
+    const isHost = (roomData.hostOpenId === this.data.userProfile.openId);
+    
+    this.setData({
+      isInRoom: true,
+      isHost: isHost,
+      roomId: roomData._id,
+      roomCode: roomData.roomCode,
+      roomSettings: roomData.settings || {}
+    });
+    
+    this.updateSeatsFromPlayers(roomData.players);
+    // 启动监听
+    this.initRoomWatcher(roomData._id);
+    // 启动轮询 (每秒更新)
+    this.startRoomPolling(roomData._id);
+  },
+
+  updateSeatsFromPlayers(players) {
+     const newSeats = this.data.seats.map((s, i) => {
+        // players 数组索引和你 seats 数组索引是一一对应的吗？
+        // 假设 players 是长度为6的数组，索引0对应id=1
+        const p = players[i];
+        return {
+          ...s,
+          occupant: p ? {
+            uid: p.openId,
+            nickName: p.nickName,
+            avatarUrl: p.avatarUrl
+          } : null
+        };
+     });
+     
+     // 检查自己是否在座位上（更新 isSeated 状态）
+     const myUid = this.data.userProfile.openId;
+     const amISeated = players.some(p => p && p.openId === myUid);
+
+     this.setData({
+       seats: newSeats,
+       isSeated: amISeated
+     });
+  },
+
+  initRoomWatcher(roomId) {
+    if (this.roomWatcher) return; // 避免重复监听
+    console.log('Start watching room:', roomId);
+    
+    const db = wx.cloud.database();
+    this.roomWatcher = db.collection('rooms').doc(roomId).watch({
+      onChange: (snapshot) => {
+        console.log('Room update:', snapshot);
+        // 如果房间被删除
+        if (!snapshot.docs || snapshot.docs.length === 0) {
+          wx.showToast({ title: '房间已解散', icon: 'none' });
+          this.leaveRoomLocal();
+          return;
+        }
+
+        const room = snapshot.docs[0];
+
+        // 如果房间被关闭
+        if (room.status === 'closed') {
+          wx.showToast({ title: '房间已关闭', icon: 'none' });
+          this.leaveRoomLocal();
+          return;
+        }
+
+        this.updateSeatsFromPlayers(room.players);
+        if (room.settings) {
+          this.setData({ roomSettings: room.settings });
+        }
+          
+          // 如果房间被销毁或状态改变？
+          // ...暂不处理
+
+      },
+      onError: (err) => {
+        console.error('Watch error:', err);
+      }
+    });
+  },
+
+  fetchRoomList() {
+    const db = wx.cloud.database();
+    const _ = db.command;
+    // 计算1小时前的时间点
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    return db.collection('rooms')
+      .where({
+        // 查询 waiting 或者 closed 的房间 (以便清理 closed)
+        status: _.in(['waiting', 'closed']),
+        createTime: _.gt(oneHourAgo)
+      })
+      .orderBy('createTime', 'desc')
+      .limit(20)
+      .get()
+      .then(res => {
+         const allRooms = res.data || [];
+         
+         // 1. 识别并删除垃圾已关闭房间
+         const closedRooms = allRooms.filter(r => r.status === 'closed');
+         if (closedRooms.length > 0) {
+             const cleanPromises = closedRooms.map(r => db.collection('rooms').doc(r._id).remove());
+             // 默默在后台删除，不等结果
+             Promise.all(cleanPromises).catch(console.error);
+         }
+
+         // 2. 只展示 waiting 的房间
+         const list = allRooms
+           .filter(r => r.status === 'waiting')
+           .map(room => {
+             const count = (room.players || []).filter(p => p).length;
+             return { ...room, playerCount: count };
+           });
+           
+         this.setData({
+           roomList: list
+         });
+      })
+      .catch(err => {
+        console.error('Fetch rooms failed:', err);
+      });
   }
 });

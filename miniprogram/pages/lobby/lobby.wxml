@@ -1,91 +1,137 @@
 <view class="lobby-page">
-  <view class="user-card">
-    <view class="user-meta">
-      <image class="avatar" src="{{userProfile.avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
-      <view class="user-text">
-        <text class="nickname">{{userProfile.nickName || '未登录'}}</text>
-        <text class="uid">{{userProfile.uid ? ('ID: ' + userProfile.uid) : '登录后即可创建/加入房间'}}</text>
+  <block wx:if="{{!isInRoom}}">
+    <view class="user-card">
+      <view class="user-meta">
+        <image class="avatar" src="{{userProfile.avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
+        <view class="user-text">
+          <text class="nickname">{{userProfile.nickName || '未登录'}}</text>
+          <text class="uid">{{userProfile.openId ? ('ID: ' + userProfile.openId) : '登录后即可创建/加入房间'}}</text>
+        </view>
       </view>
     </view>
-    <view class="user-actions">
-      <button
-        wx:if="{{isSeated}}"
-        class="mini-btn ghost"
-        size="mini"
-        bindtap="onExitRoom"
-      >
-        退出
-      </button>
-      <button
-        class="mini-btn ghost"
-        size="mini"
-        bindtap="onBack"
-      >
-        返回
-      </button>
-    </view>
-  </view>
+  </block>
 
-  <view class="room-info">
-    <view class="room-line">
-      <text class="label">房间号</text>
-      <text class="code">{{roomCode || '生成中...'}}</text>
-      <button size="mini" bindtap="onCopyRoomCode" class="mini-btn">复制</button>
-    </view>
-    <view class="room-line">
-      <text class="label">座位</text>
-      <view class="seat-grid">
-        <block wx:for="{{seats}}" wx:key="id">
-          <view class="seat" data-id="{{item.id}}" bindtap="onSelectSeat">
-            <text class="seat-label">{{item.label}}</text>
-            <view class="seat-visual">
-              <image wx:if="{{item.occupant}}" class="seat-avatar" src="{{item.occupant.avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
-              <view wx:else class="seat-avatar placeholder"></view>
-              <text class="seat-name">{{item.occupant ? item.occupant.nickName : '空闲'}}</text>
-            </view>
+  <page-container
+    show="{{isInRoom}}"
+    position="bottom"
+    round="{{true}}"
+    duration="300"
+    bind:leave="onRoomContainerLeave"
+    overlay="{{false}}"
+    custom-style="height: 100vh; width: 100vw; background: #f8f3eb;"
+  >
+    <scroll-view scroll-y class="lobby-page" style="height: 100vh; padding-top: 40rpx; box-sizing: border-box;">
+      <view class="user-card">
+        <view class="user-meta">
+          <image class="avatar" src="{{userProfile.avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
+          <view class="user-text">
+            <text class="nickname">{{userProfile.nickName || '未登录'}}</text>
+            <text class="uid">{{userProfile.openId ? ('ID: ' + userProfile.openId) : '登录后即可创建/加入房间'}}</text>
           </view>
+        </view>
+      </view>
+
+      <view class="room-info" wx:if="{{isInRoom}}" style="margin-top: 32rpx;">
+        <view class="room-header-row">
+            <view class="room-title-block">
+                <text class="label">房间号</text>
+                <text class="code">{{roomCode}}</text>
+            </view>
+            <button size="mini" bindtap="onCopyRoomCode" class="mini-btn">复制</button>
+        </view>
+
+        <view class="room-settings" wx:if="{{roomSettings}}">
+           <view class="setting-item">
+             <text class="setting-icon">🎴 </text>
+             <text class="setting-text">牌库 {{roomSettings.setCount || 1}} 套 ({{(roomSettings.setCount || 1) * baseDeckSize}} 张)</text>
+           </view>
+           <view class="setting-item">
+             <text class="setting-icon">❄️ </text>
+             <text class="setting-text">冬季卡倒数 {{roomSettings.winterStartOffset || 30}} 张</text>
+           </view>
+        </view>
+
+        <view class="divider" style="margin: 24rpx 0; border-bottom: 2rpx dashed #e0e6df;"></view>
+
+        <view class="seat-section">
+            <text class="section-label" style="display:block; margin-bottom: 16rpx; font-weight:600; color:#334536; font-size:28rpx;">座位表</text>
+            <view class="seat-grid">
+                <block wx:for="{{seats}}" wx:key="id">
+                <view class="seat {{item.occupant ? 'occupied' : ''}}" data-id="{{item.id}}" bindtap="onSelectSeat">
+                    <text class="seat-label" style="margin-bottom:8rpx;">{{item.label}}</text>
+                    <view class="seat-visual">
+                    <image wx:if="{{item.occupant}}" class="seat-avatar" src="{{item.occupant.avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
+                    <view wx:else class="seat-avatar placeholder"></view>
+                    <text class="seat-name">{{item.occupant ? item.occupant.nickName : '空闲'}}</text>
+                    </view>
+                </view>
+                </block>
+            </view>
+        </view>
+
+        <view class="room-footer" style="margin-top: 40rpx; gap: 20rpx; display: flex; flex-direction: column;">
+            <button class="action-btn primary" wx:if="{{isHost}}" bindtap="onStartGame">开始游戏</button>
+            <button class="action-btn ghost" bindtap="onExitRoom">退出房间</button>
+        </view>
+      </view>
+    </scroll-view>
+  </page-container>
+
+  <!-- 创建/加入表单：仅在未进入房间时显示 -->
+  <block wx:if="{{!isInRoom}}">
+    <view class="lobby-forms">
+    <view class="section">
+      <view class="section-header">
+        <text class="section-title">创建房间</text>
+        <text class="section-sub">设置套数与冬季卡规则</text>
+      </view>
+
+      <view class="form-item">
+        <view class="label-row">
+          <text class="label">牌库套数</text>
+          <text class="tip">每套 {{baseDeckSize}} 张</text>
+        </view>
+        <input class="input" type="number" placeholder="默认 1 套，可多套叠加" value="{{createForm.setCount}}" bindinput="onSetCountInput" />
+      </view>
+
+      <view class="form-item">
+        <text class="label">冬季卡放置</text>
+        <input class="input" type="number" placeholder="牌堆底部前多少张内开始随机抽取" value="{{createForm.winterStartOffset}}" bindinput="onWinterStartInput" />
+      </view>
+
+      <button class="action-btn primary" bindtap="onCreateRoom">
+        创建房间
+      </button>
+      <text class="hint">房间号将自动生成</text>
+    </view>
+
+    <view class="section">
+      <view class="section-header">
+        <text class="section-title">房间列表</text>
+        <view class="section-sub refresh-btn" bindtap="fetchRoomList">刷新</view>
+      </view>
+
+      <view class="room-list" wx:if="{{roomList && roomList.length > 0}}">
+        <block wx:for="{{roomList}}" wx:key="_id">
+           <view class="room-item">
+             <view class="room-left">
+                <image class="room-host-avatar" src="{{item.players[0].avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
+                <view class="room-details">
+                   <text class="room-code">房间号 {{item.roomCode}}</text>
+                   <text class="room-host">房主: {{item.players[0].nickName}}</text>
+                </view>
+             </view>
+             <view class="room-right">
+                <text class="room-count">{{item.playerCount}}/6</text>
+                <button class="mini-btn ghost" bindtap="onJoinRoom" data-code="{{item.roomCode}}">加入</button>
+             </view>
+           </view>
         </block>
       </view>
-    </view>
-  </view>
-
-  <view class="section">
-    <view class="section-header">
-      <text class="section-title">开始游戏</text>
-      <text class="section-sub">设置套数与冬季卡规则</text>
-    </view>
-
-    <view class="form-item">
-      <view class="label-row">
-        <text class="label">牌库套数</text>
-        <text class="tip">每套 {{baseDeckSize}} 张</text>
+      <view wx:else class="empty-state">
+         <text>暂时没有房间，创建一个吧！</text>
       </view>
-      <input class="input" type="number" placeholder="默认 1 套，可多套叠加" value="{{createForm.setCount}}" bindinput="onSetCountInput" />
     </view>
-
-    <view class="form-item">
-      <text class="label">冬季卡放置</text>
-      <input class="input" type="number" placeholder="牌堆底部前多少张内开始随机抽取" value="{{createForm.winterStartOffset}}" bindinput="onWinterStartInput" />
-    </view>
-
-    <button class="action-btn primary" bindtap="onCreateRoom">
-      开始游戏
-    </button>
-    <text class="hint">房间号将自动生成，可复制给朋友</text>
   </view>
-
-  <view class="section">
-    <view class="section-header">
-      <text class="section-title">加入房间</text>
-      <text class="section-sub">输入房主分享的房间号</text>
-    </view>
-
-    <view class="join-row">
-      <input class="join-input" placeholder="请输入房间号" value="{{joinRoomCode}}" bindinput="onJoinInput" />
-      <button class="action-btn ghost" bindtap="onJoinRoom">
-        加入
-      </button>
-    </view>
-    <text class="hint">确认房间号正确后再加入</text>
-  </view>
+  </block>
 </view>

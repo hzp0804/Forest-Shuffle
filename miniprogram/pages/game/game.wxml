@@ -1,0 +1,8 @@
+<view class="container">
+  <view class="loading" wx:if="{{!gameData}}">加载中...</view>
+  <view class="game-board" wx:else>
+    <text>游戏已开始！</text>
+    <!-- 临时显示手牌数量，用于验证 -->
+    <view>我的手牌数: {{myHand.length}}</view>
+  </view>
+</view>

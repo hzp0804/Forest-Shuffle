@@ -9,7 +9,6 @@
       <view class="avatar-section">
         <button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
           <image class="avatar" src="{{avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
-          <view class="camera-icon">📷</view>
         </button>
         <text class="tip-text">点击头像修改</text>
       </view>

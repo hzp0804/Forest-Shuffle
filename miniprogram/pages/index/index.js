@@ -52,6 +52,8 @@ Page({
   },
 
   onLoad: async function() {
+    this.setData({ loginLoading: true });
+    
     const stored = getStoredProfile();
     console.log('onLoad stored profile:', stored);
 
@@ -104,6 +106,10 @@ Page({
       
     } catch (err) {
       console.error('Cloud login failed:', err);
+      // 可以提示用户重试，或者静默失败让用户点击开始游戏再次触发(但目前开始游戏没有重试逻辑)
+      wx.showToast({ title: '自动登录失败', icon: 'none' });
+    } finally {
+      this.setData({ loginLoading: false });
     }
   },
 
@@ -119,111 +125,117 @@ Page({
   },
 
   onUserInfoSubmit: async function(e) {
-    const { avatarUrl, nickName } = e.detail;
+    let { avatarUrl, nickName } = e.detail;
     console.log('onUserInfoSubmit', avatarUrl, nickName);
     
-    // 更新本地状态
-    const profile = { 
-      ...(this.data.userProfile || {}),
-      avatarUrl, 
-      nickName,
-      updateTime: new Date().getTime()
-    };
-    
-    this.setData({ userProfile: profile });
-    
-    // 更新全局变量
-    getApp().globalData.userProfile = profile;
+    // 显示加载提示，因为上传图片可能需要一点时间
+    wx.showLoading({ title: '保存中...', mask: true });
 
-    // 保存到本地缓存
-    await saveProfile(profile);
-
-    // 关闭弹窗
-    const modal = this.selectComponent('#userInfoModal');
-    if (modal) {
-      if (modal.showLoading) modal.showLoading(); // 假设有 loading 方法，或者不设置也可以
-    }
-
-    // 调用客户端数据库保存到 userList
-    const db = wx.cloud.database();
-    const userCollection = db.collection('userList');
-    
-    // 注意：客户端 DB 查询只能查到自己的数据（默认权限）
-    userCollection.get({
-      success: async (res) => {
-        console.log('Query userList success:', res);
-        const users = res.data;
-        const now = db.serverDate();
+    try {
+      // 1. 如果是临时路径，先上传到云存储获取永久fileID
+      if (avatarUrl && (avatarUrl.startsWith('http://tmp') || avatarUrl.startsWith('wxfile://') || avatarUrl.startsWith('blob:'))) {
+        const ext = avatarUrl.match(/\.[^.]+?$/)?.[0] || '.jpg';
+        const openId = this.data.userProfile?.openId || 'unknown';
+        // 构建云存储路径: avatars/{openId}_{timestamp}.jpg
+        const cloudPath = `user-avatars/${openId}_${Date.now()}${ext}`;
         
-        if (users.length > 0) {
-          // 更新
-          const docId = users[0]._id;
-          console.log('Updating existing user:', docId);
-          userCollection.doc(docId).update({
-             data: {
-               avatarUrl,
-               nickName,
-               updateTime: now
-             },
-             success: (updateRes) => {
-               console.log('Update success:', updateRes);
-               wx.showToast({ title: '登录成功', icon: 'success' });
-             },
-             fail: (err) => {
-               console.error('Update fail:', err);
-               wx.showToast({ title: '登录失败', icon: 'none' });
-             }
-          });
-        } else {
-          // 新增
-          console.log('Adding new user');
-          userCollection.add({
+        console.log('Uploading temporary avatar to:', cloudPath);
+        
+        const uploadResult = await wx.cloud.uploadFile({
+          cloudPath: cloudPath,
+          filePath: avatarUrl
+        })
+        
+        if (!uploadResult.fileID) {
+          throw new Error('图片上传失败，未获取到 fileID');
+        }
+        
+        console.log('Upload success, fileID:', uploadResult.fileID);
+        avatarUrl = uploadResult.fileID; // 更新为永久的文件ID
+      }
+      
+      // 2. 更新本地状态
+      const profile = { 
+        ...(this.data.userProfile || {}),
+        avatarUrl, 
+        nickName,
+        updateTime: new Date().getTime()
+      };
+      
+      this.setData({ userProfile: profile });
+      
+      // 更新全局变量
+      getApp().globalData.userProfile = profile;
+
+      // 保存到本地缓存
+      await saveProfile(profile);
+
+      // 3. 调用客户端数据库保存到 userList
+      const db = wx.cloud.database();
+      const userCollection = db.collection('userList');
+      
+      // 查询是否已存在记录
+      const queryRes = await userCollection.get();
+      const users = queryRes.data;
+      const now = db.serverDate();
+        
+      if (users.length > 0) {
+        // 更新现有记录
+        const docId = users[0]._id;
+        console.log('Updating existing user:', docId);
+        await userCollection.doc(docId).update({
             data: {
               avatarUrl,
               nickName,
-              createTime: now,
               updateTime: now
-            },
-            success: (addRes) => {
-                console.log('Add success:', addRes);
-                wx.showToast({ title: '保存成功', icon: 'success' });
-            },
-            fail: (err) => {
-                console.error('Add fail:', err);
-                // 特殊处理集合不存在的错误提示
-                 const errMsg = err.errMsg || '';
-                 if (errMsg.includes('not exists') || errMsg.includes('not found')) {
-                    wx.showModal({
-                      title: '提示',
-                      content: '请在云开发控制台创建 "userList" 集合'
-                    });
-                 } else {
-                    wx.showToast({ title: '保存失败', icon: 'none' });
-                 }
             }
-          });
-        }
-      },
-      fail: (err) => {
-         console.error('Query userList fail:', err);
-         wx.showToast({ title: '查询数据库失败', icon: 'none' });
-      },
-      complete: () => {
-        if (modal) {
-          modal.hide();
-          if (modal.stopLoading) modal.stopLoading();
-        }
-        // 由于 DB 操作是异步的，这里直接跳转可能在保存完成前就发生了，
-        // 但为了用户体验，通常直接跳转是可接受的，后台异步保存。
-        // 或者我们可以把跳转放在 success 回调里。鉴于这是小程序，
-        // 建议稍微延迟跳转或放在 success 里。
-        
-        // 为了响应速度，我们这里直接跳转，后台慢慢存
-         wx.navigateTo({
-          url: '/pages/lobby/lobby'
+        });
+      } else {
+        // 新增记录
+        console.log('Adding new user');
+        await userCollection.add({
+          data: {
+            avatarUrl,
+            nickName,
+            createTime: now,
+            updateTime: now
+          }
         });
       }
-    });
+
+      // 4. 成功后的处理
+      wx.hideLoading();
+      wx.showToast({ title: '登录成功', icon: 'success' });
+
+      // 关闭弹窗
+      const modal = this.selectComponent('#userInfoModal');
+      if (modal) {
+        modal.hide();
+        if (modal.stopLoading) modal.stopLoading();
+      }
+
+      // 跳转
+      wx.navigateTo({
+        url: '/pages/lobby/lobby'
+      });
+
+    } catch (err) {
+      wx.hideLoading();
+      console.error('Save user info failed:', err);
+      
+      // 更加友好的错误提示
+      let errMsg = '保存失败';
+      if (err.errMsg && (err.errMsg.includes('not exists') || err.errMsg.includes('not found'))) {
+        errMsg = '数据库集合 userList 不存在';
+      } else if (err.message) {
+        errMsg = err.message;
+      }
+      
+      wx.showToast({ title: errMsg, icon: 'none', duration: 3000 });
+      
+      const modal = this.selectComponent('#userInfoModal');
+      if (modal && modal.stopLoading) modal.stopLoading();
+    }
   },
 
   onViewCards: function() {
