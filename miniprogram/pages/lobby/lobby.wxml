@@ -70,7 +70,12 @@
         </view>
 
         <view class="room-footer" style="margin-top: 40rpx; gap: 20rpx; display: flex; flex-direction: column;">
-            <button class="action-btn primary" wx:if="{{isHost}}" bindtap="onStartGame">开始游戏</button>
+            <block wx:if="{{roomStatus === 'playing'}}">
+                <button class="action-btn primary" bindtap="onContinueGame">继续游戏</button>
+            </block>
+            <block wx:elif="{{isHost}}">
+                <button class="action-btn primary" bindtap="onStartGame">开始游戏</button>
+            </block>
             <button class="action-btn ghost" bindtap="onExitRoom">退出房间</button>
         </view>
       </view>
@@ -117,7 +122,10 @@
              <view class="room-left">
                 <image class="room-host-avatar" src="{{item.players[0].avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
                 <view class="room-details">
-                   <text class="room-code">房间号 {{item.roomCode}}</text>
+                   <view class="room-title-row">
+                      <text class="room-code">房间号 {{item.roomCode}}</text>
+                      <text class="room-status status-{{item.status}}">{{item.status === 'playing' ? '进行中' : '等待中'}}</text>
+                   </view>
                    <text class="room-host">房主: {{item.players[0].nickName}}</text>
                 </view>
              </view>

@@ -60,7 +60,8 @@ Page({
       { id: 6, label: '座位6', occupant: null }
     ],
     roomList: [],
-    roomSettings: null
+    roomSettings: null,
+    roomStatus: 'waiting'
   },
 
   onLoad() {
@@ -329,9 +330,16 @@ Page({
   },
 
   onExitRoom() {
-    const { roomId, userProfile } = this.data;
+    const { roomId, userProfile, roomStatus } = this.data;
     if (!roomId) {
       this.setData({ isInRoom: false, isHost: false, roomCode: '' });
+      return;
+    }
+
+    // 游戏进行中不清空座位，保留身份便于后续返回
+    if (roomStatus === 'playing') {
+      wx.showToast({ title: '已退出，可随时重新进入', icon: 'none' });
+      this.leaveRoomLocal();
       return;
     }
 
@@ -394,7 +402,8 @@ Page({
       roomCode: '',
       roomId: '',
       seats: this.data.seats.map(s => ({ ...s, occupant: null })), // 清空座位
-      isSeated: false
+      isSeated: false,
+      isGameStarted: false
     });
     this.fetchRoomList();
     this.stopRoomPolling();
@@ -548,7 +557,8 @@ Page({
       isHost: isHost,
       roomId: roomData._id,
       roomCode: roomData.roomCode,
-      roomSettings: roomData.settings || {}
+      roomSettings: roomData.settings || {},
+      roomStatus: roomData.status || 'waiting'
     });
     
     this.updateSeatsFromPlayers(roomData.players);
@@ -600,6 +610,17 @@ Page({
 
         const room = snapshot.docs[0];
 
+        // 状态监听：跳转游戏
+        if (room.status === 'playing') {
+           // 确保只跳转一次
+           if (!this.data.isGameStarted) {
+             this.setData({ isGameStarted: true });
+             wx.navigateTo({
+               url: `/pages/game/game?roomId=${roomId}`,
+             });
+           }
+        }
+
         // 如果房间被关闭
         if (room.status === 'closed') {
           wx.showToast({ title: '房间已关闭', icon: 'none' });
@@ -607,14 +628,15 @@ Page({
           return;
         }
 
+        // Update room status
+        if (room.status) {
+             this.setData({ roomStatus: room.status });
+        }
+
         this.updateSeatsFromPlayers(room.players);
         if (room.settings) {
           this.setData({ roomSettings: room.settings });
         }
-          
-          // 如果房间被销毁或状态改变？
-          // ...暂不处理
-
       },
       onError: (err) => {
         console.error('Watch error:', err);
@@ -622,36 +644,174 @@ Page({
     });
   },
 
+  onStartGame() {
+    if (!this.data.isHost) return;
+    const { seats, roomSettings, roomId } = this.data;
+    const activePlayers = seats.filter(s => s.occupant).map(s => s.occupant);
+
+    if (activePlayers.length < 1) { // 允许单人调试，正式可能限制2人
+      wx.showToast({ title: '人数不足', icon: 'none' });
+      return;
+    }
+
+    wx.showLoading({ title: '正在洗牌...', mask: true });
+
+    // 1. 构建牌库
+    const speciesData = require('../../data/speciesData.js');
+    let rawDeck = [];
+    const setNum = (roomSettings && roomSettings.setCount) || 1;
+
+    // 假设 speciesData.byName 是字典
+    // 为防止数据结构差异，先做防守
+    const dict = speciesData.byName || speciesData; 
+    
+    Object.keys(dict).forEach(key => {
+      const cardDef = dict[key];
+      // 过滤掉特定不想加入的卡？或者全加
+      const count = (cardDef.nb || 0) * setNum;
+      for (let i = 0; i < count; i++) {
+        // 只存精简信息，减少DB体积
+        rawDeck.push({
+          id: key, // 对应 speciesData 的 key
+          uid: `${key}_${Math.random().toString(36).slice(2)}` // 唯一标识
+        });
+      }
+    });
+
+    // 2. 洗牌 (Fisher-Yates)
+    for (let i = rawDeck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [rawDeck[i], rawDeck[j]] = [rawDeck[j], rawDeck[i]];
+    }
+
+    // 3. 插入冬季卡
+    // 默认取出最后 N 张，混入 2 张 Winter
+    // 修正：如果牌太少，就全部混入
+    const winterOffset = (roomSettings && roomSettings.winterStartOffset) || 30;
+    const splitIndex = Math.max(0, rawDeck.length - winterOffset);
+    
+    const topPart = rawDeck.slice(0, splitIndex);
+    const bottomPart = rawDeck.slice(splitIndex);
+
+    // 添加 2 张冬季卡
+    bottomPart.push({ id: 'WINTER', uid: `WINTER_1_${Math.random()}` });
+    bottomPart.push({ id: 'WINTER', uid: `WINTER_2_${Math.random()}` });
+
+    // 再次洗混底部
+    for (let i = bottomPart.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [bottomPart[i], bottomPart[j]] = [bottomPart[j], bottomPart[i]];
+    }
+
+    const finalDeck = topPart.concat(bottomPart);
+
+    // 4. 发牌 (Initial Hand)
+    // 规则：通常起始手牌是 6 张
+    const HAND_SIZE = 6;
+    const playerStates = {};
+    const turnOrder = [];
+
+    activePlayers.forEach(p => {
+       const pid = p.openId || p.uid;
+       turnOrder.push(pid);
+       
+       const hand = [];
+       for(let k=0; k<HAND_SIZE; k++) {
+         if (finalDeck.length > 0) {
+           hand.push(finalDeck.shift());
+         }
+       }
+       
+       playerStates[pid] = {
+         hand: hand,
+         cave: [],
+         forest: [], // 森林区域
+         score: 0
+       };
+    });
+
+    // 5. 初始 GameState
+    const gameState = {
+      deck: finalDeck,
+      clearing: [], // 空地/弃牌区
+      playerStates: playerStates,
+      turnOrder: turnOrder,
+      currentPlayerIdx: Math.floor(Math.random() * turnOrder.length), // 随机先手
+      roundCount: 1,
+      winterCount: 0 // 抽到的冬季卡数量
+    };
+
+    // 6. 写入数据库
+    const db = wx.cloud.database();
+    db.collection('rooms').doc(roomId).update({
+      data: {
+        status: 'playing',
+        startTime: db.serverDate(),
+        gameState: gameState
+      },
+      success: () => {
+        wx.hideLoading();
+        console.log('Game Initialized');
+        // Watcher will handle navigation
+      },
+      fail: (err) => {
+        wx.hideLoading();
+        console.error('Start game failed', err);
+        wx.showToast({ title: '启动失败', icon: 'none' });
+      }
+    });
+  },
+
+  onContinueGame() {
+    if (!this.data.roomId) return;
+    wx.navigateTo({
+      url: `/pages/game/game?roomId=${this.data.roomId}`,
+    });
+  },
+
   fetchRoomList() {
     const db = wx.cloud.database();
     const _ = db.command;
-    // 计算1小时前的时间点
+    // Calculate 1 hour ago
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
-    return db.collection('rooms')
-      .where({
-        // 查询 waiting 或者 closed 的房间 (以便清理 closed)
-        status: _.in(['waiting', 'closed']),
-        createTime: _.gt(oneHourAgo)
+    // 1. Clean up old rooms (created > 1 hour ago and status is 'waiting') or 'closed' rooms
+    // We can do this silently in the background
+    db.collection('rooms')
+      .where(_.or([
+        { status: 'closed' },
+        { 
+          status: 'waiting',
+          createTime: _.lt(oneHourAgo) 
+        }
+      ]))
+      .get()
+      .then(res => {
+         const oldRooms = res.data || [];
+         if (oldRooms.length > 0) {
+             const cleanPromises = oldRooms.map(r => db.collection('rooms').doc(r._id).remove());
+             Promise.all(cleanPromises).catch(console.error);
+         }
       })
+      .catch(console.error);
+
+    // 2. Fetch valid rooms to display (waiting status AND created within 1 hour)
+    return db.collection('rooms')
+      .where(_.or([
+        {
+          status: 'waiting',
+          createTime: _.gte(oneHourAgo)
+        },
+        {
+          status: 'playing',
+          startTime: _.gte(oneHourAgo)
+        }
+      ]))
       .orderBy('createTime', 'desc')
       .limit(20)
       .get()
       .then(res => {
-         const allRooms = res.data || [];
-         
-         // 1. 识别并删除垃圾已关闭房间
-         const closedRooms = allRooms.filter(r => r.status === 'closed');
-         if (closedRooms.length > 0) {
-             const cleanPromises = closedRooms.map(r => db.collection('rooms').doc(r._id).remove());
-             // 默默在后台删除，不等结果
-             Promise.all(cleanPromises).catch(console.error);
-         }
-
-         // 2. 只展示 waiting 的房间
-         const list = allRooms
-           .filter(r => r.status === 'waiting')
-           .map(room => {
+         const list = (res.data || []).map(room => {
              const count = (room.players || []).filter(p => p).length;
              return { ...room, playerCount: count };
            });

@@ -413,6 +413,36 @@
   color: #73857a;
 }
 
+.room-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.room-status {
+  font-size: 20rpx;
+  height: 36rpx; /* 固定高度 */
+  padding: 0 12rpx;
+  border-radius: 8rpx;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: normal;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-waiting {
+  background: #e6f1e1;
+  color: #3a6b35;
+}
+
+.status-playing {
+  background: #fdf2f0;
+  color: #cc4e33;
+}
+
 .room-right {
   display: flex;
   align-items: center;

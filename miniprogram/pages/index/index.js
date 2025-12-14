@@ -115,6 +115,17 @@ Page({
 
   onStartGame: function() {
     const { userProfile } = this.data;
+    
+    // 如果已经有完整的用户信息（包含 openId, 昵称, 头像），则直接进入大厅，不再弹窗
+    // 这样可以实现"记住登录"的效果
+    if (userProfile && userProfile.openId && userProfile.nickName && userProfile.avatarUrl) {
+      console.log('Auto entering lobby with profile:', userProfile);
+      wx.navigateTo({
+        url: '/pages/lobby/lobby'
+      });
+      return;
+    }
+
     // 即使有数据也弹窗，只是带入数据
     const modal = this.selectComponent('#userInfoModal');
     if (modal) {

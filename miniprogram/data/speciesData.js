@@ -2808,372 +2808,601 @@ module.exports = {
     "points_en": "Gain 2 points for each card below a tree"
   },
   "VACCINIUM_MYRTILLUS": {
-    "name": "Vaccinium myrtillus",
+    "name": "欧洲越橘",
+    "name_en": "Vaccinium myrtillus",
     "nb": 3,
     "tags": [
+      "植物",
+      "山脉"
+    ],
+    "tags_en": [
       "Plant",
       "Mountain"
     ],
     "cost": 1,
     "type": "vCard",
-    "effect": "Play a card with a amphibian symbol for free (you can’t use its effect or bonus)",
+    "effect": "免费打出一张带有两栖动物符号的卡牌（你不能使用它的效果或奖励）",
+    "effect_en": "Play a card with a amphibian symbol for free (you can’t use its effect or bonus)",
     "bonus": "",
-    "points": "Gain 2 points for each different bird"
+    "bonus_en": "",
+    "points": "每有一种不同的鸟类，获得2分",
+    "points_en": "Gain 2 points for each different bird"
   },
   "ICHTHYOSAURA_ALPESTRIS": {
-    "name": "Ichthyosaura Alpestris",
+    "name": "高山欧螈",
+    "name_en": "Ichthyosaura Alpestris",
     "nb": 3,
     "tags": [
+      "两栖动物",
+      "山脉"
+    ],
+    "tags_en": [
       "Amphibian",
       "Mountain"
     ],
     "cost": 1,
     "type": "vCard",
     "effect": "",
-    "bonus": "Play a card with a mountain symbol, and a card with an insect symbol for free (you can’t use its effect or bonus)",
-    "points": "Gain 2 points for each card with an insect symbol"
+    "effect_en": "",
+    "bonus": "免费打出一张带有山脉符号和一张带有昆虫符号的卡牌（你不能使用它们的效果或奖励）",
+    "bonus_en": "Play a card with a mountain symbol, and a card with an insect symbol for free (you can’t use its effect or bonus)",
+    "points": "每有一张带有昆虫符号的卡牌，获得2分",
+    "points_en": "Gain 2 points for each card with an insect symbol"
   },
   "CRATERELLUS_CORNUCOPIODES": {
-    "name": "Craterellus Cornucopiodes",
+    "name": "灰喇叭菌",
+    "name_en": "Craterellus Cornucopiodes",
     "nb": 2,
     "tags": [
+      "蘑菇",
+      "山脉"
+    ],
+    "tags_en": [
       "Mushroom",
       "Mountain"
     ],
     "cost": 2,
     "type": "vCard",
-    "effect": "Whenever you play a card with a mountain symbol receive 1 card",
+    "effect": "每当你打出一张带有山脉符号的卡牌时，获得1张牌",
+    "effect_en": "Whenever you play a card with a mountain symbol receive 1 card",
     "bonus": "",
-    "points": ""
+    "bonus_en": "",
+    "points": "",
+    "points_en": ""
   },
   "LARIX_DECIDUA": {
-    "name": "Larix decidua",
+    "name": "欧洲落叶松",
+    "name_en": "Larix decidua",
     "nb": 7,
     "tags": [
+      "树木",
+      "山脉"
+    ],
+    "tags_en": [
       "Tree",
       "Mountain"
     ],
     "cost": 1,
     "type": "Tree",
     "effect": "",
-    "bonus": "Play a card with a mountain symbol for free (you can’t use its effect or bonus)",
-    "points": "Gain 3 points"
+    "effect_en": "",
+    "bonus": "免费打出一张带有山脉符号的卡牌（你不能使用它的效果或奖励）",
+    "bonus_en": "Play a card with a mountain symbol for free (you can’t use its effect or bonus)",
+    "points": "获得3分",
+    "points_en": "Gain 3 points"
   },
   "AQUILA_CHRYSAETOS": {
-    "name": "Aquila chrysaetos",
+    "name": "金雕",
+    "name_en": "Aquila chrysaetos",
     "nb": 3,
     "tags": [
+      "鸟",
+      "山脉"
+    ],
+    "tags_en": [
       "Bird",
       "Mountain"
     ],
     "cost": 1,
     "type": "vCard",
     "effect": "",
+    "effect_en": "",
     "bonus": "",
-    "points": "Gain 1 point for each card with a paw or amphibian symbol"
+    "bonus_en": "",
+    "points": "每有一张带有兽类或两栖动物符号的卡牌，获得1分",
+    "points_en": "Gain 1 point for each card with a paw or amphibian symbol"
   },
   "PINUS_CEMBRA": {
-    "name": "Pinus cembra",
+    "name": "瑞士石松",
+    "name_en": "Pinus cembra",
     "nb": 7,
     "tags": [
+      "树木",
+      "山脉"
+    ],
+    "tags_en": [
       "Tree",
       "Mountain"
     ],
     "cost": 2,
     "type": "Tree",
-    "effect": "Receive 1 card",
-    "bonus": "Receive 1 card",
-    "points": "Gain 1 point for each card with a mountain symbol"
+    "effect": "获得1张牌",
+    "effect_en": "Receive 1 card",
+    "bonus": "获得1张牌",
+    "bonus_en": "Receive 1 card",
+    "points": "每有一张带有山脉符号的卡牌，获得1分",
+    "points_en": "Gain 1 point for each card with a mountain symbol"
   },
   "LEPUS_TIMIDUS": {
-    "name": "Lepus timidus",
+    "name": "雪兔",
+    "name_en": "Lepus timidus",
     "nb": 3,
     "tags": [
+      "有爪动物",
+      "山脉"
+    ],
+    "tags_en": [
       "Paw",
       "Mountain"
     ],
     "cost": 0,
     "type": "hCard",
-    "effect": "Counts as a European Hare",
+    "effect": "视为一只欧洲野兔",
+    "effect_en": "Counts as a European Hare",
     "bonus": "",
-    "points": "Gain 1 point for each European Hare"
+    "bonus_en": "",
+    "points": "每有一只欧洲野兔，获得1分",
+    "points_en": "Gain 1 point for each European Hare"
   },
   "RUPICAPRA_RUPICAPRA": {
-    "name": "Rupicapra rupicapra",
+    "name": "臆羚",
+    "name_en": "Rupicapra rupicapra",
     "nb": 3,
     "tags": [
+      "偶蹄动物",
+      "山脉"
+    ],
+    "tags_en": [
       "Cloven-hoofed animal",
       "Mountain"
     ],
     "cost": 1,
     "type": "hCard",
     "effect": "",
+    "effect_en": "",
     "bonus": "",
-    "points": "Gain 3 points for each card with a matching tree symbol"
+    "bonus_en": "",
+    "points": "每有一张带有匹配树木符号的卡牌，获得3分",
+    "points_en": "Gain 3 points for each card with a matching tree symbol"
   },
   "GENTIANA": {
-    "name": "Gentiana",
+    "name": "龙胆",
+    "name_en": "Gentiana",
     "nb": 3,
     "tags": [
+      "植物",
+      "山脉"
+    ],
+    "tags_en": [
       "Plant",
       "Mountain"
     ],
     "cost": 0,
     "type": "vCard",
-    "effect": "Play a card with a butterfly symbol for free (you can’t use its effect or bonus)",
+    "effect": "免费打出一张带有蝴蝶符号的卡牌（你不能使用它的效果或奖励）",
+    "effect_en": "Play a card with a butterfly symbol for free (you can’t use its effect or bonus)",
     "bonus": "",
-    "points": "Gain 3 points for each card with a butterfly symbol"
+    "bonus_en": "",
+    "points": "每有一张带有蝴蝶符号的卡牌，获得3分",
+    "points_en": "Gain 3 points for each card with a butterfly symbol"
   },
   "TETRAO_UROGALLUS": {
-    "name": "Tetrao urogallus",
+    "name": "西方松鸡",
+    "name_en": "Tetrao urogallus",
     "nb": 4,
     "tags": [
+      "鸟",
+      "山脉"
+    ],
+    "tags_en": [
       "Bird",
       "Mountain"
     ],
     "cost": 1,
     "type": "hCard",
-    "effect": "Play a card with a plant symbol for free (you can’t use its effect or bonus)",
+    "effect": "免费打出一张带有植物符号的卡牌（你不能使用它的效果或奖励）",
+    "effect_en": "Play a card with a plant symbol for free (you can’t use its effect or bonus)",
     "bonus": "",
-    "points": "Gain 1 point for each card with a plant symbol"
+    "bonus_en": "",
+    "points": "每有一张带有植物符号的卡牌，获得1分",
+    "points_en": "Gain 1 point for each card with a plant symbol"
   },
   "PARNASSIUS_PHOEBUS": {
-    "name": "Parnassius phoebus",
+    "name": "依帕绢蝶",
+    "name_en": "Parnassius phoebus",
     "nb": 4,
     "tags": [
+      "蝴蝶",
+      "山脉"
+    ],
+    "tags_en": [
       "Butterfly",
       "Mountain"
     ],
     "cost": 0,
     "type": "vCard",
     "effect": "",
+    "effect_en": "",
     "bonus": "",
-    "points": "Gain points for each set of different butterflies"
+    "bonus_en": "",
+    "points": "每有一组不同的蝴蝶，获得对应分数",
+    "points_en": "Gain points for each set of different butterflies"
   },
   "MARMOTA_MARMOTA": {
-    "name": "Marmota marmota",
+    "name": "高山旱獭",
+    "name_en": "Marmota marmota",
     "nb": 4,
     "tags": [
+      "有爪动物",
+      "山脉"
+    ],
+    "tags_en": [
       "Paw",
       "Mountain"
     ],
     "cost": 1,
     "type": "hCard",
     "effect": "",
+    "effect_en": "",
     "bonus": "",
-    "points": "Gain 3 points for each different plants"
+    "bonus_en": "",
+    "points": "每有一种不同的植物，获得3分",
+    "points_en": "Gain 3 points for each different plants"
   },
   "CAPRA_IBEX": {
-    "name": "Capra ibex",
+    "name": "羱羊",
+    "name_en": "Capra ibex",
     "nb": 3,
     "tags": [
+      "偶蹄动物",
+      "山脉"
+    ],
+    "tags_en": [
       "Cloven-hoofed animal",
       "Mountain"
     ],
     "cost": 3,
     "type": "hCard",
-    "effect": "Take another turn after this one",
+    "effect": "在此回合后再进行一个回合",
+    "effect_en": "Take another turn after this one",
     "bonus": "",
-    "points": "Gain 10 points"
+    "bonus_en": "",
+    "points": "获得10分",
+    "points_en": "Gain 10 points"
   },
   "CORVUS_CORAX": {
-    "name": "Corvus corax",
+    "name": "渡鸦",
+    "name_en": "Corvus corax",
     "nb": 2,
     "tags": [
+      "鸟",
+      "山脉"
+    ],
+    "tags_en": [
       "Bird",
       "Mountain"
     ],
     "cost": 1,
     "type": "vCard",
-    "effect": "Receive 1 card",
+    "effect": "获得1张牌",
+    "effect_en": "Receive 1 card",
     "bonus": "",
-    "points": "Gain 5 points"
+    "bonus_en": "",
+    "points": "获得5分",
+    "points_en": "Gain 5 points"
   },
   "GYPAETUS_BARBATUS": {
-    "name": "Gypaetus barbatus",
+    "name": "胡兀鹫",
+    "name_en": "Gypaetus barbatus",
     "nb": 3,
     "tags": [
+      "鸟",
+      "山脉"
+    ],
+    "tags_en": [
       "Bird",
       "Mountain"
     ],
     "cost": 1,
     "type": "vCard",
-    "effect": "Place 2 cards from the clearing in your cave",
+    "effect": "将空地上的2张卡牌放入你的洞穴",
+    "effect_en": "Place 2 cards from the clearing in your cave",
     "bonus": "",
-    "points": "Gain 1 point for each card in your cave"
+    "bonus_en": "",
+    "points": "你的洞穴中每有一张卡牌，获得1分",
+    "points_en": "Gain 1 point for each card in your cave"
   },
   "LEONTOPODIUM_NIVALE": {
-    "name": "Leontopodium nivale",
+    "name": "高山火绒草",
+    "name_en": "Leontopodium nivale",
     "nb": 2,
     "tags": [
+      "植物",
+      "山脉"
+    ],
+    "tags_en": [
       "Plant",
       "Mountain"
     ],
     "cost": 1,
     "type": "vCard",
-    "effect": "Receive 1 card",
-    "bonus": "Receive 1 card",
-    "points": "Gain 3 points"
+    "effect": "获得1张牌",
+    "effect_en": "Receive 1 card",
+    "bonus": "获得1张牌",
+    "bonus_en": "Receive 1 card",
+    "points": "获得3分",
+    "points_en": "Gain 3 points"
   },
   "HYPSUGO_SAVII": {
-    "name": "Hypsugo savii",
+    "name": "萨氏伏翼",
+    "name_en": "Hypsugo savii",
     "nb": 3,
     "tags": [
+      "蝙蝠"
+    ],
+    "tags_en": [
       "Bat"
     ],
     "cost": 1,
     "type": "hCard",
     "effect": "",
+    "effect_en": "",
     "bonus": "",
-    "points": "Gain 5 points if you have at least 3 different bat species"
+    "bonus_en": "",
+    "points": "如果你拥有至少3种不同的蝙蝠，获得5分",
+    "points_en": "Gain 5 points if you have at least 3 different bat species"
   },
   "SQUEAKER_EDGE": {
-    "name": "Squeaker",
+    "name": "幼崽",
+    "name_en": "Squeaker",
     "nb": 3,
     "tags": [
+      "林缘",
+      "偶蹄动物"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Cloven-hoofed animal"
     ],
     "cost": 0,
     "type": "hCard",
     "effect": "",
+    "effect_en": "",
     "bonus": "",
-    "points": "Gain 1 point"
+    "bonus_en": "",
+    "points": "获得1分",
+    "points_en": "Gain 1 point"
   },
   "SAMBUCUS": {
-    "name": "Elderberry",
+    "name": "接骨木",
+    "name_en": "Elderberry",
     "nb": 4,
     "tags": [
+      "林缘",
+      "灌木"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Shrub"
     ],
     "cost": 2,
     "type": "Tree",
-    "effect": "Whenever you play a card with a plant symbol receive 1 card",
-    "bonus": "Play a card with a plant symbol for free (you can’t use its effect or bonus)",
-    "points": ""
+    "effect": "每当你打出一张带有植物符号的卡牌时，获得1张牌",
+    "effect_en": "Whenever you play a card with a plant symbol receive 1 card",
+    "bonus": "免费打出一张带有植物符号的卡牌（你不能使用它的效果或奖励）",
+    "bonus_en": "Play a card with a plant symbol for free (you can’t use its effect or bonus)",
+    "points": "",
+    "points_en": ""
   },
   "COMMON_HAZEL": {
-    "name": "Common Hazel",
+    "name": "欧洲榛",
+    "name_en": "Common Hazel",
     "nb": 4,
     "tags": [
+      "林缘",
+      "灌木"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Shrub"
     ],
     "cost": 2,
     "type": "Tree",
-    "effect": "Whenever you play a card with a bat symbol receive 1 card",
-    "bonus": "Play a card with a bat symbol for free (you can’t use its effect or bonus)",
-    "points": ""
+    "effect": "每当你打出一张带有蝙蝠符号的卡牌时，获得1张牌",
+    "effect_en": "Whenever you play a card with a bat symbol receive 1 card",
+    "bonus": "免费打出一张带有蝙蝠符号的卡牌（你不能使用它的效果或奖励）",
+    "bonus_en": "Play a card with a bat symbol for free (you can’t use its effect or bonus)",
+    "points": "",
+    "points_en": ""
   },
   "BLACKTHORN": {
-    "name": "Blackthorn",
+    "name": "黑刺李",
+    "name_en": "Blackthorn",
     "nb": 4,
     "tags": [
+      "林缘",
+      "灌木"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Shrub"
     ],
     "cost": 2,
     "type": "Tree",
-    "effect": "Whenever you play a card with a butterfly symbol receive 1 card",
-    "bonus": "Play a card with a butterfly symbol for free (you can’t use its effect or bonus)",
-    "points": ""
+    "effect": "每当你打出一张带有蝴蝶符号的卡牌时，获得1张牌",
+    "effect_en": "Whenever you play a card with a butterfly symbol receive 1 card",
+    "bonus": "免费打出一张带有蝴蝶符号的卡牌（你不能使用它的效果或奖励）",
+    "bonus_en": "Play a card with a butterfly symbol for free (you can’t use its effect or bonus)",
+    "points": "",
+    "points_en": ""
   },
   "WILD_BOAR_FEMALE_": {
-    "name": "Wild Boar (Female)",
+    "name": "野猪（雌性）",
+    "name_en": "Wild Boar (Female)",
     "nb": 3,
     "tags": [
+      "林缘",
+      "偶蹄动物"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Cloven-hoofed animal"
     ],
     "cost": 2,
     "type": "hCard",
-    "effect": "Remove all cards in the clearing from the game",
-    "bonus": "Play a squeaker for free",
-    "points": "Gain 10 points for each squeaker"
+    "effect": "将空地上的所有卡牌从游戏中移除",
+    "effect_en": "Remove all cards in the clearing from the game",
+    "bonus": "免费打出一张幼崽",
+    "bonus_en": "Play a squeaker for free",
+    "points": "每有一只幼崽，获得10分",
+    "points_en": "Gain 10 points for each squeaker"
   },
   "BEEHIVE": {
-    "name": "Bee Swarm",
+    "name": "蜂群",
+    "name_en": "Bee Swarm",
     "nb": 3,
     "tags": [
+      "林缘",
+      "昆虫"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Insect"
     ],
     "cost": 1,
     "type": "hCard",
-    "effect": "Put all cards with a plant, shrub or tree symbol from the clearing in your cave",
+    "effect": "将空地上所有带有植物、灌木或树木符号的卡牌放入你的洞穴",
+    "effect_en": "Put all cards with a plant, shrub or tree symbol from the clearing in your cave",
     "bonus": "",
-    "points": "Gain 1 point for each card with a plant symbol"
+    "bonus_en": "",
+    "points": "每有一张带有植物符号的卡牌，获得1分",
+    "points_en": "Gain 1 point for each card with a plant symbol"
   },
   "EUROPEAN_BISON": {
-    "name": "European Bison",
+    "name": "欧洲野牛",
+    "name_en": "European Bison",
     "nb": 3,
     "tags": [
+      "林缘",
+      "偶蹄动物"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Cloven-hoofed animal"
     ],
     "cost": 3,
     "type": "hCard",
-    "effect": "Take another turn after this one",
+    "effect": "在此回合后再进行一个回合",
+    "effect_en": "Take another turn after this one",
     "bonus": "",
-    "points": "Gain 2 points for each card with an oak or beech symbol"
+    "bonus_en": "",
+    "points": "每有一张带有橡树或山毛榉符号的卡牌，获得2分",
+    "points_en": "Gain 2 points for each card with an oak or beech symbol"
   },
   "EUROPEAN_WILDCAT": {
-    "name": "European Wildcat",
+    "name": "欧洲野猫",
+    "name_en": "European Wildcat",
     "nb": 3,
     "tags": [
+      "林缘",
+      "兽类"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Paw"
     ],
     "cost": 1,
     "type": "hCard",
-    "effect": "Take 1 card from the clearing",
+    "effect": "从空地获得1张牌",
+    "effect_en": "Take 1 card from the clearing",
     "bonus": "",
-    "points": "Gain 1 point for each card with a woodland edge symbol"
+    "bonus_en": "",
+    "points": "每有一张带有林缘符号的卡牌，获得1分",
+    "points_en": "Gain 1 point for each card with a woodland edge symbol"
   },
   "COMMON_PIPISTRELLE": {
-    "name": "Common Pipistrelle",
+    "name": "普通伏翼",
+    "name_en": "Common Pipistrelle",
     "nb": 3,
     "tags": [
+      "林缘",
+      "蝙蝠"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Bat"
     ],
     "cost": 1,
     "type": "hCard",
     "effect": "",
+    "effect_en": "",
     "bonus": "",
-    "points": "Gain 5 points if you have at least 3 different bat species"
+    "bonus_en": "",
+    "points": "如果你拥有至少3种不同的蝙蝠，获得5分",
+    "points_en": "Gain 5 points if you have at least 3 different bat species"
   },
   "MOSQUITO": {
-    "name": "Crane Fly",
+    "name": "大蚊",
+    "name_en": "Crane Fly",
     "nb": 3,
     "tags": [
+      "林缘",
+      "昆虫"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Insect"
     ],
     "cost": 1,
     "type": "hCard",
-    "effect": "Play any number of bat cards for free",
-    "bonus": "Take all cards with a bat symbol from the clearing into your hand",
-    "points": "Gain 1 point for each card with a bat symbol"
+    "effect": "免费打出任意数量的蝙蝠卡牌",
+    "effect_en": "Play any number of bat cards for free",
+    "bonus": "将空地上所有带有蝙蝠符号的卡牌加入手牌",
+    "bonus_en": "Take all cards with a bat symbol from the clearing into your hand",
+    "points": "每有一张带有蝙蝠符号的卡牌，获得1分",
+    "points_en": "Gain 1 point for each card with a bat symbol"
   },
   "EUROPEAN_POLECAT": {
-    "name": "European Polecat",
+    "name": "欧洲艾鼬",
+    "name_en": "European Polecat",
     "nb": 3,
     "tags": [
+      "林缘",
+      "兽类"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Paw"
     ],
     "cost": 2,
     "type": "hCard",
     "effect": "",
-    "bonus": "Take another turn after this one",
-    "points": "Gain 10 points if this is the only card on a tree or shrub"
+    "effect_en": "",
+    "bonus": "在此回合后再进行一个回合",
+    "bonus_en": "Take another turn after this one",
+    "points": "如果这是树上或灌木上唯一的卡牌，获得10分",
+    "points_en": "Gain 10 points if this is the only card on a tree or shrub"
   },
   "MAP_BUTTERFLY": {
-    "name": "Map Butterfly",
+    "name": "地图蛱蝶",
+    "name_en": "Map Butterfly",
     "nb": 4,
     "tags": [
+      "林缘",
+      "昆虫",
+      "蝴蝶"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Insect",
       "Butterfly"
@@ -3181,99 +3410,158 @@ module.exports = {
     "cost": 0,
     "type": "vCard",
     "effect": "",
+    "effect_en": "",
     "bonus": "",
-    "points": "Gain points for each set of different butterflies"
+    "bonus_en": "",
+    "points": "每有一组不同的蝴蝶，获得对应分数",
+    "points_en": "Gain points for each set of different butterflies"
   },
   "URTICA": {
-    "name": "Stinging Nettle",
+    "name": "荨麻",
+    "name_en": "Stinging Nettle",
     "nb": 3,
     "tags": [
+      "林缘",
+      "植物"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Plant"
     ],
     "cost": 0,
     "type": "vCard",
-    "effect": "Any number of butteflies may share a slot on this tree or shrub",
+    "effect": "任意数量的蝴蝶可以共享这棵树或灌木上的一个位置",
+    "effect_en": "Any number of butteflies may share a slot on this tree or shrub",
     "bonus": "",
-    "points": "Gain 2 points for each card with a butterfly symbol"
+    "bonus_en": "",
+    "points": "每有一张带有蝴蝶符号的卡牌，获得2分",
+    "points_en": "Gain 2 points for each card with a butterfly symbol"
   },
   "GREAT_GREEN_BUSH_CRICKET": {
-    "name": "Great Green Bush-Cricket",
+    "name": "大绿丛蟋",
+    "name_en": "Great Green Bush-Cricket",
     "nb": 3,
     "tags": [
+      "林缘",
+      "昆虫"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Insect"
     ],
     "cost": 1,
     "type": "vCard",
-    "effect": "Play a card with a bird symbol for free (you can’t use its effect or bonus)",
+    "effect": "免费打出一张带有鸟符号的卡牌（你不能使用它的效果或奖励）",
+    "effect_en": "Play a card with a bird symbol for free (you can’t use its effect or bonus)",
     "bonus": "",
-    "points": "Gain 1 point for each card with an insect symbol"
+    "bonus_en": "",
+    "points": "每有一张带有昆虫符号的卡牌，获得1分",
+    "points_en": "Gain 1 point for each card with an insect symbol"
   },
   "EUROPEAN_WATER_VOLE": {
-    "name": "Water Vole",
+    "name": "水䶄",
+    "name_en": "Water Vole",
     "nb": 2,
     "tags": [
+      "林缘",
+      "兽类"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Paw"
     ],
     "cost": 2,
     "type": "vCard",
-    "effect": "Immediately play any number of cards from hand as tree saplings",
-    "bonus": "Take another turn after this one",
-    "points": ""
+    "effect": "立即从手牌中打出任意数量的卡牌作为树苗",
+    "effect_en": "Immediately play any number of cards from hand as tree saplings",
+    "bonus": "在此回合后再进行一个回合",
+    "bonus_en": "Take another turn after this one",
+    "points": "",
+    "points_en": ""
   },
   "EURASIAN_MAGPIE": {
-    "name": "Eurasian Magpie",
+    "name": "喜鹊",
+    "name_en": "Eurasian Magpie",
     "nb": 3,
     "tags": [
+      "林缘",
+      "鸟类"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Bird"
     ],
     "cost": 1,
     "type": "vCard",
-    "effect": "Take 1 card from the clearing",
-    "bonus": "Put 2 cards from the clearing into your cave",
-    "points": "Gain 3 points"
+    "effect": "从空地获得1张牌",
+    "effect_en": "Take 1 card from the clearing",
+    "bonus": "将空地上的2张卡牌放入你的洞穴",
+    "bonus_en": "Put 2 cards from the clearing into your cave",
+    "points": "获得3分",
+    "points_en": "Gain 3 points"
   },
   "COMMON_NIGHTINGALE": {
-    "name": "Nightingale",
+    "name": "夜莺",
+    "name_en": "Nightingale",
     "nb": 3,
     "tags": [
+      "林缘",
+      "鸟类"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Bird"
     ],
     "cost": 1,
     "type": "vCard",
     "effect": "",
-    "bonus": "Take another turn after this one",
-    "points": "Gain 5 points if it’s on a shrub"
+    "effect_en": "",
+    "bonus": "在此回合后再进行一个回合",
+    "bonus_en": "Take another turn after this one",
+    "points": "如果它在灌木上，获得5分",
+    "points_en": "Gain 5 points if it's on a shrub"
   },
   "BARN_OWL": {
-    "name": "Barn Owl",
+    "name": "仓鸮",
+    "name_en": "Barn Owl",
     "nb": 2,
     "tags": [
+      "林缘",
+      "鸟类"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Bird"
     ],
     "cost": 2,
     "type": "vCard",
-    "effect": "Take another turn after this one if you have at least one bat in your forest",
+    "effect": "如果你的森林中至少有一只蝙蝠，在此回合后再进行一个回合",
+    "effect_en": "Take another turn after this one if you have at least one bat in your forest",
     "bonus": "",
-    "points": "Gain 3 points for each card with a bat symbol"
+    "bonus_en": "",
+    "points": "每有一张带有蝙蝠符号的卡牌，获得3分",
+    "points_en": "Gain 3 points for each card with a bat symbol"
   },
   "DIGITALIS": {
-    "name": "Digitalis",
+    "name": "毛地黄",
+    "name_en": "Digitalis",
     "nb": 4,
     "tags": [
+      "林缘",
+      "植物"
+    ],
+    "tags_en": [
       "Woodland Edge",
       "Plant"
     ],
     "cost": 0,
     "type": "vCard",
     "effect": "",
+    "effect_en": "",
     "bonus": "",
-    "points": "Gain points for different plants"
+    "bonus_en": "",
+    "points": "根据不同的植物数量获得分数",
+    "points_en": "Gain points for different plants"
   }
 }
 };

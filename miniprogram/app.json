@@ -3,6 +3,7 @@
     "pages/index/index",
     "pages/lobby/lobby",
     "pages/gallery/gallery",
+    "pages/game/game",
     "pages/score/score",
     "pages/card-detail/card-detail"
   ],
