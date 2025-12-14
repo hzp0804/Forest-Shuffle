@@ -1,0 +1,51 @@
+<!--pages/score/score.wxml-->
+<view class="container score-container">
+  <view class="header-summary">
+    <view class="total-label">总分</view>
+    <view class="total-score">{{totalScore}}</view>
+    <view class="reset-btn" bindtap="onReset">↺ 重置</view>
+  </view>
+
+  <scroll-view scroll-y class="score-form">
+    
+    <!-- 1. 树木部分 -->
+    <view class="score-section">
+      <view class="section-title">🌲 树木</view>
+      <view class="input-group">
+        <label>树木基础分</label>
+        <input type="number" value="{{scores.trees}}" data-field="trees" bindinput="onInputChange" placeholder="0"/>
+      </view>
+    </view>
+
+    <!-- 2. 动物/生物部分 -->
+    <view class="score-section">
+      <view class="section-title">🐾 野生动物</view>
+      
+      <view class="input-group">
+        <label>上方生物 (蝴蝶/鸟类)</label>
+        <input type="number" value="{{scores.top}}" data-field="top" bindinput="onInputChange" placeholder="0"/>
+      </view>
+
+      <view class="input-group">
+        <label>下方生物 (植物/蘑菇/爪子)</label>
+        <input type="number" value="{{scores.bottom}}" data-field="bottom" bindinput="onInputChange" placeholder="0"/>
+      </view>
+
+      <view class="input-group">
+        <label>侧边生物 (鹿/狼/狐狸等)</label>
+        <input type="number" value="{{scores.side}}" data-field="side" bindinput="onInputChange" placeholder="0"/>
+      </view>
+    </view>
+
+    <!-- 3. 特殊奖励 -->
+    <view class="score-section">
+      <view class="section-title">✨ 特殊奖励</view>
+      <view class="input-group">
+        <label>洞穴/神树奖励</label>
+        <input type="number" value="{{scores.bonus}}" data-field="bonus" bindinput="onInputChange" placeholder="0"/>
+      </view>
+    </view>
+
+    <view style="height: 200rpx;"></view>
+  </scroll-view>
+</view>

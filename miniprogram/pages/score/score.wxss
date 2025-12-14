@@ -1,0 +1,85 @@
+/* pages/score/score.wxss */
+.score-container {
+  padding: 0;
+  background-color: #FDFBF7;
+  height: 100vh;
+}
+
+.header-summary {
+  background-color: #3A6B35;
+  color: white;
+  padding: 40rpx 0;
+  text-align: center;
+  border-radius: 0 0 40rpx 40rpx;
+  box-shadow: 0 8rpx 20rpx rgba(58, 107, 53, 0.3);
+  margin-bottom: 40rpx;
+  position: relative;
+  z-index: 10;
+}
+
+.total-label {
+  font-size: 28rpx;
+  opacity: 0.9;
+  letter-spacing: 2rpx;
+}
+
+.total-score {
+  font-size: 100rpx;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.reset-btn {
+  position: absolute;
+  top: 40rpx;
+  right: 40rpx;
+  font-size: 24rpx;
+  background: rgba(255,255,255,0.2);
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+.score-form {
+  height: calc(100vh - 250rpx);
+  padding: 0 40rpx;
+  box-sizing: border-box;
+}
+
+.score-section {
+  margin-bottom: 50rpx;
+  background: white;
+  border-radius: 24rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.05);
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #2A4F25;
+  margin-bottom: 30rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+  padding-bottom: 20rpx;
+}
+
+.input-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.input-group label {
+  color: #555;
+  font-size: 28rpx;
+}
+
+.input-group input {
+  width: 120rpx;
+  text-align: right;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #3A6B35;
+  border-bottom: 2rpx solid #E3B448;
+  padding: 10rpx;
+}

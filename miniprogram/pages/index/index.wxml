@@ -1,0 +1,23 @@
+<!--index.wxml-->
+<view class="home-container">
+  <view class="cover-card">
+    <image class="cover-image" src="../../images/home.jpg" mode="widthFix"></image>
+    <view class="cover-info">
+      <text class="cover-title">森林不息 · Forest Shuffle</text>
+      <text class="cover-desc">卡牌包装 / 游戏封面</text>
+    </view>
+  </view>
+
+  <view class="menu">
+    <button class="btn btn-primary" hover-class="btn-hover" bindtap="onStartGame" loading="{{loginLoading}}" disabled="{{loginLoading}}">
+      开始游戏
+    </button>
+    <button class="btn btn-secondary" hover-class="btn-hover" bindtap="onViewCards">
+      卡片图鉴
+    </button>
+  </view>
+
+  <view class="footer">
+    <text>Developed using WeChat Cloud</text>
+  </view>
+</view>

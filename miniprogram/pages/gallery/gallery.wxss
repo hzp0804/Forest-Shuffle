@@ -1,0 +1,247 @@
+/* pages/gallery/gallery.wxss */
+.gallery-container {
+  min-height: 100vh;
+  background-color: #FDFBF7;
+  padding: 20rpx;
+}
+
+.search-bar {
+  margin-bottom: 30rpx;
+}
+
+.search-input {
+  background: white;
+  padding: 20rpx 30rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.05);
+}
+
+.card-list {
+  height: calc(100vh - 120rpx);
+}
+
+.card-item {
+  margin-bottom: 40rpx;
+  break-inside: avoid;
+}
+
+.card-split-container {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1);
+  border: 4rpx solid #e0e0e0;
+}
+
+.card-half {
+  padding: 20rpx;
+  min-height: 160rpx;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.top {
+  background-color: #E8F5E9; /* Light Green */
+  border-bottom: 2rpx dashed #ccc;
+}
+
+.bottom {
+  background-color: #F9FBE7; /* Darker Earth/Yellowish Tone */
+}
+
+/* Specific Type Colors */
+.top.butterfly { background-color: #E0F2F1; } /* Light Teal */
+.top.bird { background-color: #E3F2FD; } /* Light Blue */
+.bottom.mushroom { background-color: #FFF3E0; } /* Light Orange/Brown */
+.bottom.plant { background-color: #F1F8E9; }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 10rpx;
+}
+
+.cost-badge {
+  background-color: #8B4513;
+  color: white;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 24rpx;
+}
+
+.card-name {
+  font-weight: bold;
+  color: #2A4F25;
+  font-size: 30rpx;
+  flex: 1;
+}
+
+.card-type-icon {
+  font-size: 32rpx;
+}
+
+.card-effect {
+  font-size: 24rpx;
+  color: #555;
+  line-height: 1.4;
+  background: rgba(255,255,255,0.6);
+  padding: 10rpx;
+  border-radius: 8rpx;
+}
+
+.padding-bottom {
+  height: 40rpx;
+}
+
+/* Image Grid Styles */
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  padding-bottom: 40rpx;
+}
+
+.grid-item {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-top: 155%; /* Keep card ratio on devices without aspect-ratio support */
+  border-radius: 12rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
+  background-color: #eee;
+}
+
+.card-thumb {
+  width: 100%;
+  height: 100%;
+}
+
+/* Sprite Rendering */
+.card-sprite-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.card-sprite-img {
+  max-width: none;
+  max-height: none;
+  display: block;
+}
+
+/* Preview overlay */
+.preview-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99;
+  padding: 40rpx;
+}
+
+.preview-card {
+  width: 90%;
+  max-width: 720rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 20rpx 40rpx rgba(0,0,0,0.25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.card-sprite-viewport.preview {
+  width: 60%;
+  padding-top: 93%;
+  margin: 0 auto;
+  height: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12rpx;
+  box-shadow: 0 8rpx 16rpx rgba(0,0,0,0.1);
+}
+
+.preview-meta {
+  padding: 24rpx 28rpx 30rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  flex: 1 1 auto;
+  max-height: 45vh;
+  box-sizing: border-box;
+}
+
+.preview-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #2a4f25;
+}
+
+.preview-sub {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.preview-section {
+  padding: 20rpx 16rpx;
+  border-radius: 14rpx;
+  background: #f7f9f5;
+  border: 2rpx solid #e4e8e0;
+  box-shadow: inset 0 2rpx 4rpx rgba(0,0,0,0.04);
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1f3c18;
+}
+
+.section-pill {
+  font-size: 24rpx;
+  color: #2a4f25;
+  background: #e3f1e1;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+}
+
+.section-row {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 10rpx;
+}
+
+.section-label {
+  width: 120rpx;
+  color: #60756a;
+  font-weight: 600;
+  font-size: 24rpx;
+}
+
+.section-value {
+  flex: 1;
+  color: #314135;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
