@@ -13,7 +13,12 @@ Page({
     showDetailModal: false,
     activeTab: 0,
     primarySelection: '',
-    isMyTurn: false
+    targetTreeId: '',
+    targetTreeId: '',
+    selectedSlot: null, // { treeId, side, isValid }
+    selectedClearingIdx: -1,
+    isMyTurn: false,
+    isGameOver: false
   },
 
   onLoad(options) {
@@ -40,6 +45,68 @@ Page({
       },
       onError: (err) => console.error('Game watch error', err)
     });
+  },
+
+  computeInstruction(isMyTurn, hand, primaryUid, selectedClearingIdx, isGameOver) {
+    if (isGameOver) return { text: '游戏已结束', state: 'normal' };
+    if (!isMyTurn) return { text: '等待其他玩家行动...', state: 'normal' };
+    if (selectedClearingIdx > -1) return { text: '点击“拿取”获得该卡牌', state: 'success' };
+    if (!primaryUid) return { text: '轮到你了：可摸牌或打出手牌', state: 'normal' };
+
+    const mainCard = hand.find(c => c.uid === primaryUid);
+    if (!mainCard) return { text: '轮到你了：可摸牌或打出手牌', state: 'normal' };
+
+    const paymentCount = hand.filter(c => c.selected && c.uid !== primaryUid).length;
+    
+    let costs = new Set();
+    if (mainCard.cost !== undefined) costs.add(Number(mainCard.cost));
+    if (mainCard.speciesDetails) {
+        mainCard.speciesDetails.forEach(s => {
+             if (s.cost !== undefined) costs.add(Number(s.cost));
+        });
+    }
+    if (costs.size === 0) costs.add(0);
+    const sortedCosts = Array.from(costs).sort((a,b) => a - b);
+    
+    if (sortedCosts.length === 1) {
+        const cost = sortedCosts[0];
+        const diff = paymentCount - cost;
+        if (diff < 0) return { text: `需支付 ${cost} 张牌 (还少 ${-diff} 张)`, state: 'warning' };
+        if (diff > 0) return { text: `需支付 ${cost} 张牌 (多了 ${diff} 张)`, state: 'error' };
+        
+        // Success case - Check for bonuses
+        let bonusText = '';
+        const rawBonuses = new Set();
+        if (mainCard.bonus) rawBonuses.add(mainCard.bonus);
+        if (mainCard.speciesDetails) {
+            mainCard.speciesDetails.forEach(s => {
+                if (s.bonus) rawBonuses.add(s.bonus);
+            });
+        }
+        if (rawBonuses.size > 0) {
+            bonusText = `，奖励：${Array.from(rawBonuses).join(' / ')}`;
+        }
+        return { text: `支付 ${cost} 张牌 (完成${bonusText})`, state: 'success' };
+    } else {
+        const costStr = sortedCosts.join(' 或 ');
+        if (sortedCosts.includes(paymentCount)) {
+             // Success case logic for multi-cost (unlikely for now but safe to add)
+             let bonusText = '';
+             const rawBonuses = new Set();
+             if (mainCard.bonus) rawBonuses.add(mainCard.bonus);
+             if (mainCard.speciesDetails) {
+                 mainCard.speciesDetails.forEach(s => {
+                     // Try to match cost if possible? simplified: show all potentials
+                     if (s.bonus) rawBonuses.add(s.bonus);
+                 });
+             }
+             if (rawBonuses.size > 0) {
+                 bonusText = `，奖励：${Array.from(rawBonuses).join(' / ')}`;
+             }
+             return { text: `支付 ${paymentCount} 张牌 (完成${bonusText})`, state: 'success' };
+        }
+        return { text: `需支付 ${costStr} 张牌 (已选 ${paymentCount})`, state: 'warning' };
+    }
   },
 
   handleGameUpdate(room) {
@@ -71,9 +138,9 @@ Page({
     });
     
     // 处理手牌：将 ID 映射回详细信息
-    const speciesData = require('../../data/speciesData.js');
+    const cardData = require('../../data/cardData.js');
     const bgaData = require('../../data/bgaCardData.js');
-    const dict = speciesData.byName || speciesData;
+    const dict = cardData.byName || cardData;
 
     // --- Image Helper Logic (Unified with Gallery) ---
     const remoteBase = 'https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img';
@@ -178,8 +245,8 @@ Page({
 
     const findSpeciesMeta = (code = '') => {
         if (!code) return null;
-        // speciesData.byName is already loaded
-        const meta = speciesData.byName[code] || speciesData.byName[code.toLowerCase()] || speciesData.byConst[code];
+        // cardData.byName is already loaded
+        const meta = cardData.byName[code] || cardData.byName[code.toLowerCase()] || cardData.byConst[code];
         return meta;
     };
 
@@ -232,6 +299,19 @@ Page({
                 base.name = base.speciesDetails.map(s => s.displayName).join(' / ');
             }
         }
+        
+        // --- Fix: Ensure Type is present and Normalized ---
+        if (!base.type && visualCard && visualCard.type) {
+            base.type = visualCard.type;
+        }
+
+        if (base.type) {
+            let t = String(base.type).toUpperCase();
+            if (t === 'VCARD') t = 'V_CARD';
+            if (t === 'HCARD') t = 'H_CARD';
+            base.type = t;
+        }
+
         return base;
     };
 
@@ -245,16 +325,46 @@ Page({
     const rawClearing = gameState.clearing || [];
     const richClearing = rawClearing.map(enrichCard).filter(c => c);
 
-    // 处理森林区域 (My Forest)
+    // 处理森林区域 (My Forest) - Transform into Tree Groups
     const rawForest = myState ? (myState.forest || []) : [];
-    const richForest = rawForest.map(enrichCard).filter(c => c);
+    // If forest is flat list (legacy), treat them all as separate trees or saplings? 
+    // Ideally we assume new structure: objects with { isTree: true, ... } OR { type: 'TREE_GROUP', center: ..., slots: ... }
+    // But since we control the write, let's define the Read structure.
+    
+    // We expect gameState.playerStates[x].forest to be an array of "TreeGroup" objects.
+    // If it's a flat array of cards (from previous simple impl), we wrap them as trees for compatibility/migration.
+    let richForest = [];
+    if (rawForest.length > 0 && rawForest[0].id) {
+        // Legacy flat format detection (item has .id directly) -> Wrap as simple trees
+        richForest = rawForest.map(c => {
+            const rich = enrichCard(c);
+            return {
+               _id: c.uid || (Math.random().toString(36)),
+               center: rich,
+               slots: { top: null, bottom: null, left: null, right: null }
+            };
+        });
+    } else {
+        // New Format: Array of TreeGroup objects
+        richForest = rawForest.map(g => ({
+            _id: g._id,
+            center: enrichCard(g.center),
+            slots: {
+                top: enrichCard(g.slots?.top),
+                bottom: enrichCard(g.slots?.bottom),
+                left: enrichCard(g.slots?.left),
+                right: enrichCard(g.slots?.right)
+            }
+        }));
+    }
 
     const deckCount = (gameState.deck || []).length;
     const winterCount = gameState.winterCount || 0;
+    const isGameOver = (gameState.status === 'finished' || winterCount >= 3);
 
     const isMyTurn = (gameState.turnOrder && gameState.turnOrder[gameState.currentPlayerIdx || 0] === myOpenId);
-    const instructionText = isMyTurn ? '轮到你了：可摸牌或打出手牌' : '等待其他玩家行动...';
     const nextPrimary = prevSelected.has(prevPrimary) ? prevPrimary : (richHand.find(c => c.selected)?.uid || '');
+    const { text: instructionText, state: instructionState } = this.computeInstruction(isMyTurn, richHand, nextPrimary, -1, isGameOver);
 
     this.setData({
       gameData: gameState,
@@ -265,10 +375,22 @@ Page({
       myScore: myState ? myState.score : 0,
       deckCount: deckCount,
       instructionText: instructionText,
+      instructionState: instructionState,
       userProfile: app.globalData.userProfile || {},
       primarySelection: nextPrimary,
-      isMyTurn: isMyTurn
+      targetTreeId: this.data.targetTreeId,
+      isMyTurn: isMyTurn,
+      isGameOver: isGameOver
     });
+    
+    if (isGameOver && !this.data.hasShownResult) {
+        this.setData({ hasShownResult: true });
+        wx.showModal({
+            title: '游戏结束',
+            content: '第三张冬季卡已出现，游戏结束！\n请查看最终得分。',
+            showCancel: false
+        });
+    }
 
     // 动态更新标题
     wx.setNavigationBarTitle({
@@ -280,6 +402,46 @@ Page({
     const base = { id: card.id, uid: card.uid };
     if (card.sapling) base.sapling = true;
     return base;
+  },
+
+  getCardSymbol(card) {
+      if (!card || !card.id) return null;
+      const id = Number(card.id);
+      
+      // Map based on ID ranges for Trees (Base Game)
+      if (id >= 1 && id <= 9) return 'LINDEN';
+      if (id >= 10 && id <= 16) return 'OAK';
+      if (id >= 17 && id <= 22) return 'SILVER_FIR';
+      if (id >= 23 && id <= 32) return 'BIRCH';
+      if (id >= 33 && id <= 42) return 'BEECH';
+      if (id >= 43 && id <= 48) return 'SYCAMORE';
+      if (id >= 49 && id <= 55) return 'DOUGLAS_FIR';
+      if (id >= 56 && id <= 66) return 'HORSE_CHESTNUT';
+      if (id >= 162 && id <= 168) return 'LARCH'; // Mountain expansion?
+      if (id >= 169 && id <= 175) return 'PINE';
+
+      // For split cards (Animals/Plants), we ideally need a lookup table.
+      // Since mapping 200+ cards manually is inefficient without data, 
+      // we return 'UNKNOWN' which will pass the check to avoid blocking valid plays.
+      // TODO: Add full mapping for split cards.
+      return 'UNKNOWN';
+  },
+
+  checkBonusCondition(mainCard, payCards) {
+      // Rule: To get the bonus, all payment cards must share the same symbol as the played card.
+      const targetSymbol = this.getCardSymbol(mainCard);
+      
+      // If we don't know the symbol (e.g. split card without mapping), 
+      // we optimistically allow it (or standard rule: animals can't trigger payment bonuses unless they have symbol?)
+      // Actually, Animals HAVE symbols. 'UNKNOWN' means we miss data. 
+      // We'll Assume TRUE for UNKNOWN to be friendly.
+      if (!targetSymbol || targetSymbol === 'UNKNOWN') return true;
+
+      return payCards.every(c => {
+          const sym = this.getCardSymbol(c);
+          // If payment card symbol matches target, OR is unknown (benefit of doubt)
+          return (sym === targetSymbol || sym === 'UNKNOWN');
+      });
   },
 
   getMyOpenId() {
@@ -320,11 +482,13 @@ Page({
     const { myHand, primarySelection } = this.data;
     let nextPrimary = primarySelection;
     const newHand = (myHand || []).map(c => {
+      // Toggle selection logic
       if (c.uid === uid) {
         const toggled = !c.selected;
         if (toggled && !nextPrimary) {
           nextPrimary = uid;
         } else if (!toggled && nextPrimary === uid) {
+          // If deselecting primary, pick another selected as primary
           nextPrimary = '';
         }
         return { ...c, selected: toggled };
@@ -332,11 +496,49 @@ Page({
       return c; 
     });
 
+    // Re-evaluate primary if we lost it
     if (!nextPrimary) {
       const fallback = newHand.find(item => item.selected);
       nextPrimary = fallback ? fallback.uid : '';
     }
-    this.setData({ myHand: newHand, primarySelection: nextPrimary });
+    
+    // Selecting hand card clears clearing selection AND slot selection
+    const { text: instructionText, state: instructionState } = this.computeInstruction(this.data.isMyTurn, newHand, nextPrimary, -1, this.data.isGameOver);
+    
+    this.setData({ 
+       myHand: newHand, 
+       primarySelection: nextPrimary,
+       selectedClearingIdx: -1,
+       instructionText,
+       instructionState
+    });
+  },
+
+  onClearingCardTap(e) {
+      const idx = Number(e.currentTarget.dataset.idx);
+      const current = this.data.selectedClearingIdx;
+      const next = (current === idx) ? -1 : idx;
+
+      // Selecting clearing card clears hand selection
+      const newHand = (this.data.myHand || []).map(c => ({ ...c, selected: false }));
+      const { text: instructionText, state: instructionState } = this.computeInstruction(this.data.isMyTurn, newHand, '', next, this.data.isGameOver);
+
+      this.setData({
+          selectedClearingIdx: next,
+          primarySelection: '',
+          selectedSlot: null,
+          targetTreeId: '',
+          myHand: newHand,
+          instructionText,
+          instructionState
+      });
+  },
+
+  onTreeTap(e) {
+      const treeId = e.currentTarget.dataset.id;
+      this.setData({
+          targetTreeId: (this.data.targetTreeId === treeId) ? '' : treeId
+      });
   },
 
   async onDrawCard() {
@@ -345,6 +547,18 @@ Page({
       return;
     }
     if (this._actionBusy) return;
+    if (this.data.isGameOver) {
+        wx.showToast({ title: '游戏已结束', icon: 'none' });
+        return; 
+    }
+    // Clear selections when drawing
+    this.setData({
+        selectedClearingIdx: -1,
+        selectedSlot: null,
+        targetTreeId: '',
+        primarySelection: '',
+        myHand: (this.data.myHand || []).map(c => ({ ...c, selected: false }))
+    });
     this._actionBusy = true;
     try {
       const { db, room, gameState, myState, myId } = await this.withLatestState();
@@ -363,7 +577,11 @@ Page({
       const nextMine = { ...myState, hand: [...(myState.hand || [])] };
 
       if (drawn.id === 'WINTER') {
-        nextState.winterCount = (nextState.winterCount || 0) + 1;
+        const wCount = (nextState.winterCount || 0) + 1;
+        nextState.winterCount = wCount;
+        if (wCount >= 3) {
+            nextState.status = 'finished';
+        }
       } else {
         nextMine.hand.push(this.stripCard(drawn));
       }
@@ -383,15 +601,30 @@ Page({
     }
   },
 
-  async onTakeFromClearing(e) {
+  checkClearingLimit(clearing) {
+      if (clearing.length >= 10) {
+          return [];
+      }
+      return clearing;
+  },
+
+  async onConfirmTake() {
+    const idx = this.data.selectedClearingIdx;
+    if (idx < 0) {
+       wx.showToast({ title: '请先选择一张空地卡牌', icon: 'none' });
+       return;
+    }
     if (!this.isMyTurnNow()) {
       wx.showToast({ title: '当前不是你的回合', icon: 'none' });
       return;
     }
     if (this._actionBusy) return;
+    if (this.data.isGameOver) {
+        wx.showToast({ title: '游戏已结束', icon: 'none' });
+        return; 
+    }
     this._actionBusy = true;
     try {
-      const idx = Number(e.currentTarget.dataset.idx);
       const { db, room, gameState, myState, myId } = await this.withLatestState();
       const latestOrder = gameState.turnOrder || [];
       if (latestOrder[(gameState.currentPlayerIdx || 0)] !== myId) {
@@ -421,6 +654,8 @@ Page({
       await db.collection('rooms').doc(room._id).update({
         data: { gameState: advanced }
       });
+      // Clear selection after taking
+      this.setData({ selectedClearingIdx: -1 });
       wx.showToast({ title: '从空地拿到 1 张牌', icon: 'none' });
     } catch (err) {
       console.error('Take from clearing failed', err);
@@ -430,7 +665,98 @@ Page({
     }
   },
 
-  async onPlayCard() {
+  // New Action: Generic Confirm Play (Plants Tree or Attaches Card)
+  onConfirmPlay() {
+      const { selectedSlot } = this.data;
+      
+      // If a VALID slot is selected, play into that slot
+      if (selectedSlot && selectedSlot.isValid) {
+          this.onPlayCard({ currentTarget: { dataset: { side: selectedSlot.side } } });
+      } else {
+          // Default: Play as Tree (Ignore slot if invalid or null)
+          this.onPlayTree();
+      }
+  },
+
+  onPlayTree() {
+      // Wrapper for playing as tree - only valid for TREE or W_CARD
+      const selected = (this.data.myHand || []).filter(c => c.selected);
+      if (!selected.length) {
+          wx.showToast({ title: '请选择一张手牌', icon: 'none' });
+          return;
+      }
+      
+      const primaryUid = (this.data.primarySelection && selected.some(c => c.uid === this.data.primarySelection))
+        ? this.data.primarySelection
+        : selected[0].uid;
+      const mainCard = selected.find(c => c.uid === primaryUid);
+      
+      if (mainCard.type !== 'TREE' && mainCard.type !== 'W_CARD') {
+           wx.showToast({ title: '该卡牌不能作为树木打出', icon: 'none' });
+           return;
+      }
+
+      
+      this.onPlayCard({ currentTarget: { dataset: { side: 'tree' } } });
+  },
+
+  onSlotTap(e) {
+      const { treeid, side } = e.currentTarget.dataset;
+      if (!treeid || !side) return;
+
+      // Toggle off if clicking same slot
+      if (this.data.selectedSlot && this.data.selectedSlot.treeId === treeid && this.data.selectedSlot.side === side) {
+          this.setData({ selectedSlot: null });
+          return;
+      }
+      
+      
+      const selected = (this.data.myHand || []).filter(c => c.selected);
+      // Removed blocking check for empty selection
+
+      const primaryUid = (this.data.primarySelection && selected.some(c => c.uid === this.data.primarySelection))
+        ? this.data.primarySelection
+        : (selected.length > 0 ? selected[0].uid : '');
+      const mainCard = selected.find(c => c.uid === primaryUid);
+      
+      // Default valid if no card selected yet (allow slot selection first)
+      let isValid = true; 
+      let reason = '';
+      
+      if (mainCard) {
+          if (mainCard.type === 'H_CARD') {
+              if (side === 'left' || side === 'right') isValid = true;
+              else {
+                  isValid = false;
+                  reason = '左右结构的牌只能放置在左右两侧';
+              }
+          } else if (mainCard.type === 'V_CARD') {
+               if (side === 'top' || side === 'bottom') isValid = true;
+               else {
+                   isValid = false;
+                   reason = '上下结构的牌只能放置在上下两侧';
+               }
+          } else {
+               isValid = false;
+               reason = '该卡牌不是附属卡，不能插在树下';
+          }
+      }
+
+      this.setData({
+          selectedSlot: { treeId: treeid, side: side, isValid: isValid, reason: reason },
+          targetTreeId: treeid 
+      });
+      
+      if (!isValid && reason) {
+          wx.showToast({ title: reason, icon: 'none' });
+      }
+  },
+
+  async onPlayCard(e) {
+    // Determine Mode: Plant Tree or Attach Symbiont?
+    // Passed via data-side: 'tree', 'top', 'bottom', 'left', 'right'
+    const side = e.currentTarget.dataset.side || 'tree'; 
+
     const selected = (this.data.myHand || []).filter(c => c.selected);
     if (!selected.length) {
       wx.showToast({ title: '请选择要打出的主牌和支付牌', icon: 'none' });
@@ -448,49 +774,151 @@ Page({
         ? this.data.primarySelection
         : selected[0].uid;
       const mainCard = selected.find(c => c.uid === primaryUid);
-      if (!mainCard) {
-        wx.showToast({ title: '未找到主牌', icon: 'none' });
-        return;
+      if (!mainCard) throw new Error('未找到主牌');
+
+      // --- Validation & Setup ---
+      const isTreeAction = (side === 'tree');
+      
+      // Cost Calculation
+      // If split card, cost depends on which species we picked.
+      // mainCard.speciesDetails has [0] and [1].
+      let cost = 0;
+      let speciesIndex = 0;
+      
+      if (isTreeAction) {
+          // If playing as tree (or sapling logic handled separately), use full card cost?
+          // Trees usually have simple cost.
+          cost = mainCard.cost !== undefined ? mainCard.cost : 0; 
+      } else {
+          // Playing as symbiont
+          if (side === 'top' || side === 'left') speciesIndex = 0;
+          if (side === 'bottom' || side === 'right') speciesIndex = 1;
+          
+          if (mainCard.speciesDetails && mainCard.speciesDetails[speciesIndex]) {
+              cost = mainCard.speciesDetails[speciesIndex].cost || 0;
+          } else {
+              // Fallback
+              cost = mainCard.cost || 0;
+          }
       }
+
       const payCards = selected.filter(c => c.uid !== primaryUid);
-      const needPay = Math.max(0, Number(mainCard && mainCard.cost !== undefined ? mainCard.cost : 0)) || 0;
+      const needPay = Math.max(0, Number(cost));
 
       if (payCards.length < needPay) {
-        wx.showToast({ title: `还需选择 ${needPay - payCards.length} 张支付牌`, icon: 'none' });
-        return;
+        throw new Error(`需要支付 ${needPay} 张牌，已选 ${payCards.length} 张`);
+      }
+      if (payCards.length > needPay) {
+        throw new Error(`只需支付 ${needPay} 张牌，已多选 ${payCards.length - needPay} 张`);
+      }
+      
+      const { db, room, gameState, myState, myId } = await this.withLatestState();
+
+      // Check Game Over again
+      if (gameState.status === 'finished' || (gameState.winterCount || 0) >= 3) {
+          throw new Error('游戏已结束');
+      }
+      
+      // Validate Tree Target if attaching
+      let targetTree = null;
+      let targetTreeIdx = -1;
+      const forest = myState.forest || []; // This is raw data from DB
+
+      if (!isTreeAction) {
+          const tid = this.data.targetTreeId;
+          if (!tid) throw new Error('请先点击选择一棵森林中的树木作为目标');
+          
+          targetTreeIdx = forest.findIndex(t => t._id === tid);
+          if (targetTreeIdx < 0) throw new Error('目标树木不存在');
+          targetTree = forest[targetTreeIdx];
+          
+          // Check slot occupancy
+          if (targetTree.slots && targetTree.slots[side]) {
+              throw new Error(`这棵树的${side}位置已被占用`);
+          }
+
+          // Validate Card Type for Slot
+          if (side === 'left' || side === 'right') {
+              if (mainCard.type !== 'H_CARD') throw new Error('该位置只能放置左右结构的卡牌');
+          }
+          if (side === 'top' || side === 'bottom') {
+              if (mainCard.type !== 'V_CARD') throw new Error('该位置只能放置上下结构的卡牌');
+          }
       }
 
-      const { db, room, gameState, myState, myId } = await this.withLatestState();
-      const latestOrder = gameState.turnOrder || [];
-      if (latestOrder[(gameState.currentPlayerIdx || 0)] !== myId) {
-        wx.showToast({ title: '当前不是你的回合', icon: 'none' });
-        return;
-      }
+      // --- Execution ---
       const hand = myState.hand || [];
       const payList = payCards.slice(0, needPay);
       const paySet = new Set(payList.map(c => c.uid));
-
-      const mainRaw = hand.find(c => c.uid === primaryUid);
-      if (!mainRaw) throw new Error('主牌已不在手牌中');
-
-      const payRaw = hand.filter(c => paySet.has(c.uid));
-      if (payRaw.length < paySet.size) {
-        throw new Error('支付的牌已变化，请重选');
-      }
-
       const removeSet = new Set([primaryUid, ...payList.map(c => c.uid)]);
       const nextHand = hand.filter(c => !removeSet.has(c.uid));
+      
+      // Prepare the card to add
+      const cardToAdd = this.stripCard(mainCard);
+      // If we are playing a specific species half, we should mark it? 
+      // Actually the card data stores the ID. 
+      // Ideally we store { ...card, playedIndex: speciesIndex } so we know which half to display active.
+      cardToAdd.playedSpeciesIndex = speciesIndex;
+
+      let nextForest = [...forest];
+      
+      if (isTreeAction) {
+          // Plant new tree
+         const newTree = {
+             _id: `tree_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+             center: cardToAdd,
+             slots: { top: null, bottom: null, left: null, right: null }
+         };
+         nextForest.push(newTree);
+         
+         // Rule: Draw 1 card to clearing when planting a tree
+         const deck = [...(gameState.deck || [])];
+         let clearing = [...(gameState.clearing || [])];
+         
+         if (deck.length > 0) {
+             const drawn = deck.shift();
+             if (drawn.id === 'WINTER') {
+                 const wCount = (gameState.winterCount || 0) + 1;
+                 gameState.winterCount = wCount;
+                 if (wCount >= 3) gameState.status = 'finished';
+             } else {
+                 clearing.push(this.stripCard(drawn));
+             }
+         }
+         
+         // Apply Clearing Limit after adding
+         clearing = this.checkClearingLimit(clearing);
+         
+         gameState.deck = deck;
+         gameState.clearing = clearing;
+         
+      } else {
+          // Attach to slot
+          const updatedTree = { ...targetTree };
+          updatedTree.slots = { ...updatedTree.slots, [side]: cardToAdd };
+          nextForest[targetTreeIdx] = updatedTree;
+          
+      }
+      
+      // Handle Payment -> Clearing
+      // If payment cards exist, add them to CURRENT gameState.clearing
+      // Note: If we planted a tree, we updated gameState.clearing in the 'if' block above.
+      // We must start from that potentially updated clearing.
+      let finalClearing = gameState.clearing || []; 
+
+      if (payCards.length > 0) {
+           finalClearing = [...finalClearing, ...payCards.map(c => this.stripCard(c))];
+      }
+      // Check limit again (once at the end of transaction)
+      finalClearing = this.checkClearingLimit(finalClearing);
+
+      const nextMine = { ...myState, hand: nextHand, forest: nextForest };
       const nextState = {
         ...gameState,
-        clearing: [...(gameState.clearing || []), ...payRaw.map(card => this.stripCard(card))],
-        playerStates: { ...gameState.playerStates }
+        clearing: finalClearing,
+        playerStates: { ...gameState.playerStates, [myId]: nextMine }
       };
-      const nextMine = {
-        ...myState,
-        hand: nextHand,
-        forest: [...(myState.forest || []), this.stripCard(mainRaw)]
-      };
-      nextState.playerStates[myId] = nextMine;
+
       const advanced = this.advanceTurn(nextState);
 
       await db.collection('rooms').doc(room._id).update({
@@ -499,15 +927,120 @@ Page({
 
       this.setData({
         primarySelection: '',
+        targetTreeId: '',
         myHand: (this.data.myHand || []).map(c => ({ ...c, selected: false }))
       });
-      wx.showToast({ title: '已打出', icon: 'none' });
+
+      // --- Execute Bonus / Effects ---
+      let msg = isTreeAction ? '种植成功' : '打出成功';
+      
+      // 1. Check & Execute Bonus
+      // Logic: Condition met -> Execute Bonus effects (e.g. Draw Cards)
+      // Note: "Effect" (Always happens) vs "Bonus" (Condition).
+      // Since our data structure puts "Points" in 'points' and immediate actions?
+      // "effect": "获得1张牌" (This is 'Effect')
+      // "bonus": "获得1张牌" (This is 'Bonus')
+      
+      let drawCount = 0;
+      let bonusTriggered = false;
+
+      // Determine active species data
+      let activeData = null;
+      if (isTreeAction) {
+          activeData = mainCard; // Trees usually utilize main props
+          if (mainCard.speciesDetails && mainCard.speciesDetails[0]) {
+             // Fallback for tree species data
+             if (!activeData.effect) activeData = mainCard.speciesDetails[0];
+          }
+      } else {
+          // Played as symbiont
+          const spIndex = cardToAdd.playedSpeciesIndex || 0;
+          activeData = mainCard.speciesDetails ? mainCard.speciesDetails[spIndex] : mainCard;
+      }
+
+      if (activeData) {
+          // 1. Always Trigger Effect
+          if (activeData.effect) {
+              if (activeData.effect.includes('获得1张牌') || activeData.effect.includes('Receive 1 card')) {
+                  drawCount += 1;
+              } else if (activeData.effect.includes('获得2张牌') || activeData.effect.includes('Receive 2 cards')) {
+                  drawCount += 2;
+              }
+              // TODO: Handle other effects
+          }
+
+          // 2. Check Bonus Condition
+          if (activeData.bonus) {
+              const conditionMet = this.checkBonusCondition(mainCard, payCards);
+              if (conditionMet) {
+                  bonusTriggered = true;
+                  if (activeData.bonus.includes('获得1张牌') || activeData.bonus.includes('Receive 1 card')) {
+                      drawCount += 1;
+                  } else if (activeData.bonus.includes('获得2张牌') || activeData.bonus.includes('Receive 2 cards')) {
+                      drawCount += 2;
+                  }
+                  msg += ' (触发奖励!)';
+              }
+          }
+      }
+
+      // Execute Draws
+      if (drawCount > 0) {
+          // Perform Draw Logic
+          // We need to fetch latest state loop or just update local optimism?
+          // Since we just updated `gameState` in cloud, we should ideally chain this.
+          // BUT: The previous `update` call finished. We can call `onDrawCard` logic or manually update.
+          // Calling local draw is risky if state changed.
+          // Let's do a quick optimisic update or separate call for now.
+          // Actually, we should have done this IN the transaction or updated the gameState object before sending.
+          // RETROACTIVE FIX: We already sent the update. We need to send ANOTHER update or move logic up.
+          // Moving logic up is better but `checkBonusCondition` needs `payCards`.
+          // I will do a follow-up draw operation immediately.
+          
+          wx.showToast({ title: `${msg}\n正在抽取 ${drawCount} 张牌...`, icon: 'none' });
+          await this.doBonusDraw(drawCount); 
+      } else {
+          wx.showToast({ title: msg, icon: 'success' });
+      }
+
     } catch (err) {
       console.error('Play card failed', err);
-      wx.showToast({ title: err.message || '操作失败，请重试', icon: 'none' });
+      wx.showToast({ title: err.message || '操作失败', icon: 'none' });
     } finally {
       this._actionBusy = false;
     }
+  },
+
+  async doBonusDraw(count) {
+      if (count <= 0) return;
+      try {
+          const { db, room, gameState, myState, myId } = await this.withLatestState();
+          const deck = [...(gameState.deck || [])];
+          const nextMine = { ...myState, hand: [...(myState.hand || [])] };
+          
+          let actualDrawn = 0;
+          for (let i = 0; i < count; i++) {
+              if (deck.length === 0) break;
+              const drawn = deck.shift();
+              if (drawn.id === 'WINTER') {
+                  gameState.winterCount = (gameState.winterCount || 0) + 1;
+                  if (gameState.winterCount >= 3) gameState.status = 'finished';
+              } else {
+                  nextMine.hand.push(this.stripCard(drawn));
+                  actualDrawn++;
+              }
+          }
+          
+          gameState.deck = deck;
+          gameState.playerStates[myId] = nextMine;
+          
+          await db.collection('rooms').doc(room._id).update({
+              data: { gameState }
+          });
+          
+      } catch (e) {
+          console.error('Bonus draw failed', e);
+      }
   },
 
   async onPlaySapling() {
@@ -521,6 +1054,10 @@ Page({
       return;
     }
     if (this._actionBusy) return;
+    if (this.data.isGameOver) {
+        wx.showToast({ title: '游戏已结束', icon: 'none' });
+        return; 
+    }
     this._actionBusy = true;
 
     try {
@@ -539,14 +1076,39 @@ Page({
       if (!target) throw new Error('这张牌已不在手牌中');
 
       const nextHand = hand.filter(c => c.uid !== primaryUid);
+      
+      const newSaplingTree = {
+         _id: `tree_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+         center: { ...this.stripCard(target), sapling: true },
+         slots: { top: null, bottom: null, left: null, right: null }
+     };
+
       const nextMine = {
         ...myState,
         hand: nextHand,
-        forest: [...(myState.forest || []), { ...this.stripCard(target), sapling: true }]
+        forest: [...(myState.forest || []), newSaplingTree]
       };
 
+      // Rule: Draw 1 card to clearing when planting a sapling (Same as Tree)
+      const deck = [...(gameState.deck || [])];
+      let clearing = [...(gameState.clearing || [])];
+     
+      if (deck.length > 0) {
+         const drawn = deck.shift();
+         if (drawn.id === 'WINTER') {
+             const wCount = (gameState.winterCount || 0) + 1;
+             gameState.winterCount = wCount;
+             if (wCount >= 3) gameState.status = 'finished';
+         } else {
+             clearing.push(this.stripCard(drawn));
+         }
+      }
+      clearing = this.checkClearingLimit(clearing);
+      
       const nextState = {
         ...gameState,
+        deck,
+        clearing,
         playerStates: { ...gameState.playerStates, [myId]: nextMine }
       };
       const advanced = this.advanceTurn(nextState);

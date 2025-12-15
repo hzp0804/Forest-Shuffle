@@ -366,94 +366,190 @@
   margin-left: auto;
 }
 
+/* Room List Optimized Styles */
 .room-list {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
-  margin-top: 10rpx;
+  gap: 24rpx;
+  margin-top: 20rpx;
+  padding-bottom: 40rpx;
+  width: 100%; /* Ensure list takes full width */
 }
 
 .room-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f9fbf9;
-  padding: 24rpx 30rpx;
-  border-radius: 16rpx;
-  border: 1rpx solid #eff3ef;
+  background: #ffffff;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(100, 120, 100, 0.08);
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: hidden; /* Prevent spillover */
+  width: 100%;     /* Ensure item takes full width */
+  box-sizing: border-box; /* Include padding in width */
 }
 
-.room-left {
+.room-item:active {
+  transform: scale(0.99); /* Less dramatic scale */
+  box-shadow: 0 4rpx 12rpx rgba(100, 120, 100, 0.05);
+}
+
+.room-content-left {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: 20rpx;
+  flex: 1; 
+  min-width: 0; /* Critical for text truncation in flex items */
+  overflow: hidden;
+  margin-right: 16rpx; /* Add space between left and right sections */
+}
+
+.avatar-container {
+  position: relative;
+  width: 80rpx; /* Slightly smaller */
+  height: 80rpx;
+  flex-shrink: 0;
 }
 
 .room-host-avatar {
-  width: 72rpx;
-  height: 72rpx;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  background: #ddd;
+  background: #f0f0f0;
+  border: 4rpx solid #fff;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.08);
+  display: block; /* Eliminate inline spacing issues */
 }
 
-.room-details {
+.room-status-badge {
+  position: absolute;
+  bottom: -4rpx;
+  right: -8rpx;
+  font-size: 18rpx;
+  padding: 4rpx 8rpx; /* Tighter padding */
+  border-radius: 20rpx;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.15);
+  border: 2rpx solid #fff;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.room-status-badge.waiting {
+  background: linear-gradient(135deg, #74ba74, #52c41a);
+}
+
+.room-status-badge.playing {
+  background: linear-gradient(135deg, #ff9c6e, #ff4d4f);
+}
+
+.room-info-text {
   display: flex;
   flex-direction: column;
   gap: 4rpx;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden; /* Ensure truncation works */
 }
 
 .room-code {
-  font-size: 28rpx;
-  font-weight: 700;
+  font-size: 30rpx; /* Slightly smaller */
+  font-weight: 800;
   color: #2a4f25;
+  letter-spacing: 1rpx;
+  font-family: inherit; /* Revert monospace if it caused issues */
 }
 
 .room-host {
   font-size: 22rpx;
-  color: #73857a;
-}
-
-.room-title-row {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-}
-
-.room-status {
-  font-size: 20rpx;
-  height: 36rpx; /* 固定高度 */
-  padding: 0 12rpx;
-  border-radius: 8rpx;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: normal;
+  color: #8aa092;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  flex-shrink: 0;
+  max-width: 100%;
 }
 
-.status-waiting {
-  background: #e6f1e1;
-  color: #3a6b35;
-}
-
-.status-playing {
-  background: #fdf2f0;
-  color: #cc4e33;
-}
-
-.room-right {
+.room-content-right {
   display: flex;
   align-items: center;
   gap: 16rpx;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
-.room-count {
-  font-size: 28rpx;
-  color: #60756a;
+.player-count-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 2rpx;
+  background: #f4f9f4;
+  padding: 8rpx 14rpx;
+  border-radius: 12rpx;
+  color: #40713b;
+  flex-shrink: 0;
+}
+
+.current-count {
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.max-count {
+  font-size: 20rpx;
+  color: #8aa092;
+  font-weight: 500;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.join-btn {
+  background: linear-gradient(135deg, #40713b 0%, #2f562b 100%);
+  color: #fff;
+  font-size: 24rpx; /* Smaller font */
   font-weight: 600;
-  letter-spacing: 1rpx;
+  padding: 0 24rpx; /* Reduced padding */
+  height: 56rpx;    /* Reduced height */
+  line-height: 56rpx;
+  border-radius: 28rpx; /* Adjusted radius */
+  box-shadow: 0 6rpx 16rpx rgba(64, 113, 59, 0.3);
+  text-align: center;
+  min-width: 80rpx; /* Ensure minimum width */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.join-btn:active {
+  opacity: 0.95;
+  transform: translateY(1rpx);
+  box-shadow: 0 4rpx 10rpx rgba(64, 113, 59, 0.2);
+}
+
+.icon-btn.delete-btn {
+  width: 56rpx; /* Match join btn height */
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #ff4d4f;
+  border: 2rpx solid #ffccc7;
+  border-radius: 50%;
+  font-size: 22rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 77, 79, 0.1);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.icon-btn.delete-btn:active {
+  background: #fff1f0;
+  transform: scale(0.95);
 }
 
 .empty-state {
@@ -465,10 +561,4 @@
   font-size: 26rpx;
   padding: 40rpx 0;
   width: 100%;
-}
-
-.mini-btn.primary {
-  background: #3a6b35;
-  color: #fff;
-  border: none;
 }

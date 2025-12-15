@@ -28,52 +28,133 @@
     <!-- 中间：牌桌区域 (Board) -->
     <view class="game-board">
 
-       <view class="area-label">空地</view>
-       <scroll-view scroll-x class="clearing-scroll" enable-flex>
-          <view class="clearing-row">
-             <block wx:for="{{clearing}}" wx:key="uid">
-                <view class="hand-card clearing-card" bindtap="onTakeFromClearing" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
-                   <block wx:if="{{item.img}}">
-                      <view class="card-sprite-viewport">
-                         <image src="{{item.img}}" class="card-sprite-img" style="{{item.spriteStyle}}" lazy-load webp="true" />
-                      </view>
-                   </block>
-                   <block wx:else>
-                      <view class="card-header" style="background-color: {{item.color || '#4caf50'}}">
-                         <text class="card-name">{{item.name}}</text>
-                         <view class="card-cost-badge" wx:if="{{item.cost !== undefined}}">{{item.cost}}</view>
-                      </view>
-                      <view class="card-body">
-                         <text class="card-type">{{item.type}}</text>
-                         <text class="card-tags">{{item.tags[0] || ''}}</text>
-                      </view>
-                      <view class="card-footer">
-                         <text class="card-effect-text" wx:if="{{item.effect}}">{{item.effect}}</text>
-                      </view>
-                   </block>
-                </view>
-             </block>
-             <view class="hand-card clearing-card placeholder" wx:if="{{clearing.length === 0}}">
-                <view class="card-body">
-                   <text class="card-type">空地</text>
-                </view>
-             </view>
-          </view>
+       <!-- 空地 (Re-styled as Hand-like) -->
+       <!-- 空地 Header with Actions -->
+       <view style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10rpx; padding-right: 10rpx;">
+           <view class="area-label" style="margin-bottom:0;">空地 ({{clearing.length || 0}}/10)</view>
+           
+           <view class="action-bar-inline" wx:if="{{isMyTurn}}" style="display:flex; gap:12rpx;">
+              
+              <!-- 2. 拿取 -->
+              <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" disabled="{{selectedClearingIdx === -1}}" style="margin:0; padding:0 12rpx; font-weight:normal;">✋拿取</button>
+              
+              <!-- 3. 出牌 -->
+              <block wx:if="{{selectedSlot && selectedSlot.isValid}}">
+                   <button size="mini" class="game-btn valid-play-btn" bindtap="onConfirmPlay" style="margin:0; padding:0 12rpx; font-weight:normal;">✅打出</button>
+              </block>
+              <block wx:else>
+                   <button size="mini" class="game-btn" bindtap="onConfirmPlay" style="margin:0; padding:0 12rpx; font-weight:normal;">🌲出树</button>
+              </block>
+              
+              <!-- 4. 树苗 -->
+              <button size="mini" class="game-btn secondary sapling-btn" bindtap="onPlaySapling" style="margin:0; padding:0 12rpx; font-weight:normal;">🌱树苗</button>
+           </view>
+       </view>
+       <scroll-view class="clearing-scroll" scroll-x enable-flex>
+           <view class="clearing-row" style="padding-top: 20rpx;">
+               <!-- P1: Deck (牌库) -->
+               <view class="hand-card small-card" bindtap="onDrawCard" style="background:#8e44ad; color:white; border:none; margin-right: 16rpx;">
+                   <view class="card-body" style="background:transparent; color:white;">
+                       <view style="font-size:32rpx; font-weight:bold;">牌库</view>
+                       <view style="font-size:24rpx; margin-top:10rpx;">{{deckCount || 0}}</view>
+                   </view>
+               </view>
+
+               <!-- P2: Clearing Cards -->
+               <block wx:for="{{clearing}}" wx:key="uid">
+                  <view class="hand-card clearing-card {{index === selectedClearingIdx ? 'selected' : ''}}" 
+                        bindtap="onClearingCardTap" 
+                        bindlongpress="onShowDetail" 
+                        data-idx="{{index}}" 
+                        data-type="clearing">
+                     <block wx:if="{{item.img}}">
+                        <view class="card-sprite-viewport">
+                           <image src="{{item.img}}" class="card-sprite-img" style="{{item.spriteStyle}}" lazy-load webp="true" />
+                        </view>
+                     </block>
+                     <block wx:else>
+                        <view class="card-header" style="background-color: {{item.color || '#4caf50'}}">
+                           <text class="card-name">{{item.name}}</text>
+                           <view class="card-cost-badge" wx:if="{{item.cost !== undefined}}">{{item.cost}}</view>
+                        </view>
+                        <view class="card-body">
+                           <text class="card-type">{{item.type}}</text>
+                        </view>
+                     </block>
+                  </view>
+               </block>
+
+               <!-- P3: Limited Placeholders (Max 10 total clearing) -->
+               <block wx:for="{{[1,2,3,4,5,6,7,8,9,10]}}" wx:key="*this">
+                   <view class="hand-card placeholder" wx:if="{{index >= (clearing.length || 0)}}" style="opacity:0.3; border: 2rpx dashed #ccc;">
+                       <view class="card-body" style="background: transparent;">+</view>
+                   </view>
+               </block>
+           </view>
        </scroll-view>
+
+       <!-- 操作按钮区 (Moved Here) -->
+
+       
+
+       <!-- 操作按钮区 (Placed immediately after Clearing) -->
+
        
        <!-- 玩家森林区域 -->
        <view class="forest-area">
           <view class="area-label">森林</view>
           <scroll-view class="forest-scroll" scroll-x enable-flex>
-             <block wx:for="{{myForest}}" wx:key="uid">
-                <view class="forest-card">
-                    <view class="sapling-tag" wx:if="{{item.sapling}}">树苗</view>
-                    <block wx:if="{{item.img}}">
-                       <view class="card-sprite-viewport">
-                          <image src="{{item.img}}" class="card-sprite-img" style="{{item.spriteStyle}}" lazy-load webp="true" />
-                       </view>
-                    </block>
-                    <view wx:else class="small-card forest-fallback">{{item.name}}</view>
+             <block wx:for="{{myForest}}" wx:key="_id">
+                <view class="tree-group {{targetTreeId === item._id ? 'target-active' : ''}}">
+                    
+                    <!-- Center: Tree -->
+                    <view class="tree-center">
+                        <view class="sapling-tag" wx:if="{{item.center.sapling}}">树苗</view>
+                        <block wx:if="{{item.center.img}}">
+                            <view class="card-sprite-viewport">
+                                <image src="{{item.center.img}}" class="card-sprite-img" style="{{item.center.spriteStyle}}" lazy-load webp="true" />
+                            </view>
+                        </block>
+                        <view wx:else class="small-card forest-fallback">{{item.center.name || 'Tree'}}</view>
+                    </view>
+
+                    <!-- Slots -->
+                    <!-- Top -->
+                    <view class="slot-pos slot-top {{selectedSlot.treeId === item._id && selectedSlot.side === 'top' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="top">
+                           <view class="slot-card {{!item.slots.top ? 'empty' : ''}}">
+                              <view class="card-sprite-viewport slot-crop" wx:if="{{item.slots.top}}">
+                                 <image src="{{item.slots.top.img}}" class="card-sprite-img" style="{{item.slots.top.spriteStyle}}" lazy-load />
+                              </view>
+                           </view>
+                    </view>
+
+                    <!-- Bottom -->
+                    <view class="slot-pos slot-bottom {{selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="bottom">
+                           <view class="slot-card {{!item.slots.bottom ? 'empty' : ''}}">
+                              <view class="card-sprite-viewport slot-crop" wx:if="{{item.slots.bottom}}">
+                                 <image src="{{item.slots.bottom.img}}" class="card-sprite-img" style="{{item.slots.bottom.spriteStyle}}" lazy-load />
+                              </view>
+                           </view>
+                    </view>
+
+                    <!-- Left -->
+                    <view class="slot-pos slot-left {{selectedSlot.treeId === item._id && selectedSlot.side === 'left' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="left">
+                           <view class="slot-card h-crop {{!item.slots.left ? 'empty' : ''}}">
+                              <view class="card-sprite-viewport slot-crop" wx:if="{{item.slots.left}}">
+                                 <image src="{{item.slots.left.img}}" class="card-sprite-img" style="{{item.slots.left.spriteStyle}}" lazy-load />
+                              </view>
+                           </view>
+                    </view>
+
+                    <!-- Right -->
+                    <view class="slot-pos slot-right {{selectedSlot.treeId === item._id && selectedSlot.side === 'right' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="right">
+                           <view class="slot-card h-crop {{!item.slots.right ? 'empty' : ''}}">
+                              <view class="card-sprite-viewport slot-crop" wx:if="{{item.slots.right}}">
+                                 <image src="{{item.slots.right.img}}" class="card-sprite-img" style="{{item.slots.right.spriteStyle}}" lazy-load />
+                              </view>
+                           </view>
+                    </view>
+
                 </view>
              </block>
              <!-- 占位符提示 -->
@@ -83,6 +164,8 @@
           </scroll-view>
        </view>
     </view>
+
+
 
     <!-- Card Detail Modal (Gallery Style) -->
   <view class="detail-modal-mask" wx:if="{{showDetailModal}}" bindtap="onCloseDetail">
@@ -156,7 +239,7 @@
     <view class="hand-area">
        <view class="hand-header">
           <view class="area-title">手牌 ({{myHand.length}})</view>
-          <view class="instruction-tip">{{instructionText}}</view>
+          <view class="instruction-tip {{instructionState}}">{{instructionText}}</view>
        </view>
        <scroll-view scroll-x class="hand-scroll" enable-flex>
           <view class="hand-grid">
@@ -188,11 +271,6 @@
        </scroll-view>
     </view>
 
-    <!-- 操作按钮区 -->
-    <view class="action-bar">
-       <button size="mini" class="game-btn draw-btn" bindtap="onDrawCard">摸牌</button>
-       <button size="mini" class="game-btn" bindtap="onPlayCard">打出</button>
-       <button size="mini" class="game-btn secondary sapling-btn" bindtap="onPlaySapling">树苗</button>
-    </view>
+
   </block>
 </view>

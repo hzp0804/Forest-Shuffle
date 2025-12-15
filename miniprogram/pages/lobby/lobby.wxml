@@ -118,20 +118,35 @@
 
       <view class="room-list" wx:if="{{roomList && roomList.length > 0}}">
         <block wx:for="{{roomList}}" wx:key="_id">
-           <view class="room-item">
-             <view class="room-left">
-                <image class="room-host-avatar" src="{{item.players[0].avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
-                <view class="room-details">
-                   <view class="room-title-row">
-                      <text class="room-code">房间号 {{item.roomCode}}</text>
-                      <text class="room-status status-{{item.status}}">{{item.status === 'playing' ? '进行中' : '等待中'}}</text>
-                   </view>
+           <view class="room-item" bindtap="onJoinRoom" data-code="{{item.roomCode}}">
+             <view class="room-content-left">
+                <view class="avatar-container">
+                   <image class="room-host-avatar" src="{{item.players[0].avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
+                   <view class="room-status-badge {{item.status}}">{{item.status === 'playing' ? '进行中' : '等待中'}}</view>
+                </view>
+                <view class="room-info-text">
+                   <text class="room-code">NO.{{item.roomCode}}</text>
                    <text class="room-host">房主: {{item.players[0].nickName}}</text>
                 </view>
              </view>
-             <view class="room-right">
-                <text class="room-count">{{item.playerCount}}/6</text>
-                <button class="mini-btn ghost" bindtap="onJoinRoom" data-code="{{item.roomCode}}">加入</button>
+             
+             <view class="room-content-right">
+                <view class="player-count-badge">
+                   <text class="current-count">{{item.playerCount}}</text>
+                   <text class="max-count">/6</text>
+                </view>
+                
+                <view class="action-buttons">
+                  <view 
+                    wx:if="{{userProfile.openId === item.hostOpenId || userProfile.nickName === '会长胖'}}" 
+                    class="icon-btn delete-btn" 
+                    catchtap="onDeleteRoom" 
+                    data-id="{{item._id}}">
+                    <text>✕</text>
+                  </view>
+                  
+                  <view class="join-btn" catchtap="onJoinRoom" data-code="{{item.roomCode}}">加入</view>
+                </view>
              </view>
            </view>
         </block>

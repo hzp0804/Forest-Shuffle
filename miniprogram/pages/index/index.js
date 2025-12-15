@@ -18,16 +18,14 @@ const saveProfile = async (profile) => {
 
 const loginWithCloud = () => {
   return new Promise((resolve, reject) => {
-    console.log('Starting cloud login...');
     wx.cloud.callFunction({
       name: 'login',
       data: {},
       success: (cloudRes) => {
-        console.log('Cloud function login result:', cloudRes);
+        console.log('登录结果:', cloudRes);
         const result = cloudRes?.result || {};
         const openId = result.openId || result?.userInfo?.openId || result?.openid;
         if (!openId) {
-          console.error('No OpenID in cloud response');
           reject(new Error('未返回 openId'));
           return;
         }
@@ -38,7 +36,6 @@ const loginWithCloud = () => {
         });
       },
       fail: (err) => {
-        console.error('Cloud function login failed:', err);
         reject(new Error(err?.errMsg || '云函数调用失败'));
       }
     });
@@ -55,11 +52,9 @@ Page({
     this.setData({ loginLoading: true });
     
     const stored = getStoredProfile();
-    console.log('onLoad stored profile:', stored);
 
     // 按照要求：进入小程序时先清空上次的 openId
     if (stored && stored.openId) {
-      console.log('Clearing old openId from storage');
       delete stored.openId;
       await saveProfile(stored); // 更新本地缓存
       this.setData({ userProfile: stored });
@@ -70,7 +65,6 @@ Page({
     try {
       // 重新拉取
       const res = await loginWithCloud();
-      console.log('Logged in with cloud:', res);
       const openId = res.openId;
       
       // 获取最新状态（此时应该没有 openId）
@@ -78,22 +72,25 @@ Page({
       
       // 更新 openId
       let newProfile = { ...currentProfile, openId };
-      console.log('Updating profile with new openId:', openId);
       
       // 查询 userList 是否存在相同数据
       const db = wx.cloud.database();
-      const userRes = await db.collection('userList').get();
-      console.log('User list query result:', userRes);
+      const userRes = await db.collection('userList').where({
+        _openid: openId
+      }).get();
       
       if (userRes.data && userRes.data.length > 0) {
         const remoteUser = userRes.data[0];
-        console.log('Found remote user:', remoteUser);
         // 直接带入云端数据，但依然会弹窗确认
         newProfile = {
           ...newProfile,
           nickName: remoteUser.nickName,
           avatarUrl: remoteUser.avatarUrl
         };
+      } else {
+        // 如果云端没有记录，说明可能是新用户，或者之前的记录没保存成功
+        // 此时为了安全（防止本地缓存了别人的数据），清空本地的昵称和头像，强制重新输入
+        newProfile = { openId };
       }
 
       this.setData({ userProfile: newProfile });
@@ -102,10 +99,8 @@ Page({
       // 更新全局变量
       const app = getApp();
       app.globalData.userProfile = newProfile;
-      console.log('Updated globalData.userProfile:', app.globalData.userProfile);
       
     } catch (err) {
-      console.error('Cloud login failed:', err);
       // 可以提示用户重试，或者静默失败让用户点击开始游戏再次触发(但目前开始游戏没有重试逻辑)
       wx.showToast({ title: '自动登录失败', icon: 'none' });
     } finally {
@@ -115,7 +110,6 @@ Page({
 
   onStartGame: function() {
     const { userProfile } = this.data;
-    
     // 如果已经有完整的用户信息（包含 openId, 昵称, 头像），则直接进入大厅，不再弹窗
     // 这样可以实现"记住登录"的效果
     if (userProfile && userProfile.openId && userProfile.nickName && userProfile.avatarUrl) {
@@ -186,7 +180,10 @@ Page({
       const userCollection = db.collection('userList');
       
       // 查询是否已存在记录
-      const queryRes = await userCollection.get();
+      const openId = this.data.userProfile?.openId;
+      const queryRes = await userCollection.where({
+        _openid: openId
+      }).get();
       const users = queryRes.data;
       const now = db.serverDate();
         

@@ -1,6 +1,6 @@
 // pages/gallery/gallery.js
 const bgaData = require('../../data/bgaCardData.js');
-const speciesData = require('../../data/speciesData.js');
+const cardData = require('../../data/cardData.js');
 
 Page({
   data: {
@@ -93,8 +93,8 @@ Page({
     const normalizeKey = (value = '') => value.replace(/[^A-Za-z0-9]/g, '');
     // Create a case-insensitive map for easier lookup
     const speciesDataMap = {};
-    const byName = speciesData.byName || {};
-    const byConst = speciesData.byConst || {};
+    const byName = cardData.byName || {};
+    const byConst = cardData.byConst || {};
     
     // Helper to add to map
     const addToMap = (source) => {

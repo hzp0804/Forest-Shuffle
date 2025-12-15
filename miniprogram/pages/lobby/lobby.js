@@ -265,6 +265,12 @@ Page({
       return;
     }
 
+    // 检查游戏状态：如果已经在进行中，不允许换座位
+    if (this.data.roomStatus === 'playing') {
+      wx.showToast({ title: '游戏进行中，不可换座', icon: 'none' });
+      return;
+    }
+
     // 2. 也是为了"及时同步数据"，在操作前拉最新的房间数据检查
     wx.showLoading({ title: '请求中...', mask: true });
     const db = wx.cloud.database();
@@ -274,6 +280,12 @@ Page({
         if (!remoteRoom) {
              wx.hideLoading();
              wx.showToast({ title: '房间不存在', icon: 'none' });
+             return;
+        }
+
+        if (remoteRoom.status === 'playing') {
+             wx.hideLoading();
+             wx.showToast({ title: '游戏进行中，不可换座', icon: 'none' });
              return;
         }
         
@@ -657,22 +669,58 @@ Page({
     wx.showLoading({ title: '正在洗牌...', mask: true });
 
     // 1. 构建牌库
-    const speciesData = require('../../data/speciesData.js');
+    const cardData = require('../../data/cardData.js');
     let rawDeck = [];
     const setNum = (roomSettings && roomSettings.setCount) || 1;
 
-    // 假设 speciesData.byName 是字典
+    // 假设 cardData.byName 是字典
     // 为防止数据结构差异，先做防守
-    const dict = speciesData.byName || speciesData; 
-    
+    const dict = cardData.byName || cardData; 
+
+    // --- 重新按官方基准牌数（180/套）缩放 nb，支持多套叠加 ---
+    const BASE_DECK_SIZE = this.data.baseDeckSize || 180;
+    const targetSize = BASE_DECK_SIZE * setNum;
+    const totalNb = Object.values(dict).reduce((sum, c) => sum + Number(c.nb || 0), 0);
+    const scaled = [];
+
+    // 1) 先按比例分配，至少 1 张
     Object.keys(dict).forEach(key => {
       const cardDef = dict[key];
-      // 过滤掉特定不想加入的卡？或者全加
-      const count = (cardDef.nb || 0) * setNum;
-      for (let i = 0; i < count; i++) {
-        // 只存精简信息，减少DB体积
+      const nb = Number(cardDef.nb || 0);
+      const est = nb <= 0 || totalNb === 0 ? 1 : Math.max(1, Math.round((nb / totalNb) * targetSize));
+      scaled.push({ key, est });
+    });
+
+    // 2) 调整数量使总和精确等于 targetSize
+    let currentTotal = scaled.reduce((s, c) => s + c.est, 0);
+    if (currentTotal > targetSize) {
+      // 超出则从数量多的开始减
+      scaled.sort((a, b) => b.est - a.est);
+      let idx = 0;
+      while (currentTotal > targetSize && idx < scaled.length) {
+        if (scaled[idx].est > 1) {
+          scaled[idx].est -= 1;
+          currentTotal -= 1;
+        } else {
+          idx += 1;
+        }
+      }
+    } else if (currentTotal < targetSize) {
+      // 不足则从数量多的开始加
+      scaled.sort((a, b) => b.est - a.est);
+      let idx = 0;
+      while (currentTotal < targetSize) {
+        scaled[idx % scaled.length].est += 1;
+        currentTotal += 1;
+        idx += 1;
+      }
+    }
+
+    // 3) 按缩放后的数量构建精简牌堆
+    scaled.forEach(({ key, est }) => {
+      for (let i = 0; i < est; i++) {
         rawDeck.push({
-          id: key, // 对应 speciesData 的 key
+          id: key, // 对应 cardData 的 key
           uid: `${key}_${Math.random().toString(36).slice(2)}` // 唯一标识
         });
       }
@@ -773,42 +821,10 @@ Page({
     const db = wx.cloud.database();
     const _ = db.command;
     // Calculate 1 hour ago
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-
-    // 1. Clean up old rooms (created > 1 hour ago and status is 'waiting') or 'closed' rooms
-    // We can do this silently in the background
-    db.collection('rooms')
-      .where(_.or([
-        { status: 'closed' },
-        { 
-          status: 'waiting',
-          createTime: _.lt(oneHourAgo) 
-        }
-      ]))
-      .get()
-      .then(res => {
-         const oldRooms = res.data || [];
-         if (oldRooms.length > 0) {
-             const cleanPromises = oldRooms.map(r => db.collection('rooms').doc(r._id).remove());
-             Promise.all(cleanPromises).catch(console.error);
-         }
-      })
-      .catch(console.error);
-
-    // 2. Fetch valid rooms to display (waiting status AND created within 1 hour)
+    // 2. Fetch all rooms, sorted by createTime desc
     return db.collection('rooms')
-      .where(_.or([
-        {
-          status: 'waiting',
-          createTime: _.gte(oneHourAgo)
-        },
-        {
-          status: 'playing',
-          startTime: _.gte(oneHourAgo)
-        }
-      ]))
       .orderBy('createTime', 'desc')
-      .limit(20)
+      .limit(50) // Increase limit slightly to see more history
       .get()
       .then(res => {
          const list = (res.data || []).map(room => {
@@ -823,5 +839,35 @@ Page({
       .catch(err => {
         console.error('Fetch rooms failed:', err);
       });
+  },
+
+  onDeleteRoom(e) {
+    const roomId = e.currentTarget.dataset.id;
+    if (!roomId) return;
+
+    const { userProfile } = this.data;
+    if (!userProfile) return;
+
+    wx.showModal({
+      title: '确认删除',
+      content: '确定要删除这个房间吗？',
+      success: (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '删除中...' });
+          const db = wx.cloud.database();
+          db.collection('rooms').doc(roomId).remove()
+            .then(() => {
+              wx.hideLoading();
+              wx.showToast({ title: '删除成功' });
+              this.fetchRoomList(); // 刷新列表
+            })
+            .catch(err => {
+              wx.hideLoading();
+              console.error('Delete room failed:', err);
+              wx.showToast({ title: '删除失败', icon: 'none' });
+            });
+        }
+      }
+    });
   }
 });
