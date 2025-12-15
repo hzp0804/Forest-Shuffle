@@ -219,6 +219,13 @@
   box-sizing: border-box;
 }
 
+/* 使用伪元素占位，解决 scroll-view 这里 flex 布局下 last-child margin-right 失效的问题 */
+.forest-scroll::after {
+  content: '';
+  flex: 0 0 20rpx; /* 这里就是你想要的“右边距”宽度 */
+  height: 1px;
+}
+
 .forest-card {
   width: 120rpx; /* 森林里的卡片大小 */
   height: 180rpx;

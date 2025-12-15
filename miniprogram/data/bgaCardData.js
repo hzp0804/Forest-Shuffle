@@ -1,3 +1,4 @@
+// 根据卡片分割的233张卡片，包含他的坐标
 module.exports = {
   cards: {
     1: {"id": 1, "type": "TREE", "species": ["LINDEN"], "img": "/images/cards/trees.jpg", "x": "0", "y": "0"},

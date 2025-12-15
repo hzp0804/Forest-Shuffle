@@ -230,6 +230,10 @@ Page({
             if (!cardVisualMap[normalized]) {
                 cardVisualMap[normalized] = card;
             }
+            // Fix: Map Bechstein's Bat alias
+            if (normalized === 'BECHSTEIN') {
+                cardVisualMap['BECHSTEINSBAT'] = card;
+            }
         });
     });
     // --- End Image Helper Logic ---
@@ -362,7 +366,17 @@ Page({
     const winterCount = gameState.winterCount || 0;
     const isGameOver = (gameState.status === 'finished' || winterCount >= 3);
 
-    const isMyTurn = (gameState.turnOrder && gameState.turnOrder[gameState.currentPlayerIdx || 0] === myOpenId);
+    const turnOrder = gameState.turnOrder || [];
+    const currentIdx = gameState.currentPlayerIdx || 0;
+
+    // Robust check for turn
+    let isMyTurn = (turnOrder.length > 0 && turnOrder[currentIdx] === myOpenId);
+    
+    // Safety fallback for single player: If only 1 player, it MUST be their turn (unless game over)
+    if (turnOrder.length === 1 && turnOrder[0] === myOpenId) {
+        isMyTurn = true;
+    }
+
     const nextPrimary = prevSelected.has(prevPrimary) ? prevPrimary : (richHand.find(c => c.selected)?.uid || '');
     const { text: instructionText, state: instructionState } = this.computeInstruction(isMyTurn, richHand, nextPrimary, -1, isGameOver);
 
@@ -753,6 +767,234 @@ Page({
   },
 
   async onPlayCard(e) {
+    const side = e.currentTarget.dataset.side || 'tree'; 
+    const { myHand, primarySelection, targetTreeId, gameData, selectedSlot, isGameOver } = this.data;
+
+    if (isGameOver) {
+         wx.showToast({ title: '游戏已结束', icon: 'none' });
+         return; 
+    }
+    if (!this.isMyTurnNow()) {
+      wx.showToast({ title: '当前不是你的回合', icon: 'none' });
+      return;
+    }
+    if (this._actionBusy) return;
+    this._actionBusy = true;
+
+    try {
+      const selected = (myHand || []).filter(c => c.selected);
+      const primaryUid = (primarySelection && selected.some(c => c.uid === primarySelection))
+        ? primarySelection
+        : (selected.length > 0 ? selected[0].uid : '');
+      
+      const mainCard = selected.find(c => c.uid === primaryUid);
+      if (!mainCard) throw new Error('未选择主牌');
+      
+      const paymentCards = selected.filter(c => c.uid !== primaryUid);
+
+      // --- 1. Identify Species & Cost ---
+      let cost = 0;
+      let targetSpecies = mainCard;
+      let speciesIdx = -1;
+      const speciesList = mainCard.speciesDetails || [];
+      
+      if (side === 'tree') {
+          if (mainCard.type === 'TREE' || mainCard.type === 'W_CARD') {
+             if (mainCard.cost !== undefined) cost = Number(mainCard.cost);
+             else if (speciesList[0] && speciesList[0].cost !== undefined) cost = Number(speciesList[0].cost);
+             targetSpecies = speciesList[0] || mainCard;
+          } else {
+             throw new Error('此牌不能作为树木打出');
+          }
+      } else {
+          // Symbiont check
+          if (side === 'top' || side === 'left') speciesIdx = 0;
+          else if (side === 'bottom' || side === 'right') speciesIdx = 1;
+
+          if (speciesIdx === -1) throw new Error('未知的位置方向');
+          
+          if (!speciesList[speciesIdx]) {
+              targetSpecies = mainCard; // Fallback
+          } else {
+              targetSpecies = speciesList[speciesIdx];
+          }
+          cost = Number(targetSpecies.cost || 0);
+      }
+      
+      // --- 2. validate Cost ---
+      const needPay = Math.max(0, Number(cost));
+      if (paymentCards.length !== needPay) {
+          throw new Error(`需要支付 ${needPay} 张牌，已选 ${paymentCards.length} 张`);
+      }
+
+      // --- 3. Validate Bonus ---
+      let isBonusActive = false;
+      if (needPay > 0) {
+          isBonusActive = this.checkBonusCondition(mainCard, paymentCards);
+      }
+
+      // --- 4. Database Transaction Logic ---
+      const { db, room, gameState, myState, myId } = await this.withLatestState();
+      
+      const latestOrder = gameState.turnOrder || [];
+      if (latestOrder[(gameState.currentPlayerIdx || 0)] !== myId) {
+          throw new Error('回合已被抢占，请刷新');
+      }
+
+      // Update Hand
+      const keptHand = (myState.hand || []).filter(c => 
+          c.uid !== mainCard.uid && !paymentCards.some(p => p.uid === c.uid)
+      );
+
+      // Update Clearing
+      const oldClearing = gameState.clearing || [];
+      const strippedPayment = paymentCards.map(c => this.stripCard(c));
+      let newClearing = [...oldClearing, ...strippedPayment];
+      
+      // Update Forest
+      let newForest = [...(myState.forest || [])];
+      let cardToAdd = this.stripCard(mainCard);
+      cardToAdd.playedSpeciesIndex = speciesIdx;
+
+      let drawCount = 0;
+      let extraTurn = false;
+
+      // Parsing Effects
+      const getDrawAmt = (txt) => {
+          const m = txt && txt.match(/获得(\d+)张牌/);
+          return m ? parseInt(m[1]) : 0;
+      };
+      const checkExtraTurn = (txt) => {
+          return txt && txt.includes('再进行一个回合');
+      };
+
+      if (targetSpecies.effect) {
+             drawCount += getDrawAmt(targetSpecies.effect);
+             if (checkExtraTurn(targetSpecies.effect)) extraTurn = true;
+      }
+      if (isBonusActive && targetSpecies.bonus) {
+             drawCount += getDrawAmt(targetSpecies.bonus);
+             if (checkExtraTurn(targetSpecies.bonus)) extraTurn = true;
+      }
+
+      let winterTriggered = false;
+      let actuallyDrawn = 0;
+
+      // Execute Logic for Tree Planting (Draw 1 to clearing if deck not fail)
+      if (side === 'tree') {
+          // New Tree Group
+          const newGroup = {
+              _id: `tree_${Date.now()}_${Math.random().toString(36).substr(2,5)}`,
+              center: cardToAdd,
+              slots: { top: null, bottom: null, left: null, right: null }
+          };
+          newForest.push(newGroup);
+          
+          // Draw 1 card to CLEARING (Rule for planting tree)
+          const deck = [...(gameState.deck || [])];
+          if (deck.length > 0) {
+             const drawn = deck.shift();
+             if (drawn.id === 'WINTER') {
+                 gameState.winterCount = (gameState.winterCount || 0) + 1;
+                 winterTriggered = true;
+             } else {
+                 newClearing.push(this.stripCard(drawn));
+             }
+          }
+          gameState.deck = deck;
+      } else {
+          // Attach
+          const idx = newForest.findIndex(t => t._id === targetTreeId);
+          if (idx === -1) throw new Error('目标树木不存在');
+          const group = newForest[idx];
+          if (group.slots[side]) throw new Error('位置已占用');
+          
+          const updated = { ...group, slots: { ...group.slots } };
+          updated.slots[side] = cardToAdd;
+          newForest[idx] = updated;
+      }
+
+      // Check Clearing Limit (Flush if >= 10)
+      // Note: "Flush to box" - here just empty list
+      if (newClearing.length >= 10) {
+          newClearing = [];
+      }
+
+      // Execute Rewards (Draw Cards to HAND)
+      // Note: This modifies gameState.deck and keptHand further
+      if (drawCount > 0) {
+           const deck = gameState.deck; // Ref to current deck state (modified by tree plant maybe)
+           for (let i = 0; i < drawCount; i++) {
+                if (deck.length > 0) {
+                    const c = deck.shift();
+                    if (c.id === 'WINTER') {
+                        gameState.winterCount = (gameState.winterCount || 0) + 1;
+                        winterTriggered = true;
+                    } else {
+                        keptHand.push(this.stripCard(c));
+                        actuallyDrawn++;
+                    }
+                }
+           }
+      }
+
+      if ((gameState.winterCount || 0) >= 3) {
+          gameState.status = 'finished';
+      }
+
+      const nextPlayerState = {
+          ...myState,
+          hand: keptHand,
+          forest: newForest
+      };
+      
+      const rawNextGameState = {
+          ...gameState,
+          // deck is already updated in place
+          clearing: newClearing,
+          playerStates: {
+              ...gameState.playerStates,
+              [myId]: nextPlayerState
+          }
+      };
+
+      const finalGameState = extraTurn ? rawNextGameState : this.advanceTurn(rawNextGameState);
+
+      await db.collection('rooms').doc(room._id).update({
+          data: { gameState: finalGameState }
+      });
+      
+      const parts = [];
+      if (side === 'tree') parts.push('种植成功');
+      else parts.push('打出成功');
+      if (isBonusActive) parts.push('奖励激活');
+      if (actuallyDrawn > 0) parts.push(`摸牌${actuallyDrawn}张`);
+      if (extraTurn) parts.push('获得额外回合');
+
+      wx.showToast({ title: parts.join('，'), icon: 'none' });
+      
+      if (winterTriggered) {
+          // Additional alert
+          setTimeout(() => wx.showToast({ title: '翻出了冬季卡！', icon: 'none' }), 1500);
+      }
+
+      this.setData({
+          primarySelection: '',
+          selectedSlot: null,
+          targetTreeId: '',
+          myHand: (this.data.myHand || []).map(c => ({...c, selected: false})),
+          isMyTurn: extraTurn ? true : false
+      });
+
+    } catch (err) {
+      console.error(err);
+      wx.showToast({ title: err.message || '出牌失败', icon: 'none' });
+    } finally {
+      this._actionBusy = false;
+    }
+  },
+
+  async onPlayCard_OLD(e) {
     // Determine Mode: Plant Tree or Attach Symbiont?
     // Passed via data-side: 'tree', 'top', 'bottom', 'left', 'right'
     const side = e.currentTarget.dataset.side || 'tree'; 
