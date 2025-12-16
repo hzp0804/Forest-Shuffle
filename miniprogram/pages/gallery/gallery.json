@@ -2,5 +2,7 @@
   "navigationBarTitleText": "卡片图鉴",
   "navigationBarBackgroundColor": "#3a6b35",
   "navigationBarTextStyle": "white",
-  "usingComponents": {}
+  "usingComponents": {
+    "card-detail": "/components/card-detail/card-detail"
+  }
 }

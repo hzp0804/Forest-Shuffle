@@ -4,8 +4,7 @@
     "pages/lobby/lobby",
     "pages/gallery/gallery",
     "pages/game/game",
-    "pages/score/score",
-    "pages/card-detail/card-detail"
+    "pages/score/score"
   ],
   "window": {
     "backgroundColor": "#F6F6F6",

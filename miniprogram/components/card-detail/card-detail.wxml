@@ -1,0 +1,85 @@
+<view class="overlay" wx:if="{{visible}}" bindtap="onClose" catchtouchmove="true">
+  <view class="detail-container" catchtap="noop">
+    <view class="content-panel">
+      <!-- Card Preview (Moved Inside) -->
+      <view class="card-preview-wrapper">
+        <view class="card-preview-container">
+          <view class="card-sprite-viewport">
+            <view class="card-sprite-native {{card.cssClass}}" style="background-image: url('{{card.bgImg}}'); background-size: {{card.bgSize}}"></view>
+          </view>
+        </view>
+      </view>
+      <!-- Single Species Title -->
+      <view class="card-title" wx:if="{{tabs.length === 1}}">{{tabs[0].name}}</view>
+      <!-- Multi-Species Tabs -->
+      <view class="tabs-header" wx:if="{{tabs.length > 1}}">
+        <view class="tab-item {{index === activeTab ? 'active' : ''}}" wx:for="{{tabs}}" wx:key="name" data-index="{{index}}" catchtap="onTabClick">
+          {{item.name}}
+        </view>
+      </view>
+      <!-- Content Area -->
+      <block wx:for="{{tabs}}" wx:key="name">
+        <view class="tab-content" wx:if="{{index === activeTab}}">
+          <!-- Key Stats Grid -->
+          <view class="stats-section">
+            <!-- Cost -->
+            <view class="stat-item cost-item">
+              <view class="stat-label">
+                <text class="icon">💰</text>
+                费用
+              </view>
+              <view class="stat-value cost-value">{{item.cost}}</view>
+            </view>
+            <!-- Count -->
+            <view class="stat-item">
+              <view class="stat-label">
+                <text class="icon">🔢</text>
+                数量
+              </view>
+              <view class="stat-value">{{item.count}}</view>
+            </view>
+          </view>
+          <!-- Tags Row -->
+          <view class="tags-section">
+            <view class="section-label">
+              <text class="icon">🏷️</text>
+              标签
+            </view>
+            <view class="tags-list">
+              <text class="tag-pill" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">
+                {{tag}}
+              </text>
+            </view>
+          </view>
+          <!-- Mechanics -->
+          <view class="mechanics-section">
+            <!-- Reward (Bonus) -->
+            <view class="special-box reward-box" wx:if="{{item.bonus}}">
+              <view class="box-header">
+                <text class="icon">🎁</text>
+                <text class="box-title">奖励</text>
+              </view>
+              <view class="box-content">{{item.bonus}}</view>
+            </view>
+            <!-- Effect -->
+            <view class="special-box effect-box" wx:if="{{item.effect}}">
+              <view class="box-header">
+                <text class="icon">⚡</text>
+                <text class="box-title">效果</text>
+              </view>
+              <view class="box-content">{{item.effect}}</view>
+            </view>
+            <!-- Score (Points) -->
+            <view class="special-box score-box" wx:if="{{item.points}}">
+              <view class="box-header">
+                <text class="icon">🏆</text>
+                <text class="box-title">计分</text>
+              </view>
+              <view class="box-content">{{item.points}}</view>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+  </view>
+</view>

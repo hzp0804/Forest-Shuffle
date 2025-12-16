@@ -19,7 +19,7 @@ Page({
   data: {
     sections: [],
     viewMode: "image",
-    previewCard: null,
+    previewCardId: null,
   },
 
   onLoad: function () {
@@ -131,18 +131,15 @@ Page({
 
   onPreviewCard: function (e) {
     const id = e.currentTarget.dataset.id;
-    let found = null;
-    for (const sec of this.data.sections) {
-      found = sec.cards.find((c) => String(c.id) === String(id));
-      if (found) break;
-    }
-    if (found) {
-      this.setData({ previewCard: found });
-    }
+    this.setData({
+      previewCardId: id,
+    });
   },
 
   onClosePreview: function () {
-    this.setData({ previewCard: null });
+    this.setData({
+      previewCardId: null,
+    });
   },
 
   noop: function () {},

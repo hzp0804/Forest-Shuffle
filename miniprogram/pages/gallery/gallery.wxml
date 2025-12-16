@@ -6,16 +6,5 @@
       </view>
     </view>
   </view>
-  <!-- Simple Preview Overlay -->
-  <view class="preview-overlay" wx:if="{{previewCard}}" bindtap="onClosePreview">
-    <view class="preview-content" catchtap="noop">
-      <view class="card card-{{previewCard.id}}" style="width: 500rpx; height: 750rpx; background-image: url('{{previewCard.bgImg}}'); background-size: {{previewCard.bgSize}}; border-radius: 20rpx;"></view>
-      <view class="preview-info" wx:if="{{previewCard.speciesDetails}}">
-        <view wx:for="{{previewCard.speciesDetails}}" wx:key="key" class="species-item">
-          <text class="species-name">{{item.displayName}}</text>
-          <text class="species-effect">{{item.points}}</text>
-        </view>
-      </view>
-    </view>
-  </view>
 </view>
+<card-detail cardId="{{previewCardId}}" bind:close="onClosePreview" />
