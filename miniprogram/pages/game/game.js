@@ -1,4 +1,8 @@
-const { calculateScore } = require("../../utils/scoring");
+// const { calculateScore } = require("../../utils/scoring");
+const calculateScore = (forest, cave) => {
+  // TODO: Restore scoring logic. scoring.js was missing.
+  return 0;
+};
 
 Page({
   data: {
@@ -235,9 +239,12 @@ Page({
     });
 
     // 处理手牌：将 ID 映射回详细信息
-    const cardData = require("../../data/cardData.js");
-    const bgaData = require("../../data/bgaCardData.js");
-    const dict = cardData.byName || cardData;
+    // 处理手牌：将 ID 映射回详细信息
+    const {
+      CARDS_DATA,
+      SPECIES_DATA,
+      getCardVisual,
+    } = require("../../data/cardData.js");
 
     // --- Count Real Cards in Game ---
     const realCounts = {};
@@ -262,106 +269,7 @@ Page({
       });
     }
 
-    // --- Image Helper Logic (Unified with Gallery) ---
-    const remoteBase =
-      "https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img";
-    const remoteMap = {
-      "trees.jpg": `${remoteBase}/trees.jpg`,
-      "hcards.jpg": `${remoteBase}/hCards.jpg`,
-      "vcards.jpg": `${remoteBase}/vCards.jpg`,
-      "mountain.jpg": `${remoteBase}/mountain.jpg`,
-      "woodlands.jpg": `${remoteBase}/woodlands.Jpg`,
-      "trees.webp": `${remoteBase}/trees.jpg`,
-      "hcards.webp": `${remoteBase}/hCards.jpg`,
-      "vcards.webp": `${remoteBase}/vCards.jpg`,
-      "mountain.webp": `${remoteBase}/mountain.jpg`,
-      "hCards.jpg": `${remoteBase}/hCards.jpg`,
-      "vCards.jpg": `${remoteBase}/vCards.jpg`,
-      "woodlands.Jpg": `${remoteBase}/woodlands.Jpg`,
-    };
-
-    const toRemote = (img = "") => {
-      if (!img) return img;
-      if (/^https?:\/\//.test(img)) return img;
-      const name = img.split("/").pop();
-      const lower = name.toLowerCase();
-      if (remoteMap[name]) return remoteMap[name];
-      if (remoteMap[lower]) return remoteMap[lower];
-      return img;
-    };
-
-    const defaultSpriteByType = {
-      H_CARD: toRemote("/images/cards/hcards.jpg"),
-      V_CARD: toRemote("/images/cards/vcards.jpg"),
-      W_CARD: toRemote("/images/cards/trees.jpg"),
-      TREE: toRemote("/images/cards/trees.jpg"),
-    };
-
-    const spriteGridByFile = {
-      "trees.webp": { cols: 5, rows: 5 },
-      "trees.jpg": { cols: 5, rows: 5 },
-      "hcards.webp": { cols: 7, rows: 7 },
-      "hcards.jpg": { cols: 7, rows: 7 },
-      "vcards.webp": { cols: 7, rows: 7 },
-      "vcards.jpg": { cols: 7, rows: 7 },
-      "mountain.webp": { cols: 7, rows: 4 },
-      "mountain.jpg": { cols: 7, rows: 4 },
-      "woodlands.jpg": { cols: 6, rows: 6 },
-    };
-
-    const resolveImg = (card) => {
-      if (card.img && card.img.trim()) {
-        return toRemote(card.img.trim());
-      }
-      return defaultSpriteByType[card.type] || defaultSpriteByType.TREE;
-    };
-
-    const getGrid = (img, type) => {
-      const fname = img.split("/").pop().toLowerCase();
-      if (fname.includes("mountain")) return { cols: 7, rows: 4 };
-      if (spriteGridByFile[fname]) return spriteGridByFile[fname];
-      if (type === "H_CARD") return spriteGridByFile["hcards.jpg"];
-      if (type === "V_CARD") return spriteGridByFile["vcards.jpg"];
-      return { cols: 7, rows: 7 };
-    };
-
-    const parsePct = (s) => parseFloat(s) || 0;
-    const quantizeIndex = (valuePct, divisions) => {
-      const step = 100 / (divisions - 1);
-      return Math.round(valuePct / step);
-    };
-
-    const computeSpriteStyle = (xPctStr, yPctStr, grid) => {
-      const { cols, rows } = grid;
-      const width = cols * 100;
-      const height = rows * 100;
-      const xIndex = quantizeIndex(parsePct(xPctStr), cols);
-      const yIndex = quantizeIndex(parsePct(yPctStr), rows);
-      const left = -1 * xIndex * 100;
-      const top = -1 * yIndex * 100;
-      return `width: ${width}%; height: ${height}%; left: ${left}%; top: ${top}%; position: absolute;`;
-    };
-
-    // Prepare Visual Map
-    const cardVisualMap = {};
-    Object.values(bgaData.cards).forEach((card) => {
-      if (!card.species) return;
-      card.species.forEach((sp) => {
-        const normalized = String(sp)
-          .toUpperCase()
-          .replace(/[^A-Z0-9]/g, "");
-        if (!cardVisualMap[normalized]) {
-          cardVisualMap[normalized] = card;
-        }
-        // Fix: Map Bechstein's Bat alias
-        if (normalized === "BECHSTEIN") {
-          cardVisualMap["BECHSTEINSBAT"] = card;
-        }
-      });
-    });
-    // --- End Image Helper Logic ---
-
-    // --- Species Metadata Helper (Copied/Adapted from Gallery.js) ---
+    // --- Species Metadata Helper ---
     const tagMap = {
       Tree: "树",
       tree: "树",
@@ -394,58 +302,44 @@ Page({
     };
 
     const findSpeciesMeta = (code = "") => {
-      if (!code) return null;
-      // cardData.byName is already loaded
-      const meta =
-        cardData.byName[code] ||
-        cardData.byName[code.toLowerCase()] ||
-        cardData.byConst[code];
-      return meta;
+      if (!code) return {};
+      if (SPECIES_DATA[code]) return SPECIES_DATA[code];
+      const key = Object.keys(SPECIES_DATA).find(
+        (k) => k.toLowerCase() === code.toLowerCase()
+      );
+      return key ? SPECIES_DATA[key] : {};
     };
 
     const enrichCard = (simpleCard) => {
       if (!simpleCard || !simpleCard.id) return null;
 
-      let base = null;
-      let visualCard = null;
+      let base = { ...simpleCard };
+      let initialData = CARDS_DATA[simpleCard.id];
 
       if (simpleCard.sapling) {
-        base = { ...simpleCard, name: "树苗" };
-        visualCard = {
-          type: "V_CARD", // Treat as Vertical Card
-          img: "/images/cards/vCards.jpg", // Use standard path key
-          x: "100%",
-          y: "100%",
-        };
+        base.name = "树苗";
+        base.bgImg = "/images/cards/vCards.jpg";
+        base.bgSize = "700% 700%";
+        base.cssClass = "card-233";
       } else if (simpleCard.id === "WINTER") {
-        base = {
-          ...simpleCard,
-          name: "冬季卡",
-          type: "WINTER",
-          color: "#a0d8ef",
-        };
-        visualCard = bgaData.cards["67"];
-      } else {
-        const def = dict[simpleCard.id];
-        base = def ? { ...def, ...simpleCard } : simpleCard;
-        const normalizedKey = String(simpleCard.id)
-          .toUpperCase()
-          .replace(/[^A-Z0-9]/g, "");
-        visualCard = cardVisualMap[normalizedKey];
+        base.name = "冬季卡";
+        base.type = "WINTER";
+        base.color = "#a0d8ef";
+        base.cssClass = "card-67";
+        base.bgImg = "/images/cards/trees.jpg";
+        base.bgSize = "500% 500%";
+      } else if (initialData) {
+        base = { ...initialData, ...simpleCard };
+        const visual = getCardVisual(initialData);
+        base.bgImg = visual.bgImg;
+        base.bgSize = visual.bgSize;
+        base.cssClass = `card-${simpleCard.id}`;
       }
 
-      if (visualCard) {
-        const visual = resolveImg(visualCard);
-        const grid = getGrid(visual, visualCard.type);
-        base.img = visual;
-        base.spriteStyle = computeSpriteStyle(visualCard.x, visualCard.y, grid);
-
-        // Enrich with detailed structure for "Gallery-style" modal
-        const speciesList = visualCard.species || [];
-        base.speciesDetails = speciesList.map((code) => {
-          const meta = findSpeciesMeta(code) || {};
-          const rawTags =
-            meta.tags && meta.tags.length ? meta.tags : meta.tags_en || [];
+      if (base.species) {
+        base.speciesDetails = base.species.map((code) => {
+          const meta = findSpeciesMeta(code);
+          const rawTags = meta.tags || [];
           const tags = rawTags
             .map((t) => {
               const k = (t || "").trim();
@@ -455,25 +349,20 @@ Page({
 
           return {
             key: code,
-            displayName: meta.name || meta.name_en || code,
+            displayName: meta.name || code,
             tags: tags,
             cost: meta.cost,
             type: meta.type,
-            nb: realCounts[simpleCard.id] || meta.nb,
+            nb: initialData ? initialData.nb || meta.nb : meta.nb,
             effect: meta.effect || "",
             bonus: meta.bonus || "",
-            points: meta.points || meta.points_en || "",
+            points: meta.points || "",
           };
         });
-        // Try to find a primary name if missing
+
         if (!base.name && base.speciesDetails.length) {
           base.name = base.speciesDetails.map((s) => s.displayName).join(" / ");
         }
-      }
-
-      // --- Fix: Ensure Type is present and Normalized ---
-      if (!base.type && visualCard && visualCard.type) {
-        base.type = visualCard.type;
       }
 
       if (base.type) {

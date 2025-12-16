@@ -1,4 +1,6 @@
 {
-  "usingComponents": {},
-  "navigationBarTitleText": "卡片图鉴"
+  "navigationBarTitleText": "卡片图鉴",
+  "navigationBarBackgroundColor": "#3a6b35",
+  "navigationBarTextStyle": "white",
+  "usingComponents": {}
 }

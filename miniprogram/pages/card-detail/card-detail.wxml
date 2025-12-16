@@ -1,10 +1,9 @@
 <view class="detail-container">
   <view class="card-preview-container">
     <view class="card-sprite-viewport">
-      <image class="card-sprite-img" src="{{card.img}}" style="{{card.spriteStyle}}" mode="aspectFill" webp="true" />
+      <view class="card-sprite-native {{card.cssClass}}" style="background-image: url('{{card.bgImg}}'); background-size: {{card.bgSize}}"></view>
     </view>
   </view>
-
   <view class="card-info-panel">
     <view class="info-row">
       <text class="label">ID:</text>
@@ -21,10 +20,10 @@
       </view>
     </view>
     <view class="info-row" wx:if="{{card.tree_symbols && card.tree_symbols.length}}">
-       <text class="label">Tree Symbols:</text>
-       <view class="tags">
-         <text class="tag tree-tag" wx:for="{{card.tree_symbols}}" wx:key="*this">{{item}}</text>
-       </view>
+      <text class="label">Tree Symbols:</text>
+      <view class="tags">
+        <text class="tag tree-tag" wx:for="{{card.tree_symbols}}" wx:key="*this">{{item}}</text>
+      </view>
     </view>
   </view>
 </view>

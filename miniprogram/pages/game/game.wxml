@@ -1,97 +1,95 @@
 <view class="game-container">
-  <view class="loading-mask" wx:if="{{!gameData}}">
-    <text>正在进入森林...</text>
-  </view>
-
-  <block wx:else>
-    <!-- 顶部玩家列表 -->
-    <scroll-view class="players-bar" scroll-x enable-flex>
-      <block wx:for="{{allPlayers}}" wx:key="index">
-        <view class="player-slot {{item.isMe ? 'is-me' : ''}} {{item.isEmpty ? 'is-empty' : ''}} {{item.openId === viewingPlayerId ? 'is-viewing' : ''}}" 
-              bindtap="onPlayerTap" 
-              data-openid="{{item.openId}}">
-           <block wx:if="{{!item.isEmpty}}">
-             <image class="p-avatar" src="{{item.avatarUrl || '/images/default_avatar.png'}}" mode="aspectFill" />
-             <view class="p-info">
-                <view class="p-name">{{item.nickName}}</view>
-                <view class="p-stats">
-                   <text class="stat-item">🃏{{item.handCount}}</text>
-                   <text class="stat-item">🏆{{item.score}}</text>
-                </view>
-             </view>
-           </block>
-           <block wx:else>
-             <view class="empty-seat">+</view>
-           </block>
-        </view>
-      </block>
-    </scroll-view>
-
-    <!-- 中间：牌桌区域 (Board) -->
-    <view class="game-board">
-
-       <!-- 空地 (Re-styled as Hand-like) -->
-       <!-- 空地 Header with Actions -->
-       <view style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10rpx; padding-right: 10rpx;">
-           <view style="display:flex; align-items:center; gap: 10rpx;">
-              <view class="area-label" style="margin-bottom:0;">空地 ({{clearing.length || 0}}/10)</view>
-              <view class="log-btn" bindtap="onShowLogs">📝记录</view>
-           </view>
-           
-           <view class="action-bar-inline" wx:if="{{isMyTurn}}" style="display:flex; gap:12rpx;">
-              
-              <!-- 2. 拿取 -->
-              <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" disabled="{{selectedClearingIdx === -1}}" style="margin:0; padding:0 12rpx; font-weight:normal;">✋拿取</button>
-              
-              <!-- 3. 出牌 -->
-              <block wx:if="{{selectedSlot && selectedSlot.isValid}}">
-                   <button size="mini" class="game-btn valid-play-btn" bindtap="onConfirmPlay" style="margin:0; padding:0 12rpx; font-weight:normal;">✅打出</button>
-              </block>
-              <block wx:else>
-                   <button size="mini" class="game-btn" bindtap="onConfirmPlay" style="margin:0; padding:0 12rpx; font-weight:normal;">🌲出树</button>
-              </block>
-              
-              <!-- 4. 树苗 -->
-              <button size="mini" class="game-btn secondary sapling-btn" bindtap="onPlaySapling" style="margin:0; padding:0 12rpx; font-weight:normal;">🌱树苗</button>
-           </view>
-       </view>
-       <scroll-view class="clearing-scroll" scroll-x enable-flex>
-           <view class="clearing-row" style="padding-top: 20rpx;">
+   <view class="loading-mask" wx:if="{{!gameData}}">
+      <text>正在进入森林...</text>
+   </view>
+   <block wx:else>
+      <!-- 顶部玩家列表 -->
+      <scroll-view class="players-bar" scroll-x enable-flex>
+         <block wx:for="{{allPlayers}}" wx:key="index">
+            <view class="player-slot {{item.isMe ? 'is-me' : ''}} {{item.isEmpty ? 'is-empty' : ''}} {{item.openId === viewingPlayerId ? 'is-viewing' : ''}}" bindtap="onPlayerTap" data-openid="{{item.openId}}">
+               <block wx:if="{{!item.isEmpty}}">
+                  <image class="p-avatar" src="{{item.avatarUrl || '/images/default_avatar.png'}}" mode="aspectFill" />
+                  <view class="p-info">
+                     <view class="p-name">{{item.nickName}}</view>
+                     <view class="p-stats">
+                        <text class="stat-item">🃏{{item.handCount}}</text>
+                        <text class="stat-item">🏆{{item.score}}</text>
+                     </view>
+                  </view>
+               </block>
+               <block wx:else>
+                  <view class="empty-seat">+</view>
+               </block>
+            </view>
+         </block>
+      </scroll-view>
+      <!-- 中间：牌桌区域 (Board) -->
+      <view class="game-board">
+         <!-- 空地 (Re-styled as Hand-like) -->
+         <!-- 空地 Header with Actions -->
+         <view style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10rpx; padding-right: 10rpx;">
+            <view style="display:flex; align-items:center; gap: 10rpx;">
+               <view class="area-label" style="margin-bottom:0;">
+                  空地 ({{clearing.length || 0}}/10)
+               </view>
+               <view class="log-btn" bindtap="onShowLogs">📝记录</view>
+            </view>
+            <view class="action-bar-inline" wx:if="{{isMyTurn}}" style="display:flex; gap:12rpx;">
+               <!-- 2. 拿取 -->
+               <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" disabled="{{selectedClearingIdx === -1}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
+                  ✋拿取
+               </button>
+               <!-- 3. 出牌 -->
+               <block wx:if="{{selectedSlot && selectedSlot.isValid}}">
+                  <button size="mini" class="game-btn valid-play-btn" bindtap="onConfirmPlay" style="margin:0; padding:0 12rpx; font-weight:normal;">
+                     ✅打出
+                  </button>
+               </block>
+               <block wx:else>
+                  <button size="mini" class="game-btn" bindtap="onConfirmPlay" style="margin:0; padding:0 12rpx; font-weight:normal;">
+                     🌲出树
+                  </button>
+               </block>
+               <!-- 4. 树苗 -->
+               <button size="mini" class="game-btn secondary sapling-btn" bindtap="onPlaySapling" style="margin:0; padding:0 12rpx; font-weight:normal;">
+                  🌱树苗
+               </button>
+            </view>
+         </view>
+         <scroll-view class="clearing-scroll" scroll-x enable-flex>
+            <view class="clearing-row" style="padding-top: 20rpx;">
                <!-- P1: Deck (牌库) -->
                <view class="hand-card" bindtap="onDrawCard" style="background:#8e44ad; color:white; border:none; margin-right: 16rpx; position: relative; overflow: hidden;">
-                   <block wx:if="{{deckBack && deckBack.img}}">
-                        <view class="card-sprite-viewport" style="width: 100%; height: 100%; position: absolute; top:0; left:0; pointer-events: none;">
-                            <image src="{{deckBack.img}}" class="card-sprite-img" style="{{deckBack.spriteStyle}}" lazy-load />
+                  <block wx:if="{{deckBack && deckBack.img}}">
+                     <view class="card-sprite-native {{deckBack.cssClass}}" style="background-image: url('{{deckBack.bgImg}}'); background-size: {{deckBack.bgSize}}; pointer-events: none;"></view>
+                     <view class="card-body" style="background:transparent; color:white; z-index:1; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                        <view style="font-size:32rpx; font-weight:bold; text-shadow: 0 1px 2px black;">
+                           牌库
                         </view>
-                        <view class="card-body" style="background:transparent; color:white; z-index:1; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                            <view style="font-size:32rpx; font-weight:bold; text-shadow: 0 1px 2px black;">牌库</view>
-                            <view style="font-size:24rpx; margin-top:10rpx; text-shadow: 0 1px 2px black;">{{deckCount || 0}}</view>
+                        <view style="font-size:24rpx; margin-top:10rpx; text-shadow: 0 1px 2px black;">
+                           {{deckCount || 0}}
                         </view>
-                   </block>
-                   <block wx:else>
-                       <view class="card-body" style="background:transparent; color:white;">
-                           <view style="font-size:32rpx; font-weight:bold;">牌库</view>
-                           <view style="font-size:24rpx; margin-top:10rpx;">{{deckCount || 0}}</view>
-                       </view>
-                   </block>
+                     </view>
+                  </block>
+                  <block wx:else>
+                     <view class="card-body" style="background:transparent; color:white;">
+                        <view style="font-size:32rpx; font-weight:bold;">牌库</view>
+                        <view style="font-size:24rpx; margin-top:10rpx;">{{deckCount || 0}}</view>
+                     </view>
+                  </block>
                </view>
-
                <!-- P2: Clearing Cards -->
                <block wx:for="{{clearing}}" wx:key="uid">
-                  <view class="hand-card clearing-card {{index === selectedClearingIdx ? 'selected' : ''}}" 
-                        bindtap="onClearingCardTap" 
-                        bindlongpress="onShowDetail" 
-                        data-idx="{{index}}" 
-                        data-type="clearing">
+                  <view class="hand-card clearing-card {{index === selectedClearingIdx ? 'selected' : ''}}" bindtap="onClearingCardTap" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
                      <block wx:if="{{item.img}}">
-                        <view class="card-sprite-viewport">
-                           <image src="{{item.img}}" class="card-sprite-img" style="{{item.spriteStyle}}" lazy-load webp="true" />
-                        </view>
+                        <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
                      </block>
                      <block wx:else>
                         <view class="card-header" style="background-color: {{item.color || '#4caf50'}}">
                            <text class="card-name">{{item.name}}</text>
-                           <view class="card-cost-badge" wx:if="{{item.cost !== undefined}}">{{item.cost}}</view>
+                           <view class="card-cost-badge" wx:if="{{item.cost !== undefined}}">
+                              {{item.cost}}
+                           </view>
                         </view>
                         <view class="card-body">
                            <text class="card-type">{{item.type}}</text>
@@ -99,276 +97,235 @@
                      </block>
                   </view>
                </block>
-
                <!-- P3: Limited Placeholders (Max 10 total clearing) -->
                <block wx:for="{{[1,2,3,4,5,6,7,8,9,10]}}" wx:key="*this">
-                   <view class="hand-card placeholder" wx:if="{{index >= (clearing.length || 0)}}">
-                       <view class="card-body" style="background: transparent;">+</view>
-                   </view>
+                  <view class="hand-card placeholder" wx:if="{{index >= (clearing.length || 0)}}">
+                     <view class="card-body" style="background: transparent;">+</view>
+                  </view>
                </block>
-           </view>
-       </scroll-view>
-
-       <!-- Logs Modal -->
-       <view class="summary-modal-mask" wx:if="{{showLogModal}}" bindtap="onCloseLogs">
-           <view class="summary-panel log-panel" catchtap="noop">
+            </view>
+         </scroll-view>
+         <!-- Logs Modal -->
+         <view class="summary-modal-mask" wx:if="{{showLogModal}}" bindtap="onCloseLogs">
+            <view class="summary-panel log-panel" catchtap="noop">
                <view class="summary-header">
-                   <text class="summary-title">📜 操作记录</text>
+                  <text class="summary-title">📜 操作记录</text>
                </view>
                <scroll-view scroll-y class="log-scroll" enable-flex>
-                   <block wx:if="{{displayLogs && displayLogs.length}}">
-                       <view class="log-item" wx:for="{{displayLogs}}" wx:key="index">
-                           <view class="log-row-main">
-                               <text class="log-time">{{item.time}}</text>
-                               <text class="log-text">{{item.text}}</text>
-                           </view>
-                           <!-- Log Cards -->
-                           <view class="log-cards-row" wx:if="{{item.cards && item.cards.length}}">
-                               <block wx:for="{{item.cards}}" wx:for-item="c" wx:key="uid">
-                                   <view class="log-mini-card {{c.logType}}" catchtap="onShowLogDetail" data-card="{{c}}">
-                                       <block wx:if="{{c.img}}">
-                                            <view class="card-sprite-viewport">
-                                                <image src="{{c.img}}" class="card-sprite-img" style="{{c.spriteStyle}}" lazy-load />
-                                            </view>
-                                       </block>
-                                       <block wx:else>
-                                            <view class="log-fallback">{{c.name[0]}}</view>
-                                       </block>
-                                   </view>
-                               </block>
-                           </view>
-                       </view>
-                       <!-- Reverse order display is better but logs are pushed. We can use flex-direction: column-reverse in CSS -->
-                   </block>
-                   <view wx:else class="log-empty">暂无记录</view>
+                  <block wx:if="{{displayLogs && displayLogs.length}}">
+                     <view class="log-item" wx:for="{{displayLogs}}" wx:key="index">
+                        <view class="log-row-main">
+                           <text class="log-time">{{item.time}}</text>
+                           <text class="log-text">{{item.text}}</text>
+                        </view>
+                        <!-- Log Cards -->
+                        <view class="log-cards-row" wx:if="{{item.cards && item.cards.length}}">
+                           <block wx:for="{{item.cards}}" wx:for-item="c" wx:key="uid">
+                              <view class="log-mini-card {{c.logType}}" catchtap="onShowLogDetail" data-card="{{c}}">
+                                 <block wx:if="{{c.img}}">
+                                    <view class="card-sprite-native {{c.cssClass}}" style="background-image: url('{{c.bgImg}}'); background-size: {{c.bgSize}}"></view>
+                                 </block>
+                                 <block wx:else>
+                                    <view class="log-fallback">{{c.name[0]}}</view>
+                                 </block>
+                              </view>
+                           </block>
+                        </view>
+                     </view>
+                     <!-- Reverse order display is better but logs are pushed. We can use flex-direction: column-reverse in CSS -->
+                  </block>
+                  <view wx:else class="log-empty">暂无记录</view>
                </scroll-view>
-           </view>
-       </view>
-
-       <!-- 操作按钮区 (Moved Here) -->
-
-       
-
-       <!-- 操作按钮区 (Placed immediately after Clearing) -->
-
-       
-       <!-- 玩家森林区域 -->
-       <view class="forest-area">
-          <view class="area-label">{{viewingPlayerNick}}的森林 {{!isViewingSelf ? '(仅查看)' : ''}}</view>
-          <scroll-view class="forest-scroll" scroll-x enable-flex>
-             <block wx:for="{{myForest}}" wx:key="_id">
-                <view class="tree-group {{targetTreeId === item._id ? 'target-active' : ''}}">
-                    
-                    <!-- Center: Tree -->
-                    <view class="tree-center">
+            </view>
+         </view>
+         <!-- 操作按钮区 (Moved Here) -->
+         <!-- 操作按钮区 (Placed immediately after Clearing) -->
+         <!-- 玩家森林区域 -->
+         <view class="forest-area">
+            <view class="area-label">
+               {{viewingPlayerNick}}的森林 {{!isViewingSelf ? '(仅查看)' : ''}}
+            </view>
+            <scroll-view class="forest-scroll" scroll-x enable-flex>
+               <block wx:for="{{myForest}}" wx:key="_id">
+                  <view class="tree-group {{targetTreeId === item._id ? 'target-active' : ''}}">
+                     <!-- Center: Tree -->
+                     <view class="tree-center">
                         <block wx:if="{{item.center.img}}">
-                            <view class="card-sprite-viewport">
-                                <image src="{{item.center.img}}" class="card-sprite-img" style="{{item.center.spriteStyle}}" lazy-load webp="true" />
-                            </view>
+                           <view class="card-sprite-native {{item.center.cssClass}}" style="background-image: url('{{item.center.bgImg}}'); background-size: {{item.center.bgSize}}"></view>
                         </block>
-                        <view wx:else class="small-card forest-fallback">{{item.center.name || 'Tree'}}</view>
-                    </view>
-
-                    <!-- Slots -->
-                    <!-- Top -->
-                    <view class="slot-pos slot-top {{selectedSlot.treeId === item._id && selectedSlot.side === 'top' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="top">
-                           <view class="slot-card {{!item.slots.top ? 'empty' : ''}}">
-                              <view class="card-sprite-viewport slot-crop" wx:if="{{item.slots.top}}">
-                                 <image src="{{item.slots.top.img}}" class="card-sprite-img" style="{{item.slots.top.spriteStyle}}" lazy-load />
-                              </view>
-                           </view>
-                    </view>
-
-                    <!-- Bottom -->
-                    <view class="slot-pos slot-bottom {{selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="bottom">
-                           <view class="slot-card {{!item.slots.bottom ? 'empty' : ''}}">
-                              <view class="card-sprite-viewport slot-crop" wx:if="{{item.slots.bottom}}">
-                                 <image src="{{item.slots.bottom.img}}" class="card-sprite-img" style="{{item.slots.bottom.spriteStyle}}" lazy-load />
-                              </view>
-                           </view>
-                    </view>
-
-                    <!-- Left -->
-                    <view class="slot-pos slot-left {{selectedSlot.treeId === item._id && selectedSlot.side === 'left' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="left">
-                           <view class="slot-card h-crop {{!item.slots.left ? 'empty' : ''}}">
-                              <view class="card-sprite-viewport slot-crop" wx:if="{{item.slots.left}}">
-                                 <image src="{{item.slots.left.img}}" class="card-sprite-img" style="{{item.slots.left.spriteStyle}}" lazy-load />
-                              </view>
-                           </view>
-                    </view>
-
-                    <!-- Right -->
-                    <view class="slot-pos slot-right {{selectedSlot.treeId === item._id && selectedSlot.side === 'right' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="right">
-                           <view class="slot-card h-crop {{!item.slots.right ? 'empty' : ''}}">
-                              <view class="card-sprite-viewport slot-crop" wx:if="{{item.slots.right}}">
-                                 <image src="{{item.slots.right.img}}" class="card-sprite-img" style="{{item.slots.right.spriteStyle}}" lazy-load />
-                              </view>
-                           </view>
-                    </view>
-
-                </view>
-             </block>
-             <!-- 占位符提示 -->
-             <view class="forest-card placeholder" wx:if="{{myForest.length === 0}}">
-                <text>暂无树木</text>
-             </view>
-          </scroll-view>
-       </view>
-    </view>
-
-
-
-    <!-- Turn Summary Modal (Overlay) -->
-    <view class="summary-modal-mask" wx:if="{{showTurnSummary && turnSummaryData}}" bindtap="onCloseSummary">
-       <view class="summary-panel" catchtap="noop">
-           <view class="summary-header">
-              <image class="p-avatar-small" src="{{turnSummaryData.playerAvatar || '/images/default_avatar.png'}}" />
-              <text class="summary-title">{{turnSummaryData.playerNick}} 打出了：</text>
-           </view>
-           
-           <view class="summary-body">
-              <!-- Played Card -->
-              <view class="summary-section">
-                 <text class="section-label">打出牌</text>
-                 <view class="summary-card-lg">
-                    <block wx:if="{{turnSummaryData.playedCard.img}}">
-                         <view class="card-sprite-viewport">
-                             <image src="{{turnSummaryData.playedCard.img}}" class="card-sprite-img" style="{{turnSummaryData.playedCard.spriteStyle}}" mode="aspectFill" />
-                         </view>
-                    </block>
-                    <block wx:else>
-                         <view class="fallback-card">{{turnSummaryData.playedCard.name}}</view>
-                    </block>
-                    <view class="card-name-label">{{turnSummaryData.playedCard.name}}</view>
-                 </view>
-              </view>
-
-              <!-- Paid Cards (Discards) -->
-              <view class="summary-section" wx:if="{{turnSummaryData.paidCards.length > 0}}">
+                        <view wx:else class="small-card forest-fallback">
+                           {{item.center.name || 'Tree'}}
+                        </view>
+                     </view>
+                     <!-- Slots -->
+                     <!-- Top -->
+                     <view class="slot-pos slot-top {{selectedSlot.treeId === item._id && selectedSlot.side === 'top' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="top">
+                        <view class="slot-card {{!item.slots.top ? 'empty' : ''}}">
+                           <view class="card-sprite-native slot-crop {{item.slots.top.cssClass}}" style="background-image: url('{{item.slots.top.bgImg}}'); background-size: {{item.slots.top.bgSize}}"></view>
+                        </view>
+                     </view>
+                     <!-- Bottom -->
+                     <view class="slot-pos slot-bottom {{selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="bottom">
+                        <view class="slot-card {{!item.slots.bottom ? 'empty' : ''}}">
+                           <view class="card-sprite-native slot-crop {{item.slots.bottom.cssClass}}" style="background-image: url('{{item.slots.bottom.bgImg}}'); background-size: {{item.slots.bottom.bgSize}}"></view>
+                        </view>
+                     </view>
+                     <!-- Left -->
+                     <view class="slot-pos slot-left {{selectedSlot.treeId === item._id && selectedSlot.side === 'left' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="left">
+                        <view class="slot-card h-crop {{!item.slots.left ? 'empty' : ''}}">
+                           <view class="card-sprite-native slot-crop {{item.slots.left.cssClass}}" style="background-image: url('{{item.slots.left.bgImg}}'); background-size: {{item.slots.left.bgSize}}"></view>
+                        </view>
+                     </view>
+                     <!-- Right -->
+                     <view class="slot-pos slot-right {{selectedSlot.treeId === item._id && selectedSlot.side === 'right' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="right">
+                        <view class="slot-card h-crop {{!item.slots.right ? 'empty' : ''}}">
+                           <view class="card-sprite-native slot-crop {{item.slots.right.cssClass}}" style="background-image: url('{{item.slots.right.bgImg}}'); background-size: {{item.slots.right.bgSize}}"></view>
+                        </view>
+                     </view>
+                  </view>
+               </block>
+               <!-- 占位符提示 -->
+               <view class="forest-card placeholder" wx:if="{{myForest.length === 0}}">
+                  <text>暂无树木</text>
+               </view>
+            </scroll-view>
+         </view>
+      </view>
+      <!-- Turn Summary Modal (Overlay) -->
+      <view class="summary-modal-mask" wx:if="{{showTurnSummary && turnSummaryData}}" bindtap="onCloseSummary">
+         <view class="summary-panel" catchtap="noop">
+            <view class="summary-header">
+               <image class="p-avatar-small" src="{{turnSummaryData.playerAvatar || '/images/default_avatar.png'}}" />
+               <text class="summary-title">{{turnSummaryData.playerNick}} 打出了：</text>
+            </view>
+            <view class="summary-body">
+               <!-- Played Card -->
+               <view class="summary-section">
+                  <text class="section-label">打出牌</text>
+                  <view class="summary-card-lg">
+                     <block wx:if="{{turnSummaryData.playedCard.img}}">
+                        <view class="card-sprite-native {{turnSummaryData.playedCard.cssClass}}" style="background-image: url('{{turnSummaryData.playedCard.bgImg}}'); background-size: {{turnSummaryData.playedCard.bgSize}}"></view>
+                     </block>
+                     <block wx:else>
+                        <view class="fallback-card">{{turnSummaryData.playedCard.name}}</view>
+                     </block>
+                     <view class="card-name-label">{{turnSummaryData.playedCard.name}}</view>
+                  </view>
+               </view>
+               <!-- Paid Cards (Discards) -->
+               <view class="summary-section" wx:if="{{turnSummaryData.paidCards.length > 0}}">
                   <text class="section-label">支付费用 (弃牌)</text>
                   <scroll-view scroll-x enable-flex class="summary-discards-scroll">
-                      <block wx:for="{{turnSummaryData.paidCards}}" wx:key="uid">
-                          <view class="summary-card-sm">
-                             <block wx:if="{{item.img}}">
-                                 <view class="card-sprite-viewport">
-                                     <image src="{{item.img}}" class="card-sprite-img" style="{{item.spriteStyle}}" mode="aspectFill" />
-                                 </view>
-                             </block>
-                             <block wx:else>
-                                 <view class="fallback-card-sm">{{item.name}}</view>
-                             </block>
-                          </view>
-                      </block>
+                     <block wx:for="{{turnSummaryData.paidCards}}" wx:key="uid">
+                        <view class="summary-card-sm">
+                           <block wx:if="{{item.img}}">
+                              <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
+                           </block>
+                           <block wx:else>
+                              <view class="fallback-card-sm">{{item.name}}</view>
+                           </block>
+                        </view>
+                     </block>
                   </scroll-view>
-              </view>
-           </view>
-       </view>
-    </view>
-
-    <!-- Card Detail Modal (Gallery Style) -->
-  <view class="detail-modal-mask" wx:if="{{showDetailModal}}" bindtap="onCloseDetail">
-     <view class="preview-card" catchtap="noop">
-       <view class="preview-header">
-         <view class="card-sprite-viewport preview">
-           <image src="{{previewCard.img}}" class="card-sprite-img" style="{{previewCard.spriteStyle}}" mode="aspectFill" />
-         </view>
-       </view>
- 
-       <view class="preview-content">
-         <!-- Tabs for Split Cards -->
-         <view class="species-tabs" wx:if="{{previewCard.speciesDetails.length > 1}}">
-           <block wx:for="{{previewCard.speciesDetails}}" wx:key="key">
-             <view class="tab-item {{activeTab === index ? 'active' : ''}}" bindtap="onTabChange" data-index="{{index}}">
-               {{item.displayName}}
-             </view>
-           </block>
-         </view>
- 
-         <scroll-view scroll-y class="details-scroll" enable-flex>
-           <block wx:for="{{previewCard.speciesDetails}}" wx:key="key">
-             <view class="detail-panel" hidden="{{activeTab !== index}}">
-               
-               <view class="detail-header" wx:if="{{previewCard.speciesDetails.length === 1}}">
-                 <text class="detail-title">{{item.displayName}}</text>
                </view>
- 
-               <view class="info-grid">
-                 <view class="info-row" wx:if="{{item.tags && item.tags.length}}">
-                   <view class="info-label">🏷️ 标签</view>
-                   <view class="info-value">
-                      <view class="tag-pill" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</view>
-                   </view>
-                 </view>
- 
-                 <view class="info-row" wx:if="{{item.nb}}">
-                   <view class="info-label">🔢 数量</view>
-                   <view class="info-value">{{item.nb}} 张</view>
-                 </view>
- 
-                 <view class="info-row" wx:if="{{item.cost || item.cost === 0}}">
-                   <view class="info-label">💰 费用</view>
-                   <view class="info-value highlight">{{item.cost}}</view>
-                 </view>
- 
-                 <view class="info-block" wx:if="{{item.effect}}">
-                   <view class="info-label">✨ 效果</view>
-                   <view class="info-value-text">{{item.effect}}</view>
-                 </view>
- 
-                 <view class="info-block" wx:if="{{item.bonus}}">
-                   <view class="info-label">🎁 奖励</view>
-                   <view class="info-value-text">{{item.bonus}}</view>
-                 </view>
- 
-                 <view class="info-block" wx:if="{{item.points}}">
-                   <view class="info-label">🏆 计分</view>
-                   <view class="info-value-text">{{item.points}}</view>
-                 </view>
+            </view>
+         </view>
+      </view>
+      <!-- Card Detail Modal (Gallery Style) -->
+      <view class="detail-modal-mask" wx:if="{{showDetailModal}}" bindtap="onCloseDetail">
+         <view class="preview-card" catchtap="noop">
+            <view class="preview-header">
+               <view class="card-sprite-viewport preview">
+                  <view class="card-sprite-native {{previewCard.cssClass}}" style="background-image: url('{{previewCard.bgImg}}'); background-size: {{previewCard.bgSize}}"></view>
                </view>
- 
-             </view>
-           </block>
+            </view>
+            <view class="preview-content">
+               <!-- Tabs for Split Cards -->
+               <view class="species-tabs" wx:if="{{previewCard.speciesDetails.length > 1}}">
+                  <block wx:for="{{previewCard.speciesDetails}}" wx:key="key">
+                     <view class="tab-item {{activeTab === index ? 'active' : ''}}" bindtap="onTabChange" data-index="{{index}}">
+                        {{item.displayName}}
+                     </view>
+                  </block>
+               </view>
+               <scroll-view scroll-y class="details-scroll" enable-flex>
+                  <block wx:for="{{previewCard.speciesDetails}}" wx:key="key">
+                     <view class="detail-panel" hidden="{{activeTab !== index}}">
+                        <view class="detail-header" wx:if="{{previewCard.speciesDetails.length === 1}}">
+                           <text class="detail-title">{{item.displayName}}</text>
+                        </view>
+                        <view class="info-grid">
+                           <view class="info-row" wx:if="{{item.tags && item.tags.length}}">
+                              <view class="info-label">🏷️ 标签</view>
+                              <view class="info-value">
+                                 <view class="tag-pill" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">
+                                    {{tag}}
+                                 </view>
+                              </view>
+                           </view>
+                           <view class="info-row" wx:if="{{item.nb}}">
+                              <view class="info-label">🔢 数量</view>
+                              <view class="info-value">{{item.nb}} 张</view>
+                           </view>
+                           <view class="info-row" wx:if="{{item.cost || item.cost === 0}}">
+                              <view class="info-label">💰 费用</view>
+                              <view class="info-value highlight">{{item.cost}}</view>
+                           </view>
+                           <view class="info-block" wx:if="{{item.effect}}">
+                              <view class="info-label">✨ 效果</view>
+                              <view class="info-value-text">{{item.effect}}</view>
+                           </view>
+                           <view class="info-block" wx:if="{{item.bonus}}">
+                              <view class="info-label">🎁 奖励</view>
+                              <view class="info-value-text">{{item.bonus}}</view>
+                           </view>
+                           <view class="info-block" wx:if="{{item.points}}">
+                              <view class="info-label">🏆 计分</view>
+                              <view class="info-value-text">{{item.points}}</view>
+                           </view>
+                        </view>
+                     </view>
+                  </block>
+               </scroll-view>
+            </view>
+         </view>
+      </view>
+      <!-- 底部：玩家手牌 (Hand) -->
+      <view class="hand-area">
+         <view class="hand-header">
+            <view class="area-title">手牌 ({{myHand.length}})</view>
+            <view class="instruction-tip {{instructionState}}">{{instructionText}}</view>
+         </view>
+         <scroll-view scroll-x class="hand-scroll" enable-flex>
+            <view class="hand-grid">
+               <block wx:for="{{myHand}}" wx:key="uid">
+                  <view class="hand-card {{item.selected ? 'selected' : ''}} {{item.uid === primarySelection ? 'primary' : ''}}" bindtap="onCardTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
+                     <view class="primary-flag" wx:if="{{item.uid === primarySelection}}">主牌</view>
+                     <block wx:if="{{item.img}}">
+                        <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
+                     </block>
+                     <block wx:else>
+                        <!-- Fallback for cards without images -->
+                        <view class="card-header" style="background-color: {{item.color || '#4caf50'}}">
+                           <text class="card-name">{{item.name}}</text>
+                           <view class="card-cost-badge" wx:if="{{item.cost !== undefined}}">
+                              {{item.cost}}
+                           </view>
+                        </view>
+                        <view class="card-body">
+                           <text class="card-type">{{item.type}}</text>
+                           <text class="card-tags">{{item.tags[0] || ''}}</text>
+                        </view>
+                        <view class="card-footer">
+                           <text class="card-effect-text" wx:if="{{item.effect}}">
+                              {{item.effect}}
+                           </text>
+                        </view>
+                     </block>
+                  </view>
+               </block>
+            </view>
          </scroll-view>
-       </view>
-     </view>
-  </view>
-
-    <!-- 底部：玩家手牌 (Hand) -->
-    <view class="hand-area">
-       <view class="hand-header">
-          <view class="area-title">手牌 ({{myHand.length}})</view>
-          <view class="instruction-tip {{instructionState}}">{{instructionText}}</view>
-       </view>
-       <scroll-view scroll-x class="hand-scroll" enable-flex>
-          <view class="hand-grid">
-             <block wx:for="{{myHand}}" wx:key="uid">
-             <view class="hand-card {{item.selected ? 'selected' : ''}} {{item.uid === primarySelection ? 'primary' : ''}}" bindtap="onCardTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
-                   <view class="primary-flag" wx:if="{{item.uid === primarySelection}}">主牌</view>
-                   <block wx:if="{{item.img}}">
-                      <view class="card-sprite-viewport">
-                         <image src="{{item.img}}" class="card-sprite-img" style="{{item.spriteStyle}}" lazy-load webp="true" />
-                      </view>
-                   </block>
-                   <block wx:else>
-                      <!-- Fallback for cards without images -->
-                      <view class="card-header" style="background-color: {{item.color || '#4caf50'}}">
-                         <text class="card-name">{{item.name}}</text>
-                         <view class="card-cost-badge" wx:if="{{item.cost !== undefined}}">{{item.cost}}</view>
-                      </view>
-                      <view class="card-body">
-                         <text class="card-type">{{item.type}}</text>
-                         <text class="card-tags">{{item.tags[0] || ''}}</text>
-                      </view>
-                      <view class="card-footer">
-                         <text class="card-effect-text" wx:if="{{item.effect}}">{{item.effect}}</text>
-                      </view>
-                   </block>
-                </view>
-             </block>
-          </view>
-       </scroll-view>
-    </view>
-
-
-  </block>
+      </view>
+   </block>
 </view>

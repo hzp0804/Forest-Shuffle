@@ -1,343 +1,140 @@
-/* pages/gallery/gallery.wxss */
-.gallery-container {
-  min-height: 100vh;
-  background-color: #FDFBF7;
-  padding: 20rpx;
-}
-
-.search-bar {
-  margin-bottom: 30rpx;
-}
-
-.search-input {
-  background: white;
-  padding: 20rpx 30rpx;
-  border-radius: 40rpx;
-  font-size: 28rpx;
-  box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.05);
-}
-
-.card-list {
-  height: calc(100vh - 120rpx);
-}
-
-.card-item {
-  margin-bottom: 40rpx;
-  break-inside: avoid;
-}
-
-.card-split-container {
-  display: flex;
-  flex-direction: column;
-  border-radius: 16rpx;
-  overflow: hidden;
-  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1);
-  border: 4rpx solid #e0e0e0;
-}
-
-.card-half {
-  padding: 20rpx;
-  min-height: 160rpx;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.top {
-  background-color: #E8F5E9; /* Light Green */
-  border-bottom: 2rpx dashed #ccc;
-}
-
-.bottom {
-  background-color: #F9FBE7; /* Darker Earth/Yellowish Tone */
-}
-
-/* Specific Type Colors */
-.top.butterfly { background-color: #E0F2F1; } /* Light Teal */
-.top.bird { background-color: #E3F2FD; } /* Light Blue */
-.bottom.mushroom { background-color: #FFF3E0; } /* Light Orange/Brown */
-.bottom.plant { background-color: #F1F8E9; }
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  margin-bottom: 10rpx;
-}
-
-.cost-badge {
-  background-color: #8B4513;
-  color: white;
-  width: 40rpx;
-  height: 40rpx;
-  border-radius: 8rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 24rpx;
-}
-
-.card-name {
-  font-weight: bold;
-  color: #2A4F25;
-  font-size: 30rpx;
-  flex: 1;
-}
-
-.card-type-icon {
-  font-size: 32rpx;
-}
-
-.card-effect {
-  font-size: 24rpx;
-  color: #555;
-  line-height: 1.4;
-  background: rgba(255,255,255,0.6);
-  padding: 10rpx;
-  border-radius: 8rpx;
-}
-
-.padding-bottom {
-  height: 40rpx;
-}
-
-/* Image Grid Styles */
-.image-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16rpx;
-  padding-bottom: 40rpx;
-}
-
-.grid-item {
-  position: relative;
-  width: 100%;
-  height: 0;
-  padding-top: 155%; /* Keep card ratio on devices without aspect-ratio support */
-  border-radius: 12rpx;
-  overflow: hidden;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
-  background-color: #eee;
-}
-
-.card-thumb {
-  width: 100%;
-  height: 100%;
-}
-
-/* Sprite Rendering */
-.card-sprite-viewport {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.card-sprite-img {
-  max-width: none;
-  max-height: none;
+/* miniprogram/pages/gallery/gallery.wxss */
+.container {
   display: block;
-}
-
-/* Preview overlay */
-.preview-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 99;
-  padding: 40rpx;
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.preview-card {
-  width: 100%;
-  max-width: 680rpx;
-  background: #ffffff;
-  border-radius: 32rpx;
-  box-shadow: 0 24rpx 48rpx rgba(0,0,0,0.3);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  max-height: 85vh;
-  position: relative;
-  animation: scaleIn 0.3s cubic-bezier(0.19, 1, 0.22, 1);
-}
-
-@keyframes scaleIn {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.preview-header {
-  background: #f0f4f1;
-  padding: 40rpx;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-bottom: 1rpx solid #e1e6e2;
-}
-
-.card-sprite-viewport.preview {
-  width: 50%;
-  padding-top: 77.5%; /* Approximate card ratio */
-  height: 0;
-  position: relative;
-  overflow: hidden;
-  border-radius: 16rpx;
-  box-shadow: 0 12rpx 24rpx rgba(0,0,0,0.15);
-  transform: rotate(0deg); /* reset inheritance */
-}
-
-/* Make split layout obvious by showing full card */
-.preview-header .card-sprite-viewport {
-    /* If needed, adjust scale for landscape/portrait */
-}
-
-.preview-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: #fff;
-}
-
-.species-tabs {
-  display: flex;
-  background: #f7f9f8;
-  border-bottom: 1rpx solid #eee;
-}
-
-.tab-item {
-  flex: 1;
-  text-align: center;
-  padding: 24rpx;
-  font-size: 28rpx;
-  color: #666;
-  font-weight: 500;
-  position: relative;
-  transition: all 0.2s;
-}
-
-.tab-item.active {
-  color: #2a4f25;
-  font-weight: 700;
-  background: #fff;
-}
-
-.tab-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 20%;
-  width: 60%;
-  height: 4rpx;
-  background: #2a4f25;
-  border-radius: 4rpx 4rpx 0 0;
-}
-
-.details-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 30rpx 40rpx;
+  /* Override app.wxss flex layout */
+  padding: 20rpx;
+  background-color: #f7f7f7;
+  min-height: 100vh;
   box-sizing: border-box;
 }
 
-.detail-header {
-  margin-bottom: 30rpx;
-  text-align: center;
+.section {
+  width: 100%;
+  margin-bottom: 0;
+  /* Continuous flow */
 }
 
-.detail-title {
-  font-size: 36rpx;
-  font-weight: 800;
-  color: #1a1a1a;
+/* 
+ * Removing visible headers to match the reference image.
+ * If you want them back, just style .header again.
+ */
+
+.grid {
+  display: grid;
+  width: 100%;
+  box-sizing: border-box;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
+  padding-bottom: 20rpx;
 }
 
-.info-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 24rpx;
+.card-wrapper {
+  position: relative;
+  width: 100%;
+  padding-bottom: 156%;
+  /* Aspect Ratio approx 1/0.64 (standard card) or just rely on height if fixed. 
+                           However, grid width is variable relative to screen. 
+                           Padding-bottom hack ensures aspect ratio. */
 }
 
-.info-row {
-  display: flex;
-  align-items: center;
-  padding-bottom: 16rpx;
-  border-bottom: 1rpx dashed #eee;
-}
-
-.info-row:last-child {
-  border-bottom: none;
-}
-
-.info-block {
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-  background: #f8fbf9;
-  padding: 24rpx;
+.card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
   border-radius: 16rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+  transition: transform 0.1s;
 }
 
-.info-label {
-  font-size: 26rpx;
-  color: #666;
-  font-weight: 600;
-  width: 140rpx;
+.card:active {
+  transform: scale(0.96);
+}
+
+/* Preview Overlay - Keeping it dark for contrast */
+.preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 8rpx;
+  z-index: 1000;
+  opacity: 0;
+  animation: fadeIn 0.2s forwards;
 }
 
-.info-block .info-label {
-  width: auto;
-  color: #2a4f25;
-  margin-bottom: 4rpx;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
-.info-value {
-  flex: 1;
-  font-size: 28rpx;
-  color: #333;
+.preview-content {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
+  flex-direction: column;
+  align-items: center;
+  width: 80%;
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-.info-value-text {
-  font-size: 28rpx;
+@keyframes popIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.preview-info {
+  margin-top: 30rpx;
   color: #333;
-  line-height: 1.6;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 30rpx;
+  border-radius: 20rpx;
+  width: 100%;
+  max-height: 40vh;
+  overflow-y: auto;
+  box-shadow: 0 10rpx 40rpx rgba(0, 0, 0, 0.2);
 }
 
-.highlight {
-  font-weight: 700;
-  color: #d35400;
+.species-item {
+  margin-bottom: 20rpx;
+  border-bottom: 1rpx solid #eee;
+  padding-bottom: 16rpx;
 }
 
-.tag-pill {
-  background: #e8f5e9;
-  color: #2e7d32;
-  font-size: 22rpx;
-  padding: 4rpx 16rpx;
-  border-radius: 12rpx;
-  font-weight: 600;
+.species-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
 
-/* Scrollbar hide */
-::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  color: transparent;
+.species-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  display: block;
+  color: #2a4f25;
+  margin-bottom: 8rpx;
+}
+
+.species-effect {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.4;
+  display: block;
 }

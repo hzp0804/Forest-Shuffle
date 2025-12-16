@@ -1,267 +1,149 @@
-// pages/gallery/gallery.js
-const bgaData = require('../../data/bgaCardData.js');
-const cardData = require('../../data/cardData.js');
+// miniprogram/pages/gallery/gallery.js
+const {
+  CARDS_DATA,
+  SPECIES_DATA,
+  remoteMap,
+} = require("../../data/cardData.js");
+
+const BASIC_DECK = "basic";
+const ALPINE_DECK = "alpine";
+const EDGE_DECK = "edge";
+
+const TREE = "Tree";
+const W_CARD = "wCard";
+const H_CARD = "hCard";
+const V_CARD = "vCard";
+const MOUNTAIN = "Mountain";
 
 Page({
   data: {
-    cards: [],
-    viewMode: 'image',
+    sections: [],
+    viewMode: "image",
     previewCard: null,
-    activeTab: 0
   },
 
-  onLoad: function (options) {
-    const remoteBase = 'https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img';
-    const remoteMap = {
-      // lower-case filenames
-      'trees.jpg': `${remoteBase}/trees.jpg`,
-      'hcards.jpg': `${remoteBase}/hCards.jpg`,
-      'vcards.jpg': `${remoteBase}/vCards.jpg`,
-      'mountain.jpg': `${remoteBase}/mountain.jpg`,
-      'woodlands.jpg': `${remoteBase}/woodlands.Jpg`,
-      'trees.webp': `${remoteBase}/trees.jpg`,
-      'hcards.webp': `${remoteBase}/hCards.jpg`,
-      'vcards.webp': `${remoteBase}/vCards.jpg`,
-      'mountain.webp': `${remoteBase}/mountain.jpg`,
-      // capitalized filenames supplied by BGA
-      'hCards.jpg': `${remoteBase}/hCards.jpg`,
-      'vCards.jpg': `${remoteBase}/vCards.jpg`,
-      'woodlands.Jpg': `${remoteBase}/woodlands.Jpg`
-    };
+  onLoad: function () {
+    this.initCards();
+  },
 
-    const toRemote = (img = '') => {
-      if (!img) return img;
-      if (/^https?:\/\//.test(img)) return img;
-      const name = img.split('/').pop();
-      const lower = name.toLowerCase();
-      if (remoteMap[name]) return remoteMap[name];
-      if (remoteMap[lower]) return remoteMap[lower];
-      return img;
-    };
+  initCards: function () {
+    const sections = [
+      { id: "basic_tree", title: "基础树木 (Basic Trees)", cards: [] },
+      { id: "basic_h", title: "基础动物-横 (Basic H-Cards)", cards: [] },
+      { id: "basic_v", title: "基础动物-竖 (Basic V-Cards)", cards: [] },
+      { id: "alpine", title: "高山 (Alpine)", cards: [] },
+      { id: "edge", title: "林缘 (Edge)", cards: [] },
+    ];
 
-    // Determine Sprite Grid Dimensions based on file heuristic
-    const defaultSpriteByType = {
-      H_CARD: toRemote('/images/cards/hcards.jpg'),
-      V_CARD: toRemote('/images/cards/vcards.jpg'),
-      W_CARD: toRemote('/images/cards/trees.jpg'),
-      TREE: toRemote('/images/cards/trees.jpg')
-    };
-
-    // Sprite sheet geometry (from forestshuffle CSS background-size)
-    const spriteGridByFile = {
-      'trees.webp': { cols: 5, rows: 5 },
-      'trees.jpg': { cols: 5, rows: 5 },
-      'hcards.webp': { cols: 7, rows: 7 },
-      'hcards.jpg': { cols: 7, rows: 7 },
-      'vcards.webp': { cols: 7, rows: 7 },
-      'vcards.jpg': { cols: 7, rows: 7 },
-      'mountain.webp': { cols: 7, rows: 4 },
-      'mountain.jpg': { cols: 7, rows: 4 },
-      'woodlands.jpg': { cols: 6, rows: 6 }
-    };
-
-    const resolveImg = (card) => {
-      if (card.img && card.img.trim()) {
-        return toRemote(card.img.trim());
-      }
-      return defaultSpriteByType[card.type] || defaultSpriteByType.TREE;
-    };
-
-    const getGrid = (img, type) => {
-      const fname = img.split('/').pop().toLowerCase();
-
-      // Mountain sheet actual size 2100x1864 (7 cols x 4 rows)
-      if (fname.includes('mountain')) {
-        return { cols: 7, rows: 4, mountain: true };
-      }
-
-      if (spriteGridByFile[fname]) return spriteGridByFile[fname];
-      // fallbacks by type
-      if (type === 'H_CARD') return spriteGridByFile['hcards.jpg'];
-      if (type === 'V_CARD') return spriteGridByFile['vcards.jpg'];
-      return { cols: 7, rows: 7 };
-    };
-
-    const quantizeIndex = (valuePct, divisions) => {
-      // Snap parsed percentage to closest cell index to match CSS background-position steps
-      const step = 100 / (divisions - 1);
-      return Math.round(valuePct / step);
-    };
-
-    const parsePct = (s) => parseFloat(s) || 0;
-
-    const normalizeKey = (value = '') => value.replace(/[^A-Za-z0-9]/g, '');
-    // Create a case-insensitive map for easier lookup
+    // Helper to find species metadata case-insensitively
     const speciesDataMap = {};
-    const byName = cardData.byName || {};
-    const byConst = cardData.byConst || {};
-    
-    // Helper to add to map
-    const addToMap = (source) => {
-      Object.keys(source).forEach(key => {
-        const lowerKey = key.toLowerCase();
-        // Don't overwrite if exists to prioritize one source if needed, or overwrite if desired
-        if (!speciesDataMap[lowerKey]) {
-          speciesDataMap[lowerKey] = source[key];
+    Object.keys(SPECIES_DATA).forEach((key) => {
+      speciesDataMap[key.toLowerCase()] = SPECIES_DATA[key];
+      speciesDataMap[key] = SPECIES_DATA[key];
+    });
+
+    const findSpeciesMeta = (code) => {
+      if (!code) return {};
+      return speciesDataMap[code] || speciesDataMap[code.toLowerCase()] || {};
+    };
+
+    const getImgAndSize = (deck, type) => {
+      let img = "";
+      let cols = 1;
+      let rows = 1;
+
+      if (deck === ALPINE_DECK) {
+        img = remoteMap[MOUNTAIN];
+        cols = 7;
+        rows = 4;
+      } else if (deck === EDGE_DECK) {
+        img = remoteMap[W_CARD]; // Access woodlands.jpg via W_CARD key
+        cols = 6;
+        rows = 6;
+      } else {
+        // Basic
+        if (type === TREE || type === W_CARD) {
+          img = remoteMap[TREE];
+          cols = 5;
+          rows = 5;
+        } else if (type === H_CARD) {
+          img = remoteMap[H_CARD];
+          cols = 7;
+          rows = 7;
+        } else if (type === V_CARD) {
+          img = remoteMap[V_CARD];
+          cols = 7;
+          rows = 7;
+        } else {
+          // Fallback
+          img = remoteMap[TREE];
+          cols = 5;
+          rows = 5;
         }
-        // Also add the original key just in case
-        speciesDataMap[key] = source[key];
-      });
+      }
+      return { img, size: `${cols * 100}% ${rows * 100}%` };
     };
 
-    addToMap(byName);
-    addToMap(byConst);
+    Object.entries(CARDS_DATA).forEach(([id, card]) => {
+      const { img, size } = getImgAndSize(card.deck, card.type);
 
-    const findSpeciesMeta = (code = '') => {
-      if (!code) return null;
-      const lower = code.toLowerCase();
-      // Prefer the lower-cased key so we pick the localized byName entry
-      return speciesDataMap[lower] || speciesDataMap[code] || null;
-    };
-
-    const cards = Object.values(bgaData.cards).map(c => {
-      const img = resolveImg(c);
-      const grid = getGrid(img, c.type);
-
-      let width, height, left, top;
-      const { cols, rows } = grid;
-      width = cols * 100;
-      height = rows * 100;
-
-      // Snap everything (including mountain cards) to the closest sprite cell.
-      // Mountain data from BGA uses slightly off percentages (e.g., 42.857%)
-      // while the sprite sheet is arranged as a clean 7x4 grid, so quantizing
-      // keeps the positions aligned with the actual sheet.
-      const xIndex = quantizeIndex(parsePct(c.x), cols);
-      const yIndex = quantizeIndex(parsePct(c.y), rows);
-      left = -1 * xIndex * 100;
-      top = -1 * yIndex * 100;
-
-      const tagMap = {
-        'Tree': '树',
-        'tree': '树',
-        'Plant': '植物',
-        'plant': '植物',
-        'Mushroom': '蘑菇',
-        'mushroom': '蘑菇',
-        'Bird': '鸟类',
-        'bird': '鸟类',
-        'Insect': '昆虫',
-        'insect': '昆虫',
-        'Butterfly': '蝴蝶',
-        'butterfly': '蝴蝶',
-        'Amphibian': '两栖动物',
-        'amphibian': '两栖动物',
-        'Paw': '兽类',
-        'paw': '兽类',
-        'Bat': '蝙蝠',
-        'bat': '蝙蝠',
-        'Deer': '鹿',
-        'deer': '鹿',
-        'Cloven-hoofed animal': '偶蹄动物',
-        'cloven-hoofed animal': '偶蹄动物',
-        'Mountain': '山脉',
-        'mountain': '山脉',
-        'Woodland Edge': '林缘',
-        'woodland edge': '林缘',
-        'Shrub': '灌木',
-        'shrub': '灌木'
-      };
-
-      const speciesDetails = (c.species || []).map(code => {
-        const meta = findSpeciesMeta(code) || {};
-        const rawTags = (meta.tags && meta.tags.length) ? meta.tags : (meta.tags_en || []);
-        // Map tags to Chinese if available in map, otherwise keep original
-        const tags = rawTags.map(t => {
-          const key = (t || '').trim();
-          if (!key) return null; // Filter empty source tags
-          const lowerKey = key.toLowerCase();
-          return tagMap[key] || tagMap[lowerKey] || key;
-        }).filter(t => t && t.trim()); // Filter out empty results
-
+      // Process species details
+      const speciesDetails = (card.species || []).map((code) => {
+        const meta = findSpeciesMeta(code);
         return {
           key: code,
-          displayName: meta.name || meta.name_en || code,
-          tags: tags,
-          cost: meta.cost,
-          type: meta.type,
-          nb: meta.nb,
-          effect: meta.effect || '',
-          bonus: meta.bonus || '',
-          points: meta.points || meta.points_en || ''
+          displayName: meta.name || code,
+          points: meta.points || "",
         };
       });
 
-      const typeMap = {
-        'TREE': '树',
-        'H_CARD': '动物',
-        'V_CARD': '动物',
-        'W_CARD': '林缘'
-      };
-
-      const primaryName = speciesDetails.length
-        ? speciesDetails.map(s => s.displayName).join(' / ')
-        : (c.species || []).join(' / ');
-
-      return {
-        ...c,
-        img,
-        spriteStyle: `width: ${width}%; height: ${height}%; left: ${left}%; top: ${top}%; position: absolute;`,
+      const displayCard = {
+        ...card,
+        id, // key comes as string from Object.entries
+        bgImg: img,
+        bgSize: size,
         speciesDetails,
-        primaryName,
-        typeZh: typeMap[c.type] || c.type
+        primaryName: speciesDetails.map((s) => s.displayName).join(" / "),
       };
-    }).reduce((acc, card) => {
-      // Deduplicate identical visuals so the gallery only shows one copy of each card face
-      const key = [
-        card.type,
-        card.img,
-        card.x,
-        card.y,
-        (card.species || []).join(',')
-      ].join('|');
-      if (!acc.map.has(key)) {
-        acc.list.push(card);
-        acc.map.set(key, true);
+
+      if (card.deck === ALPINE_DECK) {
+        sections[3].cards.push(displayCard);
+      } else if (card.deck === EDGE_DECK) {
+        sections[4].cards.push(displayCard);
+      } else {
+        if (card.type === TREE || card.type === W_CARD) {
+          sections[0].cards.push(displayCard);
+        } else if (card.type === H_CARD) {
+          sections[1].cards.push(displayCard);
+        } else {
+          sections[2].cards.push(displayCard);
+        }
       }
-      return acc;
-    }, { list: [], map: new Map() }).list;
-
-    // Move mountain/winter cards to the end
-    cards.sort((a, b) => {
-      const isWinterA = (a.img || '').toLowerCase().includes('mountain');
-      const isWinterB = (b.img || '').toLowerCase().includes('mountain');
-      
-      if (isWinterA && !isWinterB) return 1;
-      if (!isWinterA && isWinterB) return -1;
-      return 0; // Keep original relative order
     });
 
-    this.setData({
-      cards: cards,
-      viewMode: 'image'
-    });
+    // Sort cards in each section by ID
+    sections.forEach((s) =>
+      s.cards.sort((a, b) => Number(a.id) - Number(b.id))
+    );
+
+    this.setData({ sections });
   },
 
-  onPreviewCard: function(e) {
+  onPreviewCard: function (e) {
     const id = e.currentTarget.dataset.id;
-    const card = this.data.cards.find(c => String(c.id) === String(id));
-    if (card) {
-      this.setData({ 
-        previewCard: card,
-        activeTab: 0
-      });
+    let found = null;
+    for (const sec of this.data.sections) {
+      found = sec.cards.find((c) => String(c.id) === String(id));
+      if (found) break;
+    }
+    if (found) {
+      this.setData({ previewCard: found });
     }
   },
 
-  onTabChange: function(e) {
-    const index = e.currentTarget.dataset.index;
-    this.setData({ activeTab: index });
-  },
-
-  onClosePreview: function() {
+  onClosePreview: function () {
     this.setData({ previewCard: null });
   },
 
-  noop: function() {}
-})
+  noop: function () {},
+});

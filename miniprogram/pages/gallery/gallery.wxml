@@ -1,129 +1,20 @@
-<!--pages/gallery/gallery.wxml-->
-<view class="gallery-container">
-  <view class="search-bar">
-    <input class="search-input" placeholder="搜索卡牌名称..." placeholder-class="placeholder" />
-  </view>
-
-  <scroll-view scroll-y class="card-list">
-    <!-- Image Grid View (When PDF processed) -->
-    <view class="image-grid" wx:if="{{viewMode === 'image'}}">
-      <block wx:for="{{cards}}" wx:key="id">
-        <view class="grid-item" bindtap="onPreviewCard" data-id="{{item.id}}">
-          <image src="{{item.img}}" class="card-sprite-img" style="{{item.spriteStyle}}" lazy-load webp="true" />
-        </view>
-      </block>
-    </view>
-
-    <!-- Code/Detail View (Default) -->
-    <block wx:else>
-      <block wx:for="{{cards}}" wx:key="id">
-        <view class="card-item">
-          <!-- Split Card Layout -->
-          <view class="card-split-container">
-            
-            <!-- Top Half -->
-            <view class="card-half top {{item.top.type}}">
-              <view class="card-header">
-                <view class="cost-badge" wx:if="{{item.top.cost !== undefined}}">{{item.top.cost}}</view>
-                <view class="card-name">{{item.top.name}}</view>
-                 <view class="card-type-icon" wx:for="{{item.top.tags}}" wx:for-item="tag" wx:key="*this">
-                 <!-- Simple placeholder icons -->
-                 <text wx:if="{{tag === 'butterfly' || tag === 'Butterfly' || tag === '蝴蝶'}}">🦋</text>
-                 <text wx:elif="{{tag === 'paw' || tag === 'Paw' || tag === '兽类'}}">🐾</text>
-                 <text wx:elif="{{tag === 'bird' || tag === 'Bird' || tag === '鸟类'}}">🐦</text>
-                </view>
-              </view>
-              <view class="card-effect">{{item.top.effect}}</view>
-            </view>
-            
-            <!-- Divider -->
-            <view class="card-divider"></view>
-
-            <!-- Bottom Half -->
-            <view class="card-half bottom {{item.bottom.type}}">
-              <view class="card-header">
-                <view class="cost-badge" wx:if="{{item.bottom.cost !== undefined}}">{{item.bottom.cost}}</view>
-                <view class="card-name">{{item.bottom.name}}</view>
-                 <view class="card-type-icon" wx:for="{{item.bottom.tags}}" wx:for-item="tag" wx:key="*this">
-                 <text wx:if="{{tag === 'mushroom' || tag === 'Mushroom' || tag === '蘑菇'}}">🍄</text>
-                 <text wx:elif="{{tag === 'paw' || tag === 'Paw' || tag === '兽类'}}">🐾</text>
-                 <text wx:elif="{{tag === 'plant' || tag === 'Plant' || tag === '植物'}}">🌿</text>
-                </view>
-              </view>
-              <view class="card-effect">{{item.bottom.effect}}</view>
-            </view>
-
-          </view>
-        </view>
-      </block>
-    </block>
-    <view class="padding-bottom"></view>
-  </scroll-view>
-
-  <!-- Fullscreen preview -->
-  <view class="preview-mask" wx:if="{{previewCard}}" bindtap="onClosePreview">
-    <view class="preview-card" catchtap="noop">
-      <view class="preview-header">
-        <view class="card-sprite-viewport preview">
-          <image src="{{previewCard.img}}" class="card-sprite-img" style="{{previewCard.spriteStyle}}" mode="aspectFill" />
-        </view>
+<view class="container">
+  <view class="section" wx:for="{{sections}}" wx:key="id">
+    <view class="grid">
+      <view class="card-wrapper" wx:for="{{item.cards}}" wx:for-item="card" wx:key="id">
+        <view class="card card-{{card.id}}" style="background-image: url('{{card.bgImg}}'); background-size: {{card.bgSize}};" bindtap="onPreviewCard" data-id="{{card.id}}"></view>
       </view>
-
-      <view class="preview-content">
-        <!-- Tabs for Split Cards -->
-        <view class="species-tabs" wx:if="{{previewCard.speciesDetails.length > 1}}">
-          <block wx:for="{{previewCard.speciesDetails}}" wx:key="key">
-            <view class="tab-item {{activeTab === index ? 'active' : ''}}" bindtap="onTabChange" data-index="{{index}}">
-              {{item.displayName}}
-            </view>
-          </block>
+    </view>
+  </view>
+  <!-- Simple Preview Overlay -->
+  <view class="preview-overlay" wx:if="{{previewCard}}" bindtap="onClosePreview">
+    <view class="preview-content" catchtap="noop">
+      <view class="card card-{{previewCard.id}}" style="width: 500rpx; height: 750rpx; background-image: url('{{previewCard.bgImg}}'); background-size: {{previewCard.bgSize}}; border-radius: 20rpx;"></view>
+      <view class="preview-info" wx:if="{{previewCard.speciesDetails}}">
+        <view wx:for="{{previewCard.speciesDetails}}" wx:key="key" class="species-item">
+          <text class="species-name">{{item.displayName}}</text>
+          <text class="species-effect">{{item.points}}</text>
         </view>
-
-        <scroll-view scroll-y class="details-scroll">
-          <block wx:for="{{previewCard.speciesDetails}}" wx:key="key">
-            <view class="detail-panel" hidden="{{activeTab !== index}}">
-              
-              <view class="detail-header" wx:if="{{previewCard.speciesDetails.length === 1}}">
-                <text class="detail-title">{{item.displayName}}</text>
-              </view>
-
-              <view class="info-grid">
-                <view class="info-row" wx:if="{{item.tags && item.tags.length}}">
-                  <view class="info-label">🏷️ 标签</view>
-                  <view class="info-value">
-                     <view class="tag-pill" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</view>
-                  </view>
-                </view>
-
-                <view class="info-row" wx:if="{{item.nb}}">
-                  <view class="info-label">🔢 数量</view>
-                  <view class="info-value">{{item.nb}} 张</view>
-                </view>
-
-                <view class="info-row" wx:if="{{item.cost || item.cost === 0}}">
-                  <view class="info-label">💰 费用</view>
-                  <view class="info-value highlight">{{item.cost}}</view>
-                </view>
-
-                <view class="info-block" wx:if="{{item.effect}}">
-                  <view class="info-label">✨ 效果</view>
-                  <view class="info-value-text">{{item.effect}}</view>
-                </view>
-
-                <view class="info-block" wx:if="{{item.bonus}}">
-                  <view class="info-label">🎁 奖励</view>
-                  <view class="info-value-text">{{item.bonus}}</view>
-                </view>
-
-                <view class="info-block" wx:if="{{item.points}}">
-                  <view class="info-label">🏆 计分</view>
-                  <view class="info-value-text">{{item.points}}</view>
-                </view>
-              </view>
-
-            </view>
-          </block>
-        </scroll-view>
       </view>
     </view>
   </view>
