@@ -1,5 +1,5 @@
 const STORAGE_KEY = "userProfile";
-const BASE_DECK_SIZE = 180; // 官方基础牌库张数（可按需调整）
+const BASE_DECK_SIZE = 236; // 官方基础牌库张数（含3张冬季卡）
 
 const getStoredProfile = () => {
   try {
@@ -49,7 +49,7 @@ Page({
     roomCode: "",
     joinRoomCode: "",
     createForm: {
-      cardCount: 180,
+      cardCount: 236,
       winterStartOffset: 30,
     },
     seats: [
@@ -148,7 +148,7 @@ Page({
   onCreateRoom() {
     if (!this.ensureProfileOrBack()) return;
     const { createForm, userProfile } = this.data;
-    const cardCount = Number(createForm.cardCount) || 180;
+    const cardCount = Number(createForm.cardCount) || BASE_DECK_SIZE;
     const winterStartOffset = Number(createForm.winterStartOffset) || 0;
 
     this.ensureRoomCode();
@@ -737,55 +737,60 @@ Page({
     // 1. 构建牌库
     const cardData = require("../../data/cardData.js");
     let rawDeck = [];
-    const setNum = (roomSettings && roomSettings.setCount) || 1;
 
-    // 假设 cardData.byName 是字典
-    // 为防止数据结构差异，先做防守
-    const dict = cardData.byName || cardData;
+    // 使用 CARDS_DATA 作为单一事实来源
+    // CARDS_DATA 的 key 是卡牌ID，value 是卡牌定义。每个 entry 代表物理上的一张卡。
+    const sourceData = cardData.CARDS_DATA || {};
+    const sourceKeys = Object.keys(sourceData);
 
-    // --- 逻辑调整：根据用户输入的总卡牌数构建牌库 ---
-    // 1. 计算单套牌总数
-    const oneSetCount = Object.values(dict).reduce(
-      (sum, c) => sum + Number(c.nb || 0),
-      0
-    );
+    // 1. 计算单套牌总数 (即 CARDS_DATA 的条目数)
+    const oneSetCount = sourceKeys.length;
 
-    // 2. 获取目标总数
-    let targetCount = roomSettings.totalCardCount;
-    // 兼容旧数据：如果没 totalCardCount，用 setCount
-    if (!targetCount) {
-      targetCount = (roomSettings.setCount || 1) * oneSetCount;
+    if (oneSetCount === 0) {
+      console.error("Fatal: No cards found in CARDS_DATA");
+      wx.hideLoading();
+      wx.showToast({ title: "牌库数据为空", icon: "none" });
+      return;
     }
 
-    const fullSets = Math.floor(targetCount / oneSetCount);
-    const remainder = targetCount % oneSetCount;
+    const BASE_DECK_SIZE = 236; // 官方基础牌库233 + 3张冬季卡
+
+    // 2. 获取目标总数
+    let totalTarget = roomSettings.totalCardCount;
+    // 兼容旧数据
+    if (!totalTarget) {
+      // 旧版逻辑是用 setCount * 233，这里近似处理，或者直接设为默认
+      totalTarget = (roomSettings.setCount || 1) * 236;
+    }
+
+    const WINTER_CARD_COUNT = 3;
+
+    // 关键调整：用户设置的 totalTarget 是包含冬季卡的。
+    // 所以实际需要构建的基础牌数量 = 总数 - 冬季卡数
+    let baseCardTarget = totalTarget - WINTER_CARD_COUNT;
+    if (baseCardTarget < 0) baseCardTarget = 0; // 防御性编程
+
+    const fullSets = Math.floor(baseCardTarget / oneSetCount);
+    const remainder = baseCardTarget % oneSetCount;
 
     // 3. 构建完整套牌
     for (let s = 0; s < fullSets; s++) {
-      Object.keys(dict).forEach((key) => {
-        const cardDef = dict[key];
-        const count = Number(cardDef.nb || 0);
-        for (let i = 0; i < count; i++) {
-          rawDeck.push({
-            id: key,
-            uid: `${key}_set${s}_${i}_${Math.random().toString(36).slice(2)}`,
-          });
-        }
+      sourceKeys.forEach((key) => {
+        rawDeck.push({
+          id: key,
+          uid: `${key}_set${s}_${Math.random().toString(36).slice(2)}`,
+        });
       });
     }
 
-    // 4. 构建剩余散牌 (洗混一套新牌后取前 remainder 张)
+    // 4. 构建剩余散牌
     if (remainder > 0) {
       let extraSet = [];
-      Object.keys(dict).forEach((key) => {
-        const cardDef = dict[key];
-        const count = Number(cardDef.nb || 0);
-        for (let i = 0; i < count; i++) {
-          extraSet.push({ id: key });
-        }
+      sourceKeys.forEach((key) => {
+        extraSet.push({ id: key });
       });
 
-      // 洗散牌
+      // Fisher-Yates shuffle
       for (let i = extraSet.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [extraSet[i], extraSet[j]] = [extraSet[j], extraSet[i]];
@@ -808,7 +813,6 @@ Page({
     }
 
     // 6. 插入冬季卡
-    // 规则调整：冬季卡固定为 3 张
     const winterOffset = (roomSettings && roomSettings.winterStartOffset) || 30;
     const splitIndex = Math.max(0, rawDeck.length - winterOffset);
 
@@ -816,7 +820,7 @@ Page({
     const bottomPart = rawDeck.slice(splitIndex);
 
     // 添加 3 张冬季卡
-    for (let w = 1; w <= 3; w++) {
+    for (let w = 1; w <= WINTER_CARD_COUNT; w++) {
       bottomPart.push({ id: "WINTER", uid: `WINTER_${w}_${Math.random()}` });
     }
 
@@ -827,6 +831,15 @@ Page({
     }
 
     const finalDeck = topPart.concat(bottomPart);
+
+    console.group("Shuffle Result");
+    console.log(`基础卡牌数 (Base): ${rawDeck.length}`);
+    console.log(`冬季卡牌数 (Winter): ${WINTER_CARD_COUNT}`);
+    console.log(
+      `总卡牌数 (Total): ${finalDeck.length} (Target: ${totalTarget})`
+    );
+    console.log("Deck Details (Array):", finalDeck);
+    console.groupEnd();
 
     // 4. 发牌 (Initial Hand)
     // 规则：通常起始手牌是 6 张
