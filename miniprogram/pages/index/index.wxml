@@ -12,6 +12,9 @@
     <button class="btn btn-primary" hover-class="btn-hover" bindtap="onStartGame" loading="{{loginLoading}}" disabled="{{loginLoading}}">
       开始游戏
     </button>
+    <button class="btn btn-secondary" hover-class="btn-hover" bindtap="onGuestLogin">
+      游客登录
+    </button>
     <button class="btn btn-secondary" hover-class="btn-hover" bindtap="onViewCards">
       卡片图鉴
     </button>
