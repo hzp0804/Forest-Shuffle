@@ -49,7 +49,7 @@ Page({
     roomCode: "",
     joinRoomCode: "",
     createForm: {
-      setCount: 1,
+      cardCount: 180,
       winterStartOffset: 30,
     },
     seats: [
@@ -131,10 +131,10 @@ Page({
     });
   },
 
-  onSetCountInput(e) {
+  onCardCountInput(e) {
     const val = parseInt(e.detail.value, 10);
     this.setData({
-      "createForm.setCount": isNaN(val) ? "" : val,
+      "createForm.cardCount": isNaN(val) ? "" : val,
     });
   },
 
@@ -148,7 +148,7 @@ Page({
   onCreateRoom() {
     if (!this.ensureProfileOrBack()) return;
     const { createForm, userProfile } = this.data;
-    const setCount = Number(createForm.setCount) || 1;
+    const cardCount = Number(createForm.cardCount) || 180;
     const winterStartOffset = Number(createForm.winterStartOffset) || 0;
 
     this.ensureRoomCode();
@@ -197,10 +197,8 @@ Page({
           status: "waiting",
           players: initialSeats,
           settings: {
-            setCount,
+            totalCardCount: cardCount,
             winterStartOffset,
-            baseDeckSize: BASE_DECK_SIZE,
-            totalCards: Math.max(0, setCount) * BASE_DECK_SIZE,
           },
           createTime: db.serverDate(),
           updateTime: db.serverDate(),
@@ -745,79 +743,82 @@ Page({
     // 为防止数据结构差异，先做防守
     const dict = cardData.byName || cardData;
 
-    // --- 重新按官方基准牌数（180/套）缩放 nb，支持多套叠加 ---
-    const BASE_DECK_SIZE = this.data.baseDeckSize || 180;
-    const targetSize = BASE_DECK_SIZE * setNum;
-    const totalNb = Object.values(dict).reduce(
+    // --- 逻辑调整：根据用户输入的总卡牌数构建牌库 ---
+    // 1. 计算单套牌总数
+    const oneSetCount = Object.values(dict).reduce(
       (sum, c) => sum + Number(c.nb || 0),
       0
     );
-    const scaled = [];
 
-    // 1) 先按比例分配，至少 1 张
-    Object.keys(dict).forEach((key) => {
-      const cardDef = dict[key];
-      const nb = Number(cardDef.nb || 0);
-      const est =
-        nb <= 0 || totalNb === 0
-          ? 1
-          : Math.max(1, Math.round((nb / totalNb) * targetSize));
-      scaled.push({ key, est });
-    });
-
-    // 2) 调整数量使总和精确等于 targetSize
-    let currentTotal = scaled.reduce((s, c) => s + c.est, 0);
-    if (currentTotal > targetSize) {
-      // 超出则从数量多的开始减
-      scaled.sort((a, b) => b.est - a.est);
-      let idx = 0;
-      while (currentTotal > targetSize && idx < scaled.length) {
-        if (scaled[idx].est > 1) {
-          scaled[idx].est -= 1;
-          currentTotal -= 1;
-        } else {
-          idx += 1;
-        }
-      }
-    } else if (currentTotal < targetSize) {
-      // 不足则从数量多的开始加
-      scaled.sort((a, b) => b.est - a.est);
-      let idx = 0;
-      while (currentTotal < targetSize) {
-        scaled[idx % scaled.length].est += 1;
-        currentTotal += 1;
-        idx += 1;
-      }
+    // 2. 获取目标总数
+    let targetCount = roomSettings.totalCardCount;
+    // 兼容旧数据：如果没 totalCardCount，用 setCount
+    if (!targetCount) {
+      targetCount = (roomSettings.setCount || 1) * oneSetCount;
     }
 
-    // 3) 按缩放后的数量构建精简牌堆
-    scaled.forEach(({ key, est }) => {
-      for (let i = 0; i < est; i++) {
-        rawDeck.push({
-          id: key, // 对应 cardData 的 key
-          uid: `${key}_${Math.random().toString(36).slice(2)}`, // 唯一标识
-        });
-      }
-    });
+    const fullSets = Math.floor(targetCount / oneSetCount);
+    const remainder = targetCount % oneSetCount;
 
-    // 2. 洗牌 (Fisher-Yates)
+    // 3. 构建完整套牌
+    for (let s = 0; s < fullSets; s++) {
+      Object.keys(dict).forEach((key) => {
+        const cardDef = dict[key];
+        const count = Number(cardDef.nb || 0);
+        for (let i = 0; i < count; i++) {
+          rawDeck.push({
+            id: key,
+            uid: `${key}_set${s}_${i}_${Math.random().toString(36).slice(2)}`,
+          });
+        }
+      });
+    }
+
+    // 4. 构建剩余散牌 (洗混一套新牌后取前 remainder 张)
+    if (remainder > 0) {
+      let extraSet = [];
+      Object.keys(dict).forEach((key) => {
+        const cardDef = dict[key];
+        const count = Number(cardDef.nb || 0);
+        for (let i = 0; i < count; i++) {
+          extraSet.push({ id: key });
+        }
+      });
+
+      // 洗散牌
+      for (let i = extraSet.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [extraSet[i], extraSet[j]] = [extraSet[j], extraSet[i]];
+      }
+
+      // 取前 remainder 张
+      const partial = extraSet.slice(0, remainder);
+      partial.forEach((p, idx) => {
+        rawDeck.push({
+          id: p.id,
+          uid: `${p.id}_extra_${idx}_${Math.random().toString(36).slice(2)}`,
+        });
+      });
+    }
+
+    // 5. 洗整个主牌库 (Fisher-Yates)
     for (let i = rawDeck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [rawDeck[i], rawDeck[j]] = [rawDeck[j], rawDeck[i]];
     }
 
-    // 3. 插入冬季卡
-    // 默认取出最后 N 张，混入 2 张 Winter
-    // 修正：如果牌太少，就全部混入
+    // 6. 插入冬季卡
+    // 规则调整：冬季卡固定为 3 张
     const winterOffset = (roomSettings && roomSettings.winterStartOffset) || 30;
     const splitIndex = Math.max(0, rawDeck.length - winterOffset);
 
     const topPart = rawDeck.slice(0, splitIndex);
     const bottomPart = rawDeck.slice(splitIndex);
 
-    // 添加 2 张冬季卡
-    bottomPart.push({ id: "WINTER", uid: `WINTER_1_${Math.random()}` });
-    bottomPart.push({ id: "WINTER", uid: `WINTER_2_${Math.random()}` });
+    // 添加 3 张冬季卡
+    for (let w = 1; w <= 3; w++) {
+      bottomPart.push({ id: "WINTER", uid: `WINTER_${w}_${Math.random()}` });
+    }
 
     // 再次洗混底部
     for (let i = bottomPart.length - 1; i > 0; i--) {

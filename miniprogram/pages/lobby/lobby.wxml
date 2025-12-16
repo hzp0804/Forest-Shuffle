@@ -43,7 +43,7 @@
         <view class="room-settings" wx:if="{{roomSettings}}">
            <view class="setting-item">
              <text class="setting-icon">🎴 </text>
-             <text class="setting-text">牌库 {{roomSettings.setCount || 1}} 套 ({{(roomSettings.setCount || 1) * baseDeckSize}} 张)</text>
+             <text class="setting-text">牌库 {{roomSettings.totalCardCount || ((roomSettings.setCount || 1) * baseDeckSize)}} 张</text>
            </view>
            <view class="setting-item">
              <text class="setting-icon">❄️ </text>
@@ -93,10 +93,10 @@
 
       <view class="form-item">
         <view class="label-row">
-          <text class="label">牌库套数</text>
-          <text class="tip">每套 {{baseDeckSize}} 张</text>
+          <text class="label">牌库数量</text>
+          <text class="tip">不含冬季卡</text>
         </view>
-        <input class="input" type="number" placeholder="默认 1 套，可多套叠加" value="{{createForm.setCount}}" bindinput="onSetCountInput" />
+        <input class="input" type="number" placeholder="请输入卡牌总数 (如 500)" value="{{createForm.cardCount}}" bindinput="onCardCountInput" />
       </view>
 
       <view class="form-item">

@@ -1,3 +1,5 @@
+const { calculateScore } = require("../../utils/scoring");
+
 Page({
   data: {
     gameData: null,
@@ -603,7 +605,7 @@ Page({
       myHand: richHand,
       clearing: richClearing,
       myForest: richForest, // 新增森林数据
-      myScore: myState ? myState.score : 0,
+      myScore: calculateScore(richForest, myState ? myState.cave : []),
       deckCount: deckCount,
       deckBack: deckBack,
       instructionText: instructionText,
@@ -1359,10 +1361,13 @@ Page({
         gameState.status = "finished";
       }
 
+      const currentScore = calculateScore(newForest, myState.cave || []);
+
       const nextPlayerState = {
         ...myState,
         hand: keptHand,
         forest: newForest,
+        score: currentScore,
       };
 
       const rawNextGameState = {
