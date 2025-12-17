@@ -12,6 +12,10 @@ let $f = (data) => {
 };
 
 // 卡片信息
+// 参数1：卡片类型
+// 参数2：[物种1, 物种2]
+// 参数3：[树木符号1, 树木符号2]，也就是我所说的颜色，物种1对应树木符号1，物种2对应树木符号2
+// 参数4：卡牌套装（基础卡、阿尔卑斯扩展、林缘扩展）
 const CARDS_DATA = {
   // 基础卡
   1: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LINDEN], [SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),

@@ -5,8 +5,48 @@ const { TAGS, CARD_TYPES } = require('../data/constants');
  * 计算游戏得分
  */
 
-function calculateTotalScore(playerState, openId, allPlayerStates) {
+// 缓存: OpenId -> { hash: String, result: Object }
+const scoreCache = new Map();
+
+/**
+ * 生成游戏状态的简易哈希 (基于所有玩家森林中卡牌的UID)
+ * 只要场上没有任何卡牌变动，不仅数量，UID组合不变，则认为分值不变
+ */
+function generateGameStateHash(allPlayerStates) {
+  if (!allPlayerStates) return '';
+  const parts = [];
+  // 确保顺序固定，以便生成稳定的Hash
+  Object.keys(allPlayerStates).sort().forEach(pid => {
+    const pState = allPlayerStates[pid];
+    if (pState && pState.forest) {
+      pState.forest.forEach(g => {
+        if (g.center) parts.push(g.center.uid);
+        if (g.slots) {
+          Object.values(g.slots).forEach(s => {
+            if (s) {
+              parts.push(s.uid);
+              if (s.stackedCards) s.stackedCards.forEach(sc => parts.push(sc.uid));
+            }
+          })
+        }
+      });
+    }
+  });
+  return parts.join('|');
+}
+
+function calculateTotalScore(playerState, openId, allPlayerStates, nickName) {
   if (!playerState) return { total: 0, breakdown: {} };
+
+  // 性能优化: 检查缓存
+  const currentHash = generateGameStateHash(allPlayerStates);
+  const cacheKey = openId; // 针对每个玩家分别缓存
+  const cached = scoreCache.get(cacheKey);
+
+  if (cached && cached.hash === currentHash) {
+    // 状态未变，直接返回缓存结果 (不打印日志以减少噪音)
+    return cached.result;
+  }
 
   let total = 0;
   const breakdown = {};
@@ -14,16 +54,67 @@ function calculateTotalScore(playerState, openId, allPlayerStates) {
   // 1. 遍历 Forest 计算得分
   const pointsCards = getAllCardsFromContext(playerState);
 
+  // 优化：统一预统计（Tag数量, 颜色数量, 名字数量）
+  const stats = precalculateStats(playerState);
+
+  // 用于存储每张卡的得分，以便后续按森林结构输出日志
+  const cardScores = {};
+
   pointsCards.forEach(card => {
-    // 传入 allPlayerStates 以支持 MAJORITY
-    const s = calculateCardScore(card, playerState, allPlayerStates, openId);
+    // 传入 stats 以优化查找
+    const s = calculateCardScore(card, playerState, allPlayerStates, openId, stats);
     if (s > 0) {
       total += s;
-      // 记录明细 (可选)
-      if (!breakdown[card.name]) breakdown[card.name] = 0;
-      breakdown[card.name] += s;
+      cardScores[card.uid] = s;
     }
   });
+
+  // 构建按森林结构排序的得分清单 (Debug)
+  const structuredLog = [];
+  if (playerState.forest) {
+    playerState.forest.forEach((group, index) => {
+      const groupLog = { index }; // 树木序号
+
+      const getLog = (card) => {
+        if (!card) return null;
+        const score = cardScores[card.uid] || 0;
+        let name = card.name;
+        // 标记套牌 (如: 欧洲七叶树)
+        if (card.scoreConfig && card.scoreConfig.type === SCORING_TYPES.SCALE_BY_COUNT) {
+          name = `${name}(套牌)`;
+        }
+
+        // 添加ID标识 (用户要求: 西方狍(101):3)
+        const tid = card.id || card.cardId || '?';
+        return `${name}(${tid}):${score}`;
+      };
+
+      if (group.center) groupLog['中'] = getLog(group.center);
+      if (group.slots) {
+        if (group.slots.top) groupLog['上'] = getLog(group.slots.top);
+        if (group.slots.bottom) groupLog['下'] = getLog(group.slots.bottom);
+        if (group.slots.left) groupLog['左'] = getLog(group.slots.left);
+        if (group.slots.right) groupLog['右'] = getLog(group.slots.right);
+
+        // 检查堆叠卡 (Stacked Cards)
+        ['top', 'bottom', 'left', 'right'].forEach(pos => {
+          const slotCard = group.slots[pos];
+          if (slotCard && slotCard.stackedCards && slotCard.stackedCards.length > 0) {
+            const stackLogs = slotCard.stackedCards.map(sc => getLog(sc)).filter(l => l && !l.endsWith(':0'));
+            if (stackLogs.length > 0) {
+              groupLog[`${pos}_stack`] = stackLogs;
+            }
+          }
+        });
+      }
+      // 只记录有得分的组，或者是空的？用户想看森林排序，最好全输出或者只输出有分的树
+      // 既然是清单，全部输出比较直观
+      structuredLog.push(groupLog);
+    });
+  }
+
+  console.log(`[得分清单 ${nickName || openId}]:`, structuredLog);
+  console.log(`[共计得分 ${nickName || openId}]:`, total);
 
   // 2. 遍历 Cave 计算得分 (如果 Cave 里的卡有分的话，通常洞穴卡只有 effect)
   // 胡兀鹫是根据洞穴数量得分，已经在 CAVE_COUNT 处理了。
@@ -32,7 +123,11 @@ function calculateTotalScore(playerState, openId, allPlayerStates) {
   // 通常洞穴里的卡不产生分数，除非被 specific rules (如胡兀鹫) 引用。
   // 胡兀鹫本身是在 Forest 里的。
 
-  return { total, breakdown };
+  const result = { total, breakdown };
+  if (currentHash) {
+    scoreCache.set(cacheKey, { hash: currentHash, result });
+  }
+  return result;
 }
 
 /**
@@ -93,55 +188,21 @@ function getCardCountValue(card, targetTag) {
   return value;
 }
 
-function calculateCardScore(card, context, allPlayerStates, myOpenId) {
+function calculateCardScore(card, context, allPlayerStates, myOpenId, stats) {
   if (!card.scoreConfig) return 0;
 
   const config = card.scoreConfig;
   let score = 0;
 
-  // 获取当前场上所有卡牌以便统计
-  const allCards = getAllCardsFromContext(context);
+  // 确保 stats 存在 (降级处理)
+  const currentStats = stats || precalculateStats(context);
+  const { tagCounts, colorCounts, nameCounts } = currentStats;
 
   switch (config.type) {
     // 统计拥有指定 Tag 的卡牌数量
     case SCORING_TYPES.PER_TAG:
-      let count = 0;
-      allCards.forEach(c => {
-        // 检查基础 Tag
-        if (c.tags && c.tags.includes(config.tag)) {
-          let val = 1;
-          // 处理 TREE_MULTIPLIER (紫木蜂逻辑: 检查此卡是否有紫木蜂附件)
-          // 这是一个反向检查: 对于每张树卡，检查它身上是否有紫木蜂。
-          if (config.tag === TAGS.TREE && context.forest) {
-            // 如果 c 是树 (center)，检查它的 slots
-            // 需要能访问 slots。allCards 已经是扁平化的了，丢失了结构关系。
-            // 这是一个问题。allCards 只是 card 对象列表。
-            // 我们需要 context.forest 的结构来检查 attachment。
-
-            // 解决方案: 在遍历 forest group 时统计。
-            // 但这里我们用的是 allCards。
-            // 妥协: 假设 allCards 里的 card 对象保留了引用? 或者我们在 getAllCards 没保留 group 信息。
-
-            // 既然如此，我们改用遍历 context.forest 来进行 PER_TAG(TREE) 的统计会更准确。
-            // 但为了兼容通用逻辑，我们可以在 card 对象上挂载一个临时属性? 不太好。
-
-            // 让我们尝试在 allCards 遍历中，如果是 TREE，去 context.forest 找对应的 group。
-            const cId = c.uid || c.cardId || c.id;
-            if (cId) {
-              const group = context.forest.find(g => g.center && (g.center.uid === cId || g.center.cardId === cId || g.center.id === cId));
-              if (group && group.slots) {
-                // 检查 slots 里是否有紫木蜂 (或其他 TREE_MULTIPLIER)
-                const hasMultiplier = Object.values(group.slots).some(s =>
-                  s && s.effectConfig && s.effectConfig.type === 'TREE_MULTIPLIER'
-                );
-                if (hasMultiplier) val = 2;
-              }
-            }
-          }
-          count += val;
-        }
-      });
-      score = count * (config.value || 0);
+      // 直接查表 (注意: TREE_MULTIPLIER 已经被 precalculateStats 处理在 tagCounts['树'] 里了)
+      score = (tagCounts[config.tag] || 0) * (config.value || 0);
       break;
 
     // 统计带有指定 Tag 的卡牌中，有多少种不同的物种 (基于有效名称去重)
@@ -208,39 +269,36 @@ function calculateCardScore(card, context, allPlayerStates, myOpenId) {
 
     // 根据数量阶梯计分 (如: 萤火虫/欧洲七叶树)
     case SCORING_TYPES.SCALE_BY_COUNT:
-      // 首先需要统计符合条件的目标数量（通常是自身）
-      let targetCount = 0;
-      const targetName = config.target || card.name; // 默认为统计自身
-      allCards.forEach(c => {
-        if (c.name === targetName) {
-          targetCount++;
-        }
-      });
+      // 首先统计符合条件的目标数量（通常是自身）
+      const targetName = config.target || card.name;
 
-      // config.scale 应该是一个数组或对象 {1: 0, 2: 5, ...}
-      // 假设是数组 [0, 2, 5, 10] 表示 1个得0分, 2个得2分...
-      // 或者对象 { "1": 0, "2": 2 }
-      // 根据 speciesData.js 里的配置格式来定。
-      // 欧洲七叶树 points: "根据你拥有的欧洲七叶树数量获得分数"
-      // 需要查看具体配置结构。
-      // 暂时假设 config.scale 是个函数或者映射表
-      if (config.scale) {
-        // 简单的映射表逻辑
-        // 如果是数组，使用 index-1? 还是直接匹配?
-        // BGA 风格通常是 table: [0, 1, 4, 9, 16] (平方?)
-        // 这里先做通用处理，假设 scale 是对象 key 为 count
-        if (config.scale[targetCount] !== undefined) {
-          score = config.scale[targetCount];
-        } else {
-          // 找最大的 key <= targetCount
-          const keys = Object.keys(config.scale).map(Number).sort((a, b) => a - b);
-          let bestKey = 0;
-          for (let k of keys) {
-            if (k <= targetCount) bestKey = k;
-            else break;
+      // 收集所有同名卡以便去重计分
+      const matchingCards = allCards.filter(c => c.name === targetName);
+      const targetCount = matchingCards.length;
+
+      // 避免重复计分：只有 UID 最小（或排序第一）的那张卡获得分数
+      // 确保 matchingCards 排序稳定
+      matchingCards.sort((a, b) => (a.uid > b.uid ? 1 : -1));
+
+      if (matchingCards.length > 0 && card.uid === matchingCards[0].uid) {
+        // 我是第一张，我负责拿分
+        if (config.scale) {
+          if (config.scale[targetCount] !== undefined) {
+            score = config.scale[targetCount];
+          } else {
+            // 找最大的 key <= targetCount
+            const keys = Object.keys(config.scale).map(Number).sort((a, b) => a - b);
+            let bestKey = 0;
+            for (let k of keys) {
+              if (k <= targetCount) bestKey = k;
+              else break;
+            }
+            score = config.scale[bestKey] || 0;
           }
-          score = config.scale[bestKey] || 0;
         }
+      } else {
+        // 其他同名卡不得分（或显示0分）
+        score = 0;
       }
       break;
 
@@ -387,36 +445,55 @@ function calculateCardScore(card, context, allPlayerStates, myOpenId) {
 
     // 匹配树木上的Tag (如: 西方狍)
     // 假设逻辑: 卡牌自身若匹配其所在的树，则得分
+    // 匹配树木上的Tag (如: 西方狍 - 统计全森林中所有匹配树木符号的卡牌)
+    // 匹配树木上的Tag (如: 西方狍 - 统计全森林中所有与本卡牌此面颜色/树木符号相同的卡牌，包括树木本身)
+    // 匹配树木上的Tag (如: 西方狍 - 统计全森林中所有与本卡牌此面颜色/树木符号相同的卡牌，包括树木本身)
     case SCORING_TYPES.PER_TAG_ON_MATCHING:
-      let myParent = null;
-      if (context.forest) {
-        for (const group of context.forest) {
-          if (group.slots) {
-            const slots = Object.values(group.slots);
-            if (slots.some(s => s && (s.uid === card.uid || (s.stackedCards && s.stackedCards.some(sc => sc.uid === card.uid))))) {
-              myParent = group.center;
-              break;
-            }
-          }
+      let matchCount = 0;
+      const mySymbols = card.tree_symbol || [];
+      if (mySymbols.length > 0) {
+        // 直接查表累加
+        mySymbols.forEach(s => {
+          matchCount += (colorCounts[s] || 0);
+        });
+
+        // [Debug] 排查西方狍
+        if (card.name && card.name.includes('西方狍')) {
+          console.warn(`[Roe Deer Debug] Player:${nickName || openId}, ID:${card.id || card.uid}, Symbols:${JSON.stringify(mySymbols)}, ColorCounts:`, colorCounts, `Match:${matchCount}`);
         }
       }
+      // 注意：如果是同一张卡有多个匹配符号（非常少见），这里会叠加。
+      // 对于西方狍，mySymbols通常只有1个，所以就是 counts[color]。
 
-      if (myParent && card.tree_symbol && card.tree_symbol.includes(myParent.name)) {
-        score = config.value || 0;
-      }
+      score = matchCount * (config.value || 0);
       break;
 
-    // 数量比别人多 (如: 椴树 - 树木最多得3分)
+    // 数量比别人多 (如: 椴树 - 树木最多得3分 / 椴树本身数量最多)
     case SCORING_TYPES.MAJORITY:
-      if (allPlayerStates && myOpenId) {
-        // 统计自己的目标数量
-        const targetTag = config.tag || TAGS.TREE;
-        const myCount = getCountByTag(context, targetTag);
+      if (allPlayerStates) {
+        let myCount = 0;
+        // 尝试使用预统计数据
+        if (config.target && nameCounts[config.target] !== undefined) {
+          myCount = nameCounts[config.target];
+        } else if (config.tag && tagCounts && tagCounts[config.tag || TAGS.TREE] !== undefined) {
+          myCount = tagCounts[config.tag || TAGS.TREE];
+        } else {
+          // Fallback
+          if (config.target) myCount = getCountByName(context, config.target);
+          else myCount = getCountByTag(context, config.tag || TAGS.TREE);
+        }
 
         let isMajor = true;
         Object.entries(allPlayerStates).forEach(([otherId, otherState]) => {
           if (otherId !== myOpenId) {
-            const otherCount = getCountByTag(otherState, targetTag);
+            let otherCount = 0;
+            if (config.target) {
+              otherCount = getCountByName(otherState, config.target);
+            } else {
+              const targetTag = config.tag || TAGS.TREE;
+              otherCount = getCountByTag(otherState, targetTag);
+            }
+
             if (otherCount > myCount) {
               isMajor = false;
             }
@@ -467,9 +544,98 @@ function getCountByTag(paramContext, tag) {
   return count;
 }
 
+// 辅助: 统计某 Name 的数量
+function getCountByName(paramContext, name) {
+  let count = 0;
+  if (paramContext.forest) {
+    paramContext.forest.forEach(g => {
+      if (g.center && (g.center.name === name)) {
+        count++;
+      }
+      if (g.slots) {
+        Object.values(g.slots).forEach(s => {
+          if (s) {
+            if (s.name === name) count++;
+            if (s.stackedCards) {
+              s.stackedCards.forEach(sc => {
+                if (sc.name === name) count++;
+              });
+            }
+          }
+        });
+      }
+    });
+  }
+  return count;
+}
 
+
+
+
+/**
+ * 统一预统计：Tags, Colors(TreeSymbols), Names
+ * 返回 { tagCounts, colorCounts, nameCounts }
+ */
+function precalculateStats(context) {
+  const tagCounts = {};
+  const colorCounts = {};
+  const nameCounts = {};
+
+  if (!context.forest) return { tagCounts, colorCounts, nameCounts };
+
+  const processCard = (card) => {
+    if (!card) return;
+
+    // 1. Count Tags
+    if (card.tags && Array.isArray(card.tags)) {
+      card.tags.forEach(t => {
+        let val = 1;
+        // 特殊处理 Tree Multiplier (仅当统计 Tree Tag 时生效，这里简单全量统计? 
+        // 只有当查询 TAGS.TREE 时才应该算2。为了通用性，我们可以在这里通过特殊key或者逻辑处理?)
+        // 为了保持 TagCounts 纯净，这里只存物理数量。Multiplier 逻辑最好在 Specific Lookup 时处理?
+        // 但用户要求"统一统计"。
+        // 让我们硬编码：如果是 Tree 标签，且有 Multiplier，则该卡对 "树" 贡献 +1 (总共2)。
+        // 为了方便，我们在 tagCounts 中直接加
+
+        tagCounts[t] = (tagCounts[t] || 0) + 1;
+
+        // 如果是 Tree 且有 Multiplier，额外加一次 Tree 计数
+        if (t === TAGS.TREE && card.effectConfig && card.effectConfig.type === 'TREE_MULTIPLIER') {
+          tagCounts[t] = (tagCounts[t] || 0) + 1;
+        }
+      });
+    }
+
+    // 2. Count Colors (Tree Symbols)
+    if (card.tree_symbol && Array.isArray(card.tree_symbol)) {
+      card.tree_symbol.forEach(s => {
+        colorCounts[s] = (colorCounts[s] || 0) + 1;
+      });
+    }
+
+    // 3. Count Names
+    if (card.name) {
+      nameCounts[card.name] = (nameCounts[card.name] || 0) + 1;
+    }
+  };
+
+  context.forest.forEach(group => {
+    if (group.center) processCard(group.center);
+    if (group.slots) {
+      Object.values(group.slots).forEach(s => {
+        if (s) {
+          processCard(s);
+          if (s.stackedCards) s.stackedCards.forEach(processCard);
+        }
+      });
+    }
+  });
+
+  return { tagCounts, colorCounts, nameCounts };
+}
 
 module.exports = {
   calculateTotalScore,
   calculateCardScore
 };
+

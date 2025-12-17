@@ -621,6 +621,10 @@ const SPECIES_DATA = {
       count: 1
     },
     points: "每张带有匹配树木符号的牌得3分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG_ON_MATCHING,
+      value: 3
+    },
   },
 
   [SPECIES_NAMES.SQUEAKER]: {
@@ -683,6 +687,12 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "获得1分，若没有其他森林的椴树数量比你多，则改为获得3分",
+    scoreConfig: {
+      type: SCORING_TYPES.MAJORITY,
+      target: SPECIES_NAMES.LINDEN,
+      value: 3,
+      valueOnFail: 1
+    },
   },
 
   [SPECIES_NAMES.OAK]: {
@@ -787,6 +797,13 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "根据你拥有的欧洲七叶树数量获得分数",
+    scoreConfig: {
+      type: SCORING_TYPES.SCALE_BY_COUNT,
+      target: SPECIES_NAMES.HORSE_CHESTNUT,
+      scale: {
+        1: 1, 2: 4, 3: 9, 4: 16, 5: 25, 6: 36, 7: 49, 8: 49, 9: 49, 10: 49, 11: 49
+      }
+    },
   },
 
   [SPECIES_NAMES.HYPSUGO_SAVII]: {

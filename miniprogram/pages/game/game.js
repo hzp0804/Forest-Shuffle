@@ -79,7 +79,7 @@ Page({
     this.queryGameData(this.data.roomId);
     this.pollingTimer = setInterval(() => {
       this.queryGameData(this.data.roomId);
-    }, 2000);
+    }, 1000);
   },
 
   stopPolling() {
@@ -150,41 +150,10 @@ Page({
       processedData.lastActivePlayer = currentActive || '';
       processedData.lastTurnCount = currentTurnCount;
 
-      // --- 2. 日志弹窗 (Game Log Popup) ---
+      // --- 2. 日志弹窗 (Removed) ---
+      // We still update the index to avoid processing old logs if we were to re-enable it features
       const logs = serverData.gameState?.logs || [];
-      const lastIndex = this.data.lastLogIndex || 0;
-
-      if (logs.length > lastIndex) {
-        const newLogs = logs.slice(lastIndex);
-
-        // 过滤掉自己操作的日志，只显示别人的
-        const othersLogs = newLogs.filter(
-          (log) => log.operator !== this.data.openId
-        );
-
-        if (othersLogs.length > 0) {
-          // 拼接显示
-          const content = othersLogs
-            .map((log) => {
-              // 尝试根据 openId 找昵称
-              const user = (serverData.players || []).find(
-                (p) => p.openId === log.operator
-              );
-              const nick = user ? user.nickName : "对手";
-              return `${nick}: ${log.action}`;
-            })
-            .join("\n");
-
-          wx.showModal({
-            title: "游戏记录",
-            content: content,
-            showCancel: false,
-            confirmText: "知道了",
-          });
-        }
-        // 更新索引
-        processedData.lastLogIndex = logs.length;
-      }
+      processedData.lastLogIndex = logs.length;
 
       this.setData(processedData);
     } catch (e) {
@@ -208,16 +177,25 @@ Page({
     if (updates) this.setData(updates);
   },
 
-  onHandLongPress(e) {
-    const uid = e.currentTarget.dataset.uid;
-    const { playerStates, openId } = this.data;
-    const myHand = playerStates[openId]?.hand || [];
-    const card = myHand.find((c) => c.uid === uid);
+  onShowDetail(e) {
+    const { uid, idx, type, cardid } = e.currentTarget.dataset;
+    const { playerStates, openId, clearing } = this.data;
+    let cardIdToShow = null;
 
-    if (card && card.id) {
-      this.setData({
-        detailCardId: card.id,
-      });
+    if (type === 'clearing' && idx !== undefined) {
+      const card = clearing[idx];
+      if (card) cardIdToShow = card.id;
+    } else if (type === 'hand' && uid) {
+      const myHand = playerStates[openId]?.hand || [];
+      const card = myHand.find((c) => c.uid === uid);
+      if (card) cardIdToShow = card.id;
+    } else if (cardid) {
+      // Direct card ID passed (e.g. from forest)
+      cardIdToShow = cardid;
+    }
+
+    if (cardIdToShow) {
+      this.setData({ detailCardId: cardIdToShow });
     }
   },
 
@@ -751,13 +729,7 @@ Page({
     this.submitGameUpdate(updates, null, "由空地打出树苗");
   },
 
-  // 11. 日志显示
-  onShowLogs() {
-    this.setData({ showLogModal: true });
-  },
-  onCloseLogs() {
-    this.setData({ showLogModal: false });
-  },
+
 
   // 12. 展示当前 Buff
   onShowBuffs() {

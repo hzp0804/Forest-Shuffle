@@ -11,6 +11,40 @@ const enrichCard = (card) => {
   return { ...info, ...card, id };
 };
 
+const enrichCardWithSpecies = (card, side) => {
+  if (!card) return null;
+  const enriched = enrichCard(card);
+  if (!enriched.speciesDetails || enriched.speciesDetails.length === 0) return enriched;
+
+  let index = 0;
+  if (enriched.type === CARD_TYPES.H_CARD) {
+    if (side === 'right') index = 1;
+  } else if (enriched.type === CARD_TYPES.V_CARD) {
+    if (side === 'bottom') index = 1;
+  }
+  // For Tree, it's usually 0. If there are multiple species for tree, 
+  // currently we default to 0 for 'center'.
+
+  const speciesData = enriched.speciesDetails[index];
+
+  // Update tree_symbol to be specific for this side
+  let specificTreeSymbol = enriched.tree_symbol;
+  if (Array.isArray(enriched.tree_symbol) && enriched.tree_symbol.length > index) {
+    specificTreeSymbol = [enriched.tree_symbol[index]];
+  } else if (!Array.isArray(enriched.tree_symbol)) {
+    // Fallback or if it's already a single value (shouldn't happen with current data structure but for safety)
+    specificTreeSymbol = [enriched.tree_symbol];
+  }
+
+  // Merge species data if available
+  // We prioritize card's own id/uid but overwrite name/tags/cost etc from species
+  if (speciesData) {
+    return { ...enriched, ...speciesData, tree_symbol: specificTreeSymbol, id: enriched.id, uid: enriched.uid };
+  }
+  // Even if no species data (shouldn't happen for valid cards), we return enriched with specific tree symbol
+  return { ...enriched, tree_symbol: specificTreeSymbol };
+};
+
 const enrichHand = (hand, myOpenId, currentOpenId, selectedUids = new Set()) => {
   if (!Array.isArray(hand)) return [];
   return hand.map((card) => ({
@@ -31,12 +65,13 @@ const enrichForest = (forest) => {
     }
     return {
       _id: node._id,
-      center: enrichCard(node.center),
+      _id: node._id,
+      center: enrichCardWithSpecies(node.center, 'center'),
       slots: {
-        top: enrichCard(node.slots?.top),
-        bottom: enrichCard(node.slots?.bottom),
-        left: enrichCard(node.slots?.left),
-        right: enrichCard(node.slots?.right),
+        top: enrichCardWithSpecies(node.slots?.top, 'top'),
+        bottom: enrichCardWithSpecies(node.slots?.bottom, 'bottom'),
+        left: enrichCardWithSpecies(node.slots?.left, 'left'),
+        right: enrichCardWithSpecies(node.slots?.right, 'right'),
       },
     };
   });
@@ -63,10 +98,19 @@ const toggleHandSelection = (hand, uid, currentPrimary) => {
 };
 
 const computeInstruction = (data) => {
-  const { openId, primarySelection, playerStates, selectedSlot } = data;
+  const { openId, primarySelection, playerStates, selectedSlot, turnAction } = data;
 
   if (!playerStates?.[openId]) {
     return { instructionState: "normal", instructionText: "加载中..." };
+  }
+
+  // 1. 优先检查回合状态 (是否处于摸牌阶段)
+  const drawnCount = turnAction?.drawnCount || 0;
+  if (drawnCount === 1) {
+    return {
+      instructionState: "warning", // 使用 warning 样式引起注意
+      instructionText: "请再摸一张牌",
+    };
   }
 
   const myHand = playerStates[openId].hand || [];
@@ -205,11 +249,15 @@ const processGameData = (res, currentData) => {
           selectedUids
         );
       }
+      // NEW: Enrich forest for everyone so score calculation works
+      if (playerState?.forest) {
+        playerState.forest = enrichForest(playerState.forest);
+      }
     });
   }
 
   const viewingPlayerState = playerStates?.[viewingId];
-  const displayForest = viewingPlayerState?.forest ? enrichForest(viewingPlayerState.forest) : [];
+  const displayForest = viewingPlayerState?.forest || [];
   const viewingPlayer = (res.data.players || []).find((p) => p && p.openId === viewingId);
 
   const users = res.data.players || [];
@@ -217,7 +265,7 @@ const processGameData = (res, currentData) => {
     .map((p) => {
       if (!p) return null;
       const pState = playerStates?.[p.openId];
-      const scoreData = calculateTotalScore(pState, p.openId, playerStates);
+      const scoreData = calculateTotalScore(pState, p.openId, playerStates, p.nickName);
       return {
         ...p,
         score: scoreData.total || 0,
@@ -260,6 +308,7 @@ const processGameData = (res, currentData) => {
     instructionText,
     logs,
     displayLogs,
+    turnAction: gameState.turnAction || { drawnCount: 0 },
   };
 };
 

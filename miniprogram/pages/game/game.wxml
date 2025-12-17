@@ -28,11 +28,8 @@
          <!-- 空地 (Re-styled as Hand-like) -->
          <!-- 空地 Header with Actions -->
          <view style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10rpx; padding-right: 10rpx;">
-            <view style="display:flex; align-items:center; gap: 10rpx;">
-               <view class="area-label" style="margin-bottom:0;">
-                  空地 ({{clearing.length || 0}}/10)
-               </view>
-               <view class="log-btn" bindtap="onShowLogs">📝记录</view>
+            <view class="area-label" style="margin-bottom:0; padding-right: 10rpx;">
+               空地 ({{clearing.length || 0}}/10)
             </view>
             <view class="action-bar-inline" wx:if="{{isMyTurn}}" style="display:flex; gap:12rpx;">
                <!-- 2. 拿取：从空地拿取一张牌 -->
@@ -99,39 +96,7 @@
                </block>
             </view>
          </scroll-view>
-         <!-- Logs Modal -->
-         <view class="summary-modal-mask" wx:if="{{showLogModal}}" bindtap="onCloseLogs">
-            <view class="summary-panel log-panel" catchtap="noop">
-               <view class="summary-header">
-                  <text class="summary-title">📜 操作记录</text>
-               </view>
-               <scroll-view scroll-y class="log-scroll" enable-flex>
-                  <block wx:if="{{displayLogs && displayLogs.length}}">
-                     <view class="log-item" wx:for="{{displayLogs}}" wx:key="index">
-                        <view class="log-row-main">
-                           <text class="log-time">{{item.time}}</text>
-                           <text class="log-text">{{item.text}}</text>
-                        </view>
-                        <!-- Log Cards -->
-                        <view class="log-cards-row" wx:if="{{item.cards && item.cards.length}}">
-                           <block wx:for="{{item.cards}}" wx:for-item="c" wx:key="uid">
-                              <view class="log-mini-card {{c.logType}}" catchtap="onShowLogDetail" data-card="{{c}}">
-                                 <block wx:if="{{c.img}}">
-                                    <view class="card-sprite-native {{c.cssClass}}" style="background-image: url('{{c.bgImg}}'); background-size: {{c.bgSize}}"></view>
-                                 </block>
-                                 <block wx:else>
-                                    <view class="log-fallback">{{c.name[0]}}</view>
-                                 </block>
-                              </view>
-                           </block>
-                        </view>
-                     </view>
-                     <!-- Reverse order display is better but logs are pushed. We can use flex-direction: column-reverse in CSS -->
-                  </block>
-                  <view wx:else class="log-empty">暂无记录</view>
-               </scroll-view>
-            </view>
-         </view>
+         <!-- Logs Modal Removed -->
          <!-- 操作按钮区 (Moved Here) -->
          <!-- 操作按钮区 (Placed immediately after Clearing) -->
          <!-- 玩家森林区域 -->
@@ -144,7 +109,7 @@
                <block wx:for="{{myForest}}" wx:key="_id">
                   <view class="tree-group {{targetTreeId === item._id ? 'target-active' : ''}}">
                      <!-- Center: Tree -->
-                     <view class="tree-center">
+                     <view class="tree-center" bindlongpress="onShowDetail" data-cardid="{{item.center.id}}">
                         <block wx:if="{{item.center.bgImg}}">
                            <view class="card-sprite-native {{item.center.cssClass}}" style="background-image: url('{{item.center.bgImg}}'); background-size: {{item.center.bgSize}}"></view>
                         </block>
@@ -154,25 +119,25 @@
                      </view>
                      <!-- Slots -->
                      <!-- Top -->
-                     <view class="slot-pos slot-top {{selectedSlot.treeId === item._id && selectedSlot.side === 'top' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="top">
+                     <view class="slot-pos slot-top {{selectedSlot.treeId === item._id && selectedSlot.side === 'top' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="top" data-cardid="{{item.slots.top.id}}">
                         <view class="slot-card {{!item.slots.top ? 'empty' : ''}}">
                            <view class="card-sprite-native slot-crop {{item.slots.top.cssClass}}" style="background-image: url('{{item.slots.top.bgImg}}'); background-size: {{item.slots.top.bgSize}}"></view>
                         </view>
                      </view>
                      <!-- Bottom -->
-                     <view class="slot-pos slot-bottom {{selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="bottom">
+                     <view class="slot-pos slot-bottom {{selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="bottom" data-cardid="{{item.slots.bottom.id}}">
                         <view class="slot-card {{!item.slots.bottom ? 'empty' : ''}}">
                            <view class="card-sprite-native slot-crop {{item.slots.bottom.cssClass}}" style="background-image: url('{{item.slots.bottom.bgImg}}'); background-size: {{item.slots.bottom.bgSize}}"></view>
                         </view>
                      </view>
                      <!-- Left -->
-                     <view class="slot-pos slot-left {{selectedSlot.treeId === item._id && selectedSlot.side === 'left' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="left">
+                     <view class="slot-pos slot-left {{selectedSlot.treeId === item._id && selectedSlot.side === 'left' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="left" data-cardid="{{item.slots.left.id}}">
                         <view class="slot-card h-crop {{!item.slots.left ? 'empty' : ''}}">
                            <view class="card-sprite-native slot-crop {{item.slots.left.cssClass}}" style="background-image: url('{{item.slots.left.bgImg}}'); background-size: {{item.slots.left.bgSize}}"></view>
                         </view>
                      </view>
                      <!-- Right -->
-                     <view class="slot-pos slot-right {{selectedSlot.treeId === item._id && selectedSlot.side === 'right' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" data-treeid="{{item._id}}" data-side="right">
+                     <view class="slot-pos slot-right {{selectedSlot.treeId === item._id && selectedSlot.side === 'right' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="right" data-cardid="{{item.slots.right.id}}">
                         <view class="slot-card h-crop {{!item.slots.right ? 'empty' : ''}}">
                            <view class="card-sprite-native slot-crop {{item.slots.right.cssClass}}" style="background-image: url('{{item.slots.right.bgImg}}'); background-size: {{item.slots.right.bgSize}}"></view>
                         </view>
@@ -249,7 +214,7 @@
          <scroll-view scroll-x class="hand-scroll" enable-flex>
             <view class="hand-grid">
                <block wx:for="{{playerStates[openId].hand}}" wx:key="uid">
-                  <view class="hand-card {{item.selected ? 'selected' : ''}} {{item.uid === primarySelection ? 'primary' : ''}}" bindtap="onHandTap" bindlongpress="onHandLongPress" data-uid="{{item.uid}}" data-type="hand">
+                  <view class="hand-card {{item.selected ? 'selected' : ''}} {{item.uid === primarySelection ? 'primary' : ''}}" bindtap="onHandTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
                      <view class="primary-flag" wx:if="{{item.uid === primarySelection}}">主牌</view>
                      <block wx:if="{{item.bgImg}}">
                         <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
