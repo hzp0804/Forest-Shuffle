@@ -29,13 +29,8 @@ const TAGS = {
   CLOVEN: "蹄足",
   SHRUB: "灌木",
   EDGE: "林缘",
-  // New tags from reading cardData.js (e.g., DEER)
-  DEER: "鹿", // Note: Found usage in cardData.js line 565 and 620: tags: ["Cloven-hoofed animal", "Deer"]
-  // Wait, line 565 says tags: ["Cloven-hoofed animal", "Deer"] literals.
-  // I should check if I should normalize these.
-  // Existing constants were: CLOVEN="蹄足".
-  // The literal "Cloven-hoofed animal" seems to be used instead of CLOVEN constant in some places?
-  // Let's stick to what was defined as constant first.
+  DEER: "鹿",
+  CLOVEN_HOOFED_ANIMAL: "蹄足动物",
 };
 
 // 基础树木名称

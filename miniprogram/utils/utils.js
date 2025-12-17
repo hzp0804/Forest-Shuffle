@@ -1,6 +1,6 @@
 const { getCardInfoById, getCardVisual, getSaplingVisual } = require("./getCardInfoById");
 const { getCardCost } = require("./cost");
-const { calculateScore } = require("./score");
+const { calculateTotalScore } = require("./score");
 const { CARD_TYPES } = require("../data/constants");
 const RewardUtils = require("./reward");
 
@@ -217,7 +217,7 @@ const processGameData = (res, currentData) => {
     .map((p) => {
       if (!p) return null;
       const pState = playerStates?.[p.openId];
-      const scoreData = calculateScore(pState);
+      const scoreData = calculateTotalScore(pState, p.openId);
       return {
         ...p,
         score: scoreData.total || 0,

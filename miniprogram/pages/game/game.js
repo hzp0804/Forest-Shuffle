@@ -28,7 +28,7 @@ Page({
     lastActivePlayer: "", // 上一个激活的玩家，用于判断轮次切换
     lastTurnCount: -1,
     lastNotifiedTurnCount: -1,
-    enableAnimation: true, // 动画开关
+    enableAnimation: false, // 动画开关
   },
 
   onLoad(options) {
@@ -186,6 +186,23 @@ Page({
     const uid = e.currentTarget.dataset.uid;
     const updates = Utils.handleHandTap(uid, this.data);
     if (updates) this.setData(updates);
+  },
+
+  onHandLongPress(e) {
+    const uid = e.currentTarget.dataset.uid;
+    const { playerStates, openId } = this.data;
+    const myHand = playerStates[openId]?.hand || [];
+    const card = myHand.find((c) => c.uid === uid);
+
+    if (card && card.id) {
+      this.setData({
+        detailCardId: card.id,
+      });
+    }
+  },
+
+  onCloseDetail() {
+    this.setData({ detailCardId: null });
   },
 
 
@@ -539,8 +556,6 @@ Page({
       return;
     }
 
-    wx.showLoading({ title: "摸牌中..." });
-
     const newDeck = [...deck];
     const newHand = [...(myState.hand || [])];
 
@@ -548,42 +563,36 @@ Page({
     const card = newDeck.shift();
     if (!card) return; // Should not happen if check passed
 
-    // --- 展示动画 ---
-    this.setData({ drawingCard: card });
+    // 直接执行实际入手牌逻辑和提交
+    newHand.push(card);
 
-    setTimeout(() => {
-      // 延时后执行实际入手牌逻辑和提交
-      newHand.push(card);
+    const newDrawnCount = currentDrawn + 1;
+    let nextPlayer = this.data.activePlayer;
+    let nextTurnAction = { drawnCount: newDrawnCount };
 
-      const newDrawnCount = currentDrawn + 1;
-      let nextPlayer = this.data.activePlayer;
-      let nextTurnAction = { drawnCount: newDrawnCount };
+    const updates = {
+      [`gameState.deck`]: newDeck,
+      [`gameState.playerStates.${openId}.hand`]: newHand,
+      [`gameState.turnAction`]: nextTurnAction,
+    };
 
-      const updates = {
-        [`gameState.deck`]: newDeck,
-        [`gameState.playerStates.${openId}.hand`]: newHand,
-        [`gameState.turnAction`]: nextTurnAction,
-      };
+    // 4. 判断回合结束
+    if (newDrawnCount >= 2) {
+      nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, false);
+      updates[`gameState.activePlayer`] = nextPlayer;
+      updates[`gameState.turnAction`] = { drawnCount: 0 };
+      updates[`gameState.turnCount`] = db.command.inc(1);
+      updates[`gameState.turnReason`] = "normal";
+    } else {
+      updates[`gameState.activePlayer`] = nextPlayer;
+    }
 
-      // 4. 判断回合结束
-      if (newDrawnCount >= 2) {
-        nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, false);
-        updates[`gameState.activePlayer`] = nextPlayer;
-        updates[`gameState.turnAction`] = { drawnCount: 0 };
-        updates[`gameState.turnCount`] = db.command.inc(1);
-        updates[`gameState.turnReason`] = "normal";
-      } else {
-        updates[`gameState.activePlayer`] = nextPlayer;
-      }
-
-      // 清除展示并提交
-      this.setData({ drawingCard: null });
-      this.submitGameUpdate(
-        updates,
-        null,
-        `摸了一张牌 (本回合第${newDrawnCount}张)`
-      );
-    }, 1000); // 展示1秒
+    // 提交
+    this.submitGameUpdate(
+      updates,
+      null,
+      `摸了一张牌 (本回合第${newDrawnCount}张)`
+    );
   },
 
   // 9. 确认拿取 (从空地)
@@ -603,14 +612,13 @@ Page({
       return;
     }
 
-    wx.showLoading({ title: "拿取中..." });
+
 
     const newClearing = [...clearing];
     const myState = playerStates[openId];
     const newHand = [...(myState.hand || [])];
 
     if (selectedClearingIdx >= newClearing.length) {
-      wx.hideLoading();
       return;
     }
 
@@ -618,24 +626,18 @@ Page({
     const [takenCard] = newClearing.splice(selectedClearingIdx, 1);
     if (!takenCard) return;
 
-    // --- 展示动画 ---
-    this.setData({ drawingCard: takenCard });
+    newHand.push(takenCard);
 
-    setTimeout(() => {
-      newHand.push(takenCard);
+    const updates = {
+      [`gameState.clearing`]: newClearing,
+      [`gameState.playerStates.${openId}.hand`]: newHand,
+      [`gameState.activePlayer`]: RoundUtils.getNextPlayer(openId, this.data.players, false),
+      [`gameState.turnAction`]: { drawnCount: 0 },
+      [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
+      [`gameState.turnReason`]: "normal",
+    };
 
-      const updates = {
-        [`gameState.clearing`]: newClearing,
-        [`gameState.playerStates.${openId}.hand`]: newHand,
-        [`gameState.activePlayer`]: RoundUtils.getNextPlayer(openId, this.data.players, false),
-        [`gameState.turnAction`]: { drawnCount: 0 },
-        [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
-        [`gameState.turnReason`]: "normal",
-      };
-
-      this.setData({ drawingCard: null });
-      this.submitGameUpdate(updates, null, "从空地拿了一张牌");
-    }, 1000);
+    this.submitGameUpdate(updates, null, "从空地拿了一张牌");
   },
 
   // 10. 打出树苗

@@ -35,7 +35,6 @@ Component({
         // Prepare tabs data from speciesDetails
         const tabs = [];
         const speciesList = info.speciesDetails || [];
-        // Note: original c.species is list of names, info.speciesDetails is list of objects.
 
         speciesList.forEach(meta => {
           if (meta && meta.name && meta.name !== "未知物种") {
@@ -49,14 +48,20 @@ Component({
               effect: meta.effect || "",
               points: meta.points || "",
             });
-          } else {
-            // Fallback if species detail is missing but name exists? 
-            // getCardInfoById fills "未知物种" if missing.
           }
         });
 
-        // If speciesDetails was empty or filtered out, maybe fallback logic?
-        // But getCardInfoById logic guarantees speciesDetails array corresponding to species keys.
+        // Fallback
+        if (tabs.length === 0 && info.name) {
+          tabs.push({
+            name: info.name,
+            tags: info.tags || [],
+            cost: info.cost,
+            bonus: info.bonus || "",
+            effect: info.effect || "",
+            points: info.points || "",
+          });
+        }
 
         this.setData({
           card: info,
