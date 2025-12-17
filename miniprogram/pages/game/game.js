@@ -1,6 +1,7 @@
 import Utils from "../../utils/utils";
 const RewardUtils = require("../../utils/reward.js");
 const RoundUtils = require("../../utils/round.js");
+const AnimationUtils = require("../../utils/animation.js");
 const app = getApp();
 const db = wx.cloud.database();
 
@@ -96,7 +97,16 @@ Page({
       if (isNewTurn) {
         if (currentActive === this.data.openId) {
           // 只有轮到自己才提示
-          wx.showToast({ title: "轮到你了！", icon: "none", duration: 2000 });
+          // 延迟提示，避免覆盖掉“操作成功”或“获得奖励”的 toast
+          setTimeout(() => {
+            const turnReason = serverData.gameState?.turnReason;
+            const tips = turnReason === 'extra' ? "额外回合！" : "轮到你了！";
+            // 再次检查是否仍是自己回合 (防止极速操作)
+            if (this.data.playerStates && this.data.playerStates[this.data.openId]) {
+              wx.showToast({ title: tips, icon: "none", duration: 2000 });
+            }
+          }, 1500);
+
           processedData.selectedPlayerOpenId = this.data.openId;
         }
       }
@@ -337,6 +347,10 @@ Page({
     const newHand = hand.filter((c) => !cardsToRemoveUid.has(c.uid));
 
     // 执行打出逻辑
+    // 准备动画数据
+    const popAnim = AnimationUtils.playToForest(this.data.enableAnimation);
+    const flyInAnim = AnimationUtils.playToClearing(this.data.enableAnimation);
+
     if (type === "Tree") {
       // 树木：新建一个 TreeGroup 放入森林
       // 结构参考 utils.js enrichForest
@@ -344,6 +358,7 @@ Page({
         _id: Math.random().toString(36).substr(2, 9), // 生成个临时ID，或者直接存对象，后端处理
         center: primaryCard,
         slots: { top: null, bottom: null, left: null, right: null },
+        animationData: popAnim, // 添加入场动画
       };
       forest.push(newTreeGroup);
     } else {
@@ -372,8 +387,9 @@ Page({
         return;
       }
 
-      // 放置卡牌
-      targetTree.slots[selectedSlot.side] = primaryCard;
+      // 放置卡牌，并添加动画
+      const cardWithAnim = { ...primaryCard, animationData: popAnim };
+      targetTree.slots[selectedSlot.side] = cardWithAnim;
       forest[targetTreeIndex] = targetTree;
     }
 
@@ -435,7 +451,8 @@ Page({
 
     // 支付牌进空地
     paymentCards.forEach((c) => {
-      const cleanCard = { ...c, selected: false };
+      // 支付牌飞入空地动画
+      const cleanCard = { ...c, selected: false, animationData: flyInAnim };
       newClearing.push(cleanCard);
     });
 
@@ -469,6 +486,7 @@ Page({
       [`gameState.activePlayer`]: nextPlayer,
       [`gameState.turnAction`]: nextTurnAction, // 使用动态计算的状态
       [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
+      [`gameState.turnReason`]: gainedExtraTurn ? "extra" : "normal", // 记录回合类型
     };
 
     // 成功后清除选中状态
@@ -512,34 +530,44 @@ Page({
 
     // 只摸一张
     const card = newDeck.shift();
-    if (card) newHand.push(card);
+    if (!card) return; // Should not happen if check passed
 
-    const newDrawnCount = currentDrawn + 1;
-    let nextPlayer = this.data.activePlayer; // 默认不下机
-    let nextTurnAction = { drawnCount: newDrawnCount }; // 更新计数
+    // --- 展示动画 ---
+    this.setData({ drawingCard: card });
 
-    const updates = {
-      [`gameState.deck`]: newDeck,
-      [`gameState.playerStates.${openId}.hand`]: newHand,
-      [`gameState.turnAction`]: nextTurnAction,
-      // 注意：摸第一张牌时不增加 turnCount，也不切回合
-    };
+    setTimeout(() => {
+      // 延时后执行实际入手牌逻辑和提交
+      newHand.push(card);
 
-    // 4. 判断回合结束
-    if (newDrawnCount >= 2) {
-      nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, false);
-      updates[`gameState.activePlayer`] = nextPlayer;
-      updates[`gameState.turnAction`] = { drawnCount: 0 };
-      updates[`gameState.turnCount`] = db.command.inc(1); // 回合结束，计数+1
-    } else {
-      updates[`gameState.activePlayer`] = nextPlayer; // 保持不变
-    }
+      const newDrawnCount = currentDrawn + 1;
+      let nextPlayer = this.data.activePlayer;
+      let nextTurnAction = { drawnCount: newDrawnCount };
 
-    this.submitGameUpdate(
-      updates,
-      null,
-      `摸了一张牌 (本回合第${newDrawnCount}张)`
-    );
+      const updates = {
+        [`gameState.deck`]: newDeck,
+        [`gameState.playerStates.${openId}.hand`]: newHand,
+        [`gameState.turnAction`]: nextTurnAction,
+      };
+
+      // 4. 判断回合结束
+      if (newDrawnCount >= 2) {
+        nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, false);
+        updates[`gameState.activePlayer`] = nextPlayer;
+        updates[`gameState.turnAction`] = { drawnCount: 0 };
+        updates[`gameState.turnCount`] = db.command.inc(1);
+        updates[`gameState.turnReason`] = "normal";
+      } else {
+        updates[`gameState.activePlayer`] = nextPlayer;
+      }
+
+      // 清除展示并提交
+      this.setData({ drawingCard: null });
+      this.submitGameUpdate(
+        updates,
+        null,
+        `摸了一张牌 (本回合第${newDrawnCount}张)`
+      );
+    }, 1000); // 展示1秒
   },
 
   // 9. 确认拿取 (从空地)
@@ -569,20 +597,29 @@ Page({
       wx.hideLoading();
       return;
     }
+
+    // 拿取卡片
     const [takenCard] = newClearing.splice(selectedClearingIdx, 1);
-    if (takenCard) {
+    if (!takenCard) return;
+
+    // --- 展示动画 ---
+    this.setData({ drawingCard: takenCard });
+
+    setTimeout(() => {
       newHand.push(takenCard);
-    }
 
-    const updates = {
-      [`gameState.clearing`]: newClearing,
-      [`gameState.playerStates.${openId}.hand`]: newHand,
-      [`gameState.activePlayer`]: RoundUtils.getNextPlayer(openId, this.data.players, false),
-      [`gameState.turnAction`]: { drawnCount: 0 },
-      [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
-    };
+      const updates = {
+        [`gameState.clearing`]: newClearing,
+        [`gameState.playerStates.${openId}.hand`]: newHand,
+        [`gameState.activePlayer`]: RoundUtils.getNextPlayer(openId, this.data.players, false),
+        [`gameState.turnAction`]: { drawnCount: 0 },
+        [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
+        [`gameState.turnReason`]: "normal",
+      };
 
-    this.submitGameUpdate(updates, null, "从空地拿了一张牌");
+      this.setData({ drawingCard: null });
+      this.submitGameUpdate(updates, null, "从空地拿了一张牌");
+    }, 1000);
   },
 
   // 10. 打出树苗
@@ -609,6 +646,7 @@ Page({
       [`gameState.activePlayer`]: RoundUtils.getNextPlayer(openId, this.data.players, false),
       [`gameState.turnAction`]: { drawnCount: 0 },
       [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
+      [`gameState.turnReason`]: "normal",
     };
 
     this.submitGameUpdate(updates, null, "由空地打出树苗");
@@ -620,6 +658,45 @@ Page({
   },
   onCloseLogs() {
     this.setData({ showLogModal: false });
+  },
+
+  // 12. 展示当前 Buff
+  onShowBuffs() {
+    const { playerStates, openId } = this.data;
+    const myState = playerStates[openId];
+    if (!myState || !myState.forest) return;
+
+    const buffList = [];
+
+    // 遍历森林寻找常驻效果
+    myState.forest.forEach((treeGroup) => {
+      // 检查中心树木
+      if (treeGroup.center && treeGroup.center.effect) {
+        if (treeGroup.center.effect.toLowerCase().includes("whenever")) {
+          buffList.push(`[${treeGroup.center.name}] ${treeGroup.center.effect}`);
+        }
+      }
+
+      // 检查槽位卡牌
+      if (treeGroup.slots) {
+        Object.values(treeGroup.slots).forEach((card) => {
+          if (card && card.effect && card.effect.toLowerCase().includes("whenever")) {
+            buffList.push(`[${card.name}] ${card.effect}`);
+          }
+        });
+      }
+    });
+
+    if (buffList.length === 0) {
+      wx.showToast({ title: "暂无生效中的被动效果", icon: "none" });
+    } else {
+      wx.showModal({
+        title: "生效中的效果 (Buff)",
+        content: buffList.join("\n\n"),
+        showCancel: false,
+        confirmText: "了解",
+      });
+    }
   },
 
   noop() { }, // 空函数用于阻止冒泡

@@ -458,6 +458,26 @@ const processGameData = (res, currentData) => {
   const activePlayerId = gameState.activePlayer || res.data.activePlayer;
   const isMyTurn = activePlayerId ? activePlayerId === myOpenId : true;
 
+  // --- Log Processing ---
+  const logs = gameState.logs || [];
+  const displayLogs = logs
+    .map((log) => {
+      // Find operator nick
+      const user = users.find((u) => u.openId === log.operator);
+      const nick = user ? user.nickName : "未知玩家";
+      // Format time HH:MM:SS
+      const date = new Date(log.timestamp);
+      const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+
+      return {
+        ...log,
+        nick,
+        time: timeStr,
+        text: `${nick}: ${log.action}`
+      };
+    })
+    .reverse(); // Newest first
+
   return {
     players: enrichedPlayers,
     deck: gameState.deck,
@@ -470,6 +490,9 @@ const processGameData = (res, currentData) => {
     isMyTurn, // 控制按钮显示
     instructionState, // 更新指引状态
     instructionText, // 更新指引文案
+    // Logs
+    logs, // Raw logs for game.js logic
+    displayLogs, // Processed logs for UI
   };
 };
 

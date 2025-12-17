@@ -136,8 +136,9 @@
          <!-- 操作按钮区 (Placed immediately after Clearing) -->
          <!-- 玩家森林区域 -->
          <view class="forest-area">
-            <view class="area-label">
-               {{viewingPlayerNick}}的森林 {{!isViewingSelf ? '(仅查看)' : ''}}
+            <view class="area-label" style="display:flex; justify-content:space-between; width:100%; padding-right:20rpx; box-sizing:border-box;">
+               <text>{{viewingPlayerNick}}的森林 {{!isViewingSelf ? '(仅查看)' : ''}}</text>
+               <view class="buff-btn" bindtap="onShowBuffs" wx:if="{{isViewingSelf}}">✨Buff</view>
             </view>
             <scroll-view class="forest-scroll" scroll-x enable-flex>
                <block wx:for="{{myForest}}" wx:key="_id">
@@ -183,6 +184,20 @@
                   <text>暂无树木</text>
                </view>
             </scroll-view>
+         </view>
+      </view>
+      <!-- 抽卡展示遮罩/悬浮层 -->
+      <view class="preview-overlay" wx:if="{{drawingCard}}">
+         <view class="preview-card-container">
+            <view class="preview-card">
+               <block wx:if="{{drawingCard.bgImg}}">
+                  <view class="card-sprite-native {{drawingCard.cssClass}}" style="background-image: url('{{drawingCard.bgImg}}'); background-size: {{drawingCard.bgSize}}"></view>
+               </block>
+               <block wx:else>
+                  <view class="fallback-card">{{drawingCard.name}}</view>
+               </block>
+            </view>
+            <view class="preview-tip">摸到了这张牌</view>
          </view>
       </view>
       <!-- Turn Summary Modal (Overlay) -->

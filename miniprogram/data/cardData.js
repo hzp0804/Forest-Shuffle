@@ -1,162 +1,1193 @@
-let $f = (data) => {
-  return {
-    type: data[0],
-    species: data[1],
-    tree_symbol: data[2],
-    deck: data[3],
-  };
-};
-
-const remoteBase =
-  "https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img";
-
-/*
- * Game Constants
- */
-
-const W_CARD = "wCard";
-const V_CARD = "vCard";
-const H_CARD = "hCard";
-const PURPLE_EMPEROR = "Purple Emperor";
-const LARGE_TORTOISESHELL = "Large Tortoiseshell";
-const GNAT = "Gnat";
-const BEECH = "Beech";
-const TREE = "Tree";
-const CHANTERELLE = "Chanterelle";
-const BULLFINCH = "Bullfinch";
-const PENNY_BUN = "Penny Bun";
-const CAMBERWELL_BEAUTY = "Camberwell Beauty";
-const TREE_FERNS = "Tree Ferns";
-const CHAFFINCH = "Chaffinch";
-const BIRCH = "Birch";
-const HEDGEHOG = "Hedgehog";
-const EUROPEAN_BADGER = "European Badger";
-const GOSHAWK = "Goshawk";
-const POND_TURTLE = "Pond Turtle";
-const RED_SQUIRREL = "Red Squirrel";
-const WOLF = "Wolf";
-const WILD_STRAWBERRIES = "Wild Strawberries";
-const OAK = "Oak";
-const BROWN_BEAR = "Brown Bear";
-const RED_DEER = "Red Deer";
-const GREAT_SPOTTED_WOODPECKER = "Great Spotted Woodpecker";
-const SQUEAKER = "Squeaker";
-const FIRE_SALAMANDER = "Fire Salamander";
-const FLY_AGARIC = "Fly Agaric";
-const TAWNY_OWL = "Tawny Owl";
-const GREATER_HORSESHOE_BAT = "Greater Horseshoe Bat";
-const FALLOW_DEER = "Fallow Deer";
-const BECHSTEIN = "Bechstein's bat";
-const RED_FOX = "Red Fox";
-const RACCOON = "Raccoon";
-const BEECH_MARTEN = "Beech Marten";
-const PEACOCK_BUTTERFLY = "Peacock Butterfly";
-const WILD_BOAR = "Wild Boar";
-const SILVER_FIR = "Silver Fir";
-const SYCAMORE = "Sycamore";
-const EUROPEAN_HARE = "European Hare";
-const TREE_FROG = "Tree Frog";
-const HORSE_CHESTNUT = "Horse Chestnut";
-const FIREFLIES = "Fireflies";
-const BLACKBERRIES = "Blackberries";
-const DOUGLAS_FIR = "Douglas Fir";
-const MOSS = "Moss";
-const EUROPEAN_FAT_DORMOUSE = "European Fat Dormouse";
-const MOLE = "Mole";
-const COMMON_TOAD = "Common Toad";
-const PARASOL_MUSHROOM = "Parasol Mushroom";
-const ROE_DEER = "Roe Deer";
-const STAG_BEETLE = "Stag Beetle";
-const LINDEN = "Linden";
-const EURASIAN_JAY = "Eurasian Jay";
-const BARBASTELLE_BAT = "Barbastelle Bat";
-const VIOLET_CARPENTER_BEE = "Violet Carpenter Bee";
-const LYNX = "Lynx";
-const WOOD_ANT = "Wood Ant";
-const CLOVEN = "Cloven-hoofed animal";
-
-//tags
-const BUTTERFLY = "Butterfly";
-const INSECT = "Insect";
-const MUSHROOM = "Mushroom";
-const BIRD = "Bird";
-const BAT = "Bat";
-const PAW = "Paw";
-const AMPHIBIAN = "Amphibian";
-const PLANT = "Plant";
-
-//Alpine Shuffle from here
-const MOUNTAIN = "Mountain";
-const VACCINIUM_MYRTILLUS = "Vaccinium Myrtillus";
-const ICHTHYOSAURA_ALPESTRIS = "Ichthyosaura Alpestris";
-const LARIX = "Larix";
-const CRATERELLUS_CORNUCOPIODES = "Craterellus Cornucopiodes";
-const LARIX_DECIDUA = "Larix Decidua";
-const AQUILA_CHRYSAETOS = "Aquila Chrysaetos";
-const PINUS_CEMBRA = "Pinus Cembra";
-const LEPUS_TIMIDUS = "Lepus Timidus";
-const RUPICAPRA_RUPICAPRA = "Rupicapra Rupicapra";
-const GENTIANA = "Gentiana";
-const TETRAO_UROGALLUS = "Tetrao Urogallus";
-const PARNASSIUS_PHOEBUS = "Parnassius Phoebus";
-const PINUS = "Pinus";
-const MARMOTA_MARMOTA = "Marmota Marmota";
-const CAPRA_IBEX = "Capra Ibex";
-const CORVUS_CORAX = "Corvus Corax";
-const GYPAETUS_BARBATUS = "Gypaetus Barbatus";
-const LEONTOPODIUM_NIVALE = "Leontopodium Nivale";
-const HYPSUGO_SAVII = "Hypsugo Savii";
-//edge
-const SQUEAKER_EDGE = "Squeaker Edge";
-const SAMBUCUS = "Sambucus";
-const COMMON_HAZEL = "Common Hazel";
-const BLACKTHORN = "Blackthorn";
-const WILD_BOAR_FEMALE_ = "Wild Boar (Female)";
-const BEEHIVE = "Beehive";
-const EUROPEAN_BISON = "European Bison";
-const EUROPEAN_WILDCAT = "European Wildcat";
-const COMMON_PIPISTRELLE = "Common Pipistrelle";
-const MOSQUITO = "Mosquito";
-const EUROPEAN_POLECAT = "European Polecat";
-const MAP_BUTTERFLY = "Map Butterfly";
-const HAZEL_DOORMOUSE = "Hazel Doormouse";
-const URTICA = "Urtica";
-const GREAT_GREEN_BUSH_CRICKET = "Great Green Bush-Cricket";
-const EUROPEAN_WATER_VOLE = "European Water Vole";
-const EURASIAN_MAGPIE = "Eurasian Magpie";
-const COMMON_NIGHTINGALE = "Common Nightingale";
-const BARN_OWL = "Barn Owl";
-const DIGITALIS = "Digitalis";
-const EDGE = "Woodland Edge";
-const SHRUB = "Shrub";
-
+// 卡包：基础版 / 阿尔卑斯扩展 / 林缘扩展
 const BASIC_DECK = "basic";
 const ALPINE_DECK = "alpine";
 const EDGE_DECK = "edge";
 
-const WITH_OTHERS = [
-  FIREFLIES,
-  HORSE_CHESTNUT,
-  FIRE_SALAMANDER,
-  CAMBERWELL_BEAUTY,
-  LARGE_TORTOISESHELL,
-  PEACOCK_BUTTERFLY,
-  PURPLE_EMPEROR,
-  PARNASSIUS_PHOEBUS,
-  "Silver-Washed Fritillary",
-];
-const SLOT_SCORE = [EUROPEAN_HARE, COMMON_TOAD];
+// 卡片类型
+const TREE = "tree" // 单卡（林缘扩展 / 林地边缘）
+const V_CARD = "vCard" // 垂直附属卡
+const H_CARD = "hCard" // 水平附属卡
+const W_CARD = "wCard" // 冬季卡
 
-const remoteMap = {
-  [TREE]: `${remoteBase}/trees.jpg`,
-  [H_CARD]: `${remoteBase}/hCards.jpg`,
-  [V_CARD]: `${remoteBase}/vCards.jpg`,
-  [W_CARD]: `${remoteBase}/woodlands.Jpg`,
-  [MOUNTAIN]: `${remoteBase}/mountain.jpg`,
+// 标签
+const BUTTERFLY = "蝴蝶"
+const INSECT = "昆虫"
+const MUSHROOM = "蘑菇"
+const BIRD = "鸟"
+const BAT = "蝙蝠"
+const PAW = "爪子"
+const AMPHIBIAN = "两栖动物"
+const PLANT = "植物"
+const MOUNTAIN = "高山"
+const LARIX = "落叶松属"
+const PINUS = "松属"
+const CLOVEN = "蹄足"
+const SHRUB = "灌木"
+const EDGE = "林缘"
+
+// 根据卡片类型获取雪碧图，根据卡片ID定位卡片
+const imgUrl = {
+  [TREE]: `https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img/trees.jpg`,
+  [H_CARD]: `https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img/hCards.jpg`,
+  [V_CARD]: `https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img/vCards.jpg`,
+  [W_CARD]: `https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img/woodlands.Jpg`,
+  [MOUNTAIN]: `https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img/mountain.jpg`,
 };
 
-// prettier-ignore
+
+// 基础树木
+const LINDEN = "椴树"
+const OAK = "橡树"
+const SILVER_FIR = "银杉"
+const BIRCH = "桦树"
+const BEECH = "山毛榉"
+const SYCAMORE = "梧桐"
+const DOUGLAS_FIR = "冷杉"
+const HORSE_CHESTNUT = "欧洲七叶树"
+// 基础生物
+const EUROPEAN_HARE = "欧洲野兔"
+const EUROPEAN_BADGER = "欧洲獾"
+const GREATER_HORSESHOE_BAT = "马铁菊头蝠"
+const RED_FOX = "赤狐"
+const RACCOON = "浣熊"
+const WILD_BOAR = "野猪"
+const BROWN_LONG_EARED_BAT = "褐大耳蝠"
+const ROE_DEER = "西方狍"
+const BARBASTELLE_BAT = "宽耳犬吻蝠"
+const BROWN_BEAR = "棕熊"
+const BEECH_MARTEN = "石貂"
+const RED_DEER = "马鹿"
+const LYNX = "猞猁"
+const GNAT = "蚊子"
+const VIOLET_CARPENTER_BEE = "紫木蜂"
+const FALLOW_DEER = "小鹿"
+const EUROPEAN_FAT_DORMOUSE = "欧洲睡鼠"
+const WOLF = "狼"
+const BECHSTEIN = "贝希斯坦蝙蝠"
+const SQUEAKER = "小野猪"
+const GOSHAWK = "苍鹰"
+const MOSS = "苔藓"
+const GREAT_SPOTTED_WOODPECKER = "大斑啄木鸟"
+const WOOD_ANT = "红褐林蚁"
+const CHAFFINCH = "苍头燕雀"
+const TAWNY_OWL = "灰林鸮"
+const STAG_BEETLE = "锹甲"
+const SILVER_WASHED_FRITILLARY = "绿豹蛱蝶"
+const FIRE_SALAMANDER = "火蝾螈"
+const PURPLE_EMPEROR = "紫闪蛱蝶"
+const POND_TURTLE = "泽龟"
+const CAMBERWELL_BEAUTY = "黄缘蛱蝶"
+const LARGE_TORTOISESHELL = "榆蛱蝶"
+const BULLFINCH = "红腹灰雀"
+const TREE_FROG = "树蛙"
+const COMMON_TOAD = "大蟾蜍"
+const EURASIAN_JAY = "松鸦"
+const TREE_FERNS = "树蕨"
+const WILD_STRAWBERRIES = "野草莓"
+const BLACKBERRIES = "黑莓"
+const FIREFLIES = "萤火虫"
+const HEDGEHOG = "刺猬"
+const PEACOCK_BUTTERFLY = "孔雀蛱蝶"
+const RED_SQUIRREL = "红松松鼠"
+const CHANTERELLE = "鸡油菌"
+const MOLE = "鼹鼠"
+const FLY_AGARIC = "毒蝇伞"
+const PENNY_BUN = "牛肝菌"
+const PARASOL_MUSHROOM = "高大环柄菇"
+
+// 树木（阿尔卑斯扩展）
+const LARIX_DECIDUA = "欧洲落叶松"
+const PINUS_CEMBRA = "瑞士石松"
+// 阿尔卑斯生物（阿尔卑斯扩展）
+const MARMOTA_MARMOTA = "阿尔卑斯旱獭"
+const RUPICAPRA_RUPICAPRA = "臆羚"
+const TETRAO_UROGALLUS = "松鸡"
+const LEPUS_TIMIDUS = "雪兔"
+const CAPRA_IBEX = "羱羊"
+const HYPSUGO_SAVII = "萨维伏翼"
+const PARNASSIUS_PHOEBUS = "小阿波罗绢蝶"
+const CRATERELLUS_CORNUCOPIODES = "灰号角菇"
+const LEONTOPODIUM_NIVALE = "高山火绒草"
+const VACCINIUM_MYRTILLUS = "黑果越橘"
+const ICHTHYOSAURA_ALPESTRIS = "高山欧叶螈"
+const AQUILA_CHRYSAETOS = "金雕"
+const GYPAETUS_BARBATUS = "胡兀鹫"
+const GENTIANA = "龙胆草"
+const CORVUS_CORAX = "渡鸦"
+
+// 灌木（林缘扩展）
+const SAMBUCUS = "接骨木"
+const COMMON_HAZEL = "欧榛"
+const BLACKTHORN = "黑刺李"
+// 林缘生物（林缘扩展）
+const MAP_BUTTERFLY = "盛蛱蝶"
+const DIGITALIS = "毛地黄"
+const URTICA = "荨麻"
+const GREAT_GREEN_BUSH_CRICKET = "绿丛螽"
+const EUROPEAN_WATER_VOLE = "水田鼠"
+const EURASIAN_MAGPIE = "欧亚喜鹊"
+const COMMON_NIGHTINGALE = "夜莺"
+const BARN_OWL = "仓鸮"
+const WILD_BOAR_FEMALE_ = "野猪（雌性）"
+const BEEHIVE = "蜂群"
+const EUROPEAN_BISON = "欧洲野牛"
+const EUROPEAN_WILDCAT = "欧洲野猫"
+const COMMON_PIPISTRELLE = "伏翼"
+const MOSQUITO = "大蚊"
+const EUROPEAN_POLECAT = "欧洲林鼬"
+// const SQUEAKER_EDGE = "小野猪" // 用SQUEAKER
+
+
+// const WITH_OTHERS = [
+//   FIREFLIES,
+//   HORSE_CHESTNUT,
+//   FIRE_SALAMANDER,
+//   CAMBERWELL_BEAUTY,
+//   LARGE_TORTOISESHELL,
+//   PEACOCK_BUTTERFLY,
+//   PURPLE_EMPEROR,
+//   PARNASSIUS_PHOEBUS,
+//   SILVER_WASHED_FRITILLARY,
+// ];
+// const SLOT_SCORE = [EUROPEAN_HARE, COMMON_TOAD];
+
+const SPECIES_DATA = {
+  BLACKBERRIES: {
+    name: "黑莓",
+    nb: 3,
+    tags: [PLANT],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每张带有植物符号的牌得2分",
+  },
+
+  BULLFINCH: {
+    name: "红腹灰雀",
+    nb: 4,
+    tags: [BIRD],
+    cost: 1,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每张带有昆虫符号的牌得2分",
+  },
+
+  CAMBERWELLBEAUTY: {
+    name: "黄缘蛱蝶",
+    nb: 4,
+    tags: [INSECT, BUTTERFLY],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每张不同的蝴蝶牌得1分",
+  },
+
+  CHAFFINCH: {
+    name: "苍头燕雀",
+    nb: 4,
+    tags: [BIRD],
+    cost: 1,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "若位于山毛榉上，获得5分",
+  },
+
+  CHANTERELLE: {
+    name: "鸡油菌",
+    nb: 2,
+    tags: [MUSHROOM],
+    cost: 2,
+    type: "vCard",
+    effect: "每当你打出一张带有树木符号的牌时，获得1张牌",
+    bonus: "",
+    points: "",
+  },
+
+  COMMONTOAD: {
+    name: "大蟾蜍",
+    nb: 6,
+    tags: [AMPHIBIAN],
+    cost: 0,
+    type: "vCard",
+    effect: "该槽位最多可容纳2只大蟾蜍",
+    bonus: "",
+    points: "若2只大蟾蜍共享此槽位，获得5分",
+  },
+
+  EURASIANJAY: {
+    name: "松鸦",
+    nb: 4,
+    tags: [BIRD],
+    cost: 1,
+    type: "vCard",
+    effect: "获得新的回合",
+    bonus: "",
+    points: "获得3分",
+  },
+
+  FIRESALAMANDER: {
+    name: "火蛾螈",
+    nb: 3,
+    tags: [AMPHIBIAN],
+    cost: 1,
+    type: "vCard",
+    effect: "",
+    bonus: "免费打出一张带有爪印符号的牌",
+    points: "根据你拥有的火蛾螈数量获得分数",
+  },
+
+  FIREFLIES: {
+    name: "萤火虫",
+    nb: 4,
+    tags: [INSECT],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "根据你拥有的萤火虫数量获得分数",
+  },
+
+  FLYAGARIC: {
+    name: "毒蝇伞",
+    nb: 2,
+    tags: [MUSHROOM],
+    cost: 2,
+    type: "vCard",
+    effect: "每当你打出一张带有爪印符号的牌时，获得1张牌",
+    bonus: "",
+    points: "",
+  },
+
+  GOSHAWK: {
+    name: "苍鹰",
+    nb: 4,
+    tags: [BIRD],
+    cost: 2,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每张带有鸟类符号的牌得3分",
+  },
+
+  GREATSPOTTEDWOODPECKER: {
+    name: "大斑啄木鸟",
+    nb: 4,
+    tags: [BIRD],
+    cost: 1,
+    type: "vCard",
+    effect: "获得1张牌",
+    bonus: "",
+    points: "若没有其他森林的树木数量比你多，获得10分",
+  },
+
+  HEDGEHOG: {
+    name: "刺猬",
+    nb: 3,
+    tags: [PAW],
+    cost: 1,
+    type: "vCard",
+    effect: "",
+    bonus: "获得1张牌",
+    points: "每张带有蝴蝶符号的牌得2分",
+  },
+
+  LARGETORTOISESHELL: {
+    name: "榆蛱蝶",
+    nb: 4,
+    tags: [INSECT, BUTTERFLY],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每张不同的蝴蝶牌得1分",
+  },
+
+  MOLE: {
+    name: "鼹鼠",
+    nb: 2,
+    tags: [PAW],
+    cost: 2,
+    type: "vCard",
+    effect: "立即支付费用打出任意数量的牌",
+    bonus: "",
+    points: "",
+  },
+
+  MOSS: {
+    name: "苔藓",
+    nb: 3,
+    tags: [PLANT],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "如果你至少拥有10棵树，获得10分",
+  },
+
+  PARASOLMUSHROOM: {
+    name: "高大环柄菇",
+    nb: 2,
+    tags: [MUSHROOM],
+    cost: 2,
+    type: "vCard",
+    effect: "每当你打出一张位于树木下方的牌时，获得1张牌",
+    bonus: "",
+    points: "",
+  },
+
+  PEACOCKBUTTERFLY: {
+    name: "孔雀蛱蝶",
+    nb: 4,
+    tags: [INSECT, BUTTERFLY],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每张不同的蝴蝶牌得1分",
+  },
+
+  PENNYBUN: {
+    name: "牛肝菌",
+    nb: 2,
+    tags: [MUSHROOM],
+    cost: 2,
+    type: "vCard",
+    effect: "每当你往树木顶端打一张牌将会奖励一张牌（仅树木，灌木不算）",
+    bonus: "",
+    points: "",
+  },
+
+  PONDTURTLE: {
+    name: "泽龟",
+    nb: 2,
+    tags: [AMPHIBIAN],
+    cost: 2,
+    type: "vCard",
+    effect: "获得1张牌",
+    bonus: "",
+    points: "获得5分",
+  },
+
+  PURPLEEMPEROR: {
+    name: "紫闪蛱蝶",
+    nb: 4,
+    tags: [INSECT, BUTTERFLY],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每张不同的蝴蝶牌得1分",
+  },
+
+  REDSQUIRREL: {
+    name: "红松鼠",
+    nb: 4,
+    tags: [PAW],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "若位于橡树上，获得5分",
+  },
+
+  SILVERWASHEDFRITILLARY: {
+    name: "绿豹蛱蝶",
+    nb: 4,
+    tags: [INSECT, BUTTERFLY],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每张不同的蝴蝶牌得1分",
+  },
+
+  STAGBEETLE: {
+    name: "锹甲",
+    nb: 2,
+    tags: [INSECT],
+    cost: 2,
+    type: "vCard",
+    effect: "",
+    bonus: "免费打出一张带有鸟符号的牌",
+    points: "每张带有爪印符号的牌得1分",
+  },
+
+  TAWNYOWL: {
+    name: "灰林鸮",
+    nb: 4,
+    tags: [BIRD],
+    cost: 2,
+    type: "vCard",
+    effect: "获得1张牌",
+    bonus: "获得2张牌",
+    points: "获得5分",
+  },
+
+  TREEFERNS: {
+    name: "树蕨",
+    nb: 3,
+    tags: [PLANT],
+    cost: 1,
+    type: "vCard",
+    effect: "获得1张牌",
+    bonus: "",
+    points: "每张带有两栖动物符号的牌得6分",
+  },
+
+  TREEFROG: {
+    name: "树蛙",
+    nb: 3,
+    tags: [AMPHIBIAN],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每有一只蚊子获得5分",
+  },
+
+  WILDSTRAWBERRIES: {
+    name: "野草莓",
+    nb: 3,
+    tags: [PLANT],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "如果你集齐所有8种不同的树木，获得10分",
+  },
+
+  WOODANT: {
+    name: "红褐林蚁",
+    nb: 3,
+    tags: [INSECT],
+    cost: 1,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每张树下的牌得2分",
+  },
+
+  BARBASTELLEBAT: {
+    name: "宽耳犬吻蝠",
+    nb: 3,
+    tags: [BAT],
+    cost: 1,
+    type: "hCard",
+    effect: "",
+    bonus: "",
+    points: "如果你有至少3种不同的蝙蝠，获得5分",
+  },
+
+  BECHSTEINSBAT: {
+    name: "贝希斯坦蝙蝠",
+    nb: 3,
+    tags: [BAT],
+    cost: 1,
+    type: "hCard",
+    effect: "",
+    bonus: "",
+    points: "如果你有至少3种不同的蝙蝠，获得5分",
+  },
+
+  BEECHMARTEN: {
+    name: "石貂",
+    nb: 5,
+    tags: [PAW],
+    cost: 1,
+    type: "hCard",
+    effect: "获得1张牌",
+    bonus: "",
+    points: "每棵完全被占据的树木得5分",
+  },
+
+  BROWNBEAR: {
+    name: "棕熊",
+    nb: 3,
+    tags: [PAW],
+    cost: 3,
+    type: "hCard",
+    effect: "将空地上的所有卡牌放入你的洞穴",
+    bonus: "获得1张牌并获得新的回合",
+    points: "",
+  },
+
+  BROWNLONGEAREDBAT: {
+    name: "褐大耳蝠",
+    nb: 3,
+    tags: [BAT],
+    cost: 1,
+    type: "hCard",
+    effect: "",
+    bonus: "",
+    points: "如果你有至少3种不同的蝙蝠，获得5分",
+  },
+
+  EUROPEANBADGER: {
+    name: "欧洲獾",
+    nb: 4,
+    tags: [PAW],
+    cost: 1,
+    type: "hCard",
+    effect: "",
+    bonus: "免费打出一张带有爪印符号的牌",
+    points: "获得2分",
+  },
+
+  EUROPEANFATDORMOUSE: {
+    name: "欧洲睡鼠",
+    nb: 4,
+    tags: [PAW],
+    cost: 1,
+    type: "hCard",
+    effect: "",
+    bonus: "",
+    points: "如果该树上也有一只蝙蝠，获得15分",
+  },
+
+  EUROPEANHARE: {
+    name: "欧洲野兔",
+    nb: 11,
+    tags: [PAW],
+    cost: 0,
+    type: "hCard",
+    effect: "该槽位可以容纳任意数量的欧洲野兔",
+    bonus: "",
+    points: "每有一只欧洲野兔获得1分",
+  },
+
+  FALLOWDEER: {
+    name: "小鹿",
+    nb: 4,
+    tags: ["Cloven-hoofed animal", "Deer"],
+    cost: 2,
+    type: "hCard",
+    effect: "",
+    bonus: "获得2张牌",
+    points: "每张带有偶蹄动物符号的牌得3分",
+  },
+
+  GNAT: {
+    name: "蚊子",
+    nb: 3,
+    tags: [INSECT],
+    cost: 0,
+    type: "hCard",
+    effect: "免费打出任意数量的蝙蝠牌",
+    bonus: "",
+    points: "每张带有蝙蝠符号的牌得1分",
+  },
+
+  GREATERHORSESHOEBAT: {
+    name: "马铁菊头蝠",
+    nb: 3,
+    tags: [BAT],
+    cost: 1,
+    type: "hCard",
+    effect: "",
+    bonus: "",
+    points: "如果你有至少3种不同的蝙蝠，获得5分",
+  },
+
+  LYNX: {
+    name: "猞猁",
+    nb: 6,
+    tags: [PAW],
+    cost: 1,
+    type: "hCard",
+    effect: "",
+    bonus: "",
+    points: "如果你至少有1只西方狍，获得10分",
+  },
+
+  RACCOON: {
+    name: "浣熊",
+    nb: 4,
+    tags: [PAW],
+    cost: 1,
+    type: "hCard",
+    effect: "将手牌中任意数量的卡牌放入你的洞穴；从牌库中抽出相同数量的牌",
+    bonus: "",
+    points: "",
+  },
+
+  REDDEER: {
+    name: "马鹿",
+    nb: 5,
+    tags: ["Cloven-hoofed animal", "Deer"],
+    cost: 2,
+    type: "hCard",
+    effect: "",
+    bonus: "免费打出一张带有鹿符号的牌",
+    points: "每张带有树木或植物符号的牌得1分",
+  },
+
+  REDFOX: {
+    name: "赤狐",
+    nb: 5,
+    tags: [PAW],
+    cost: 2,
+    type: "hCard",
+    effect: "每有一只欧洲野兔获得1张牌",
+    bonus: "",
+    points: "每有一只欧洲野兔获得2分",
+  },
+
+  ROEDEER: {
+    name: "西方狍",
+    nb: 5,
+    tags: ["Cloven-hoofed animal", "Deer"],
+    cost: 2,
+    type: "hCard",
+    effect: "",
+    bonus: "获得1张牌",
+    points: "每张带有匹配树木符号的牌得3分",
+  },
+
+  SQUEAKER: {
+    name: "小野猪",
+    nb: 4,
+    tags: ["Cloven-hoofed animal"],
+    cost: 0,
+    type: "hCard",
+    effect: "",
+    bonus: "",
+    points: "获得1分",
+  },
+
+  VIOLETCARPENTERBEE: {
+    name: "紫木蜂",
+    nb: 4,
+    tags: [INSECT],
+    cost: 1,
+    type: "hCard",
+    effect: "这只蜜蜂占据的树木被算作同类型的一棵额外树木",
+    bonus: "",
+    points: "",
+  },
+
+  WILDBOAR: {
+    name: "野猪",
+    nb: 5,
+    tags: ["Cloven-hoofed animal"],
+    cost: 2,
+    type: "hCard",
+    effect: "",
+    bonus: "",
+    points: "如果你至少有1只小野猪，获得10分",
+  },
+
+  WOLF: {
+    name: "狼",
+    nb: 4,
+    tags: [PAW],
+    cost: 3,
+    type: "hCard",
+    effect: "每有一只鹿获得1张牌",
+    bonus: "获得新的回合",
+    points: "每张带有鹿符号的牌得5分",
+  },
+
+  LINDEN: {
+    name: "椴树",
+    nb: 9,
+    tags: [TREE],
+    cost: 1,
+    type: 'tree',
+    effect: "",
+    bonus: "",
+    points: "获得1分，若没有其他森林的椴树数量比你多，则改为获得3分",
+  },
+
+  OAK: {
+    name: "橡树",
+    nb: 7,
+    tags: [TREE],
+    cost: 2,
+    type: 'tree',
+    effect: "",
+    bonus: "获得新的回合",
+    points: "如果你集齐所有8种不同的树木，获得10分",
+  },
+
+  SILVERFIR: {
+    name: "银杉",
+    nb: 6,
+    tags: [TREE],
+    cost: 2,
+    type: 'tree',
+    effect: "",
+    bonus: "免费打出一张带有爪印符号的牌",
+    points: "连接到这棵银冷杉的每张牌得2分",
+  },
+
+  BIRCH: {
+    name: "桦树",
+    nb: 10,
+    tags: [TREE],
+    cost: 0,
+    type: 'tree',
+    effect: "获得1张牌",
+    bonus: "",
+    points: "获得1分",
+  },
+
+  BEECH: {
+    name: "山毛榉",
+    nb: 10,
+    tags: [TREE],
+    cost: 1,
+    type: 'tree',
+    effect: "获得1张牌",
+    bonus: "",
+    points: "如果你至少有4棵山毛榉，获得5分",
+  },
+
+  SYCAMORE: {
+    name: "梧桐",
+    nb: 6,
+    tags: [TREE],
+    cost: 2,
+    type: 'tree',
+    effect: "",
+    bonus: "",
+    points: "每张带有树木符号的牌得1分",
+  },
+
+  DOUGLASFIR: {
+    name: "冷杉",
+    nb: 7,
+    tags: [TREE],
+    cost: 2,
+    type: 'tree',
+    effect: "",
+    bonus: "获得新的回合",
+    points: "获得5分",
+  },
+
+  HORSECHESTNUT: {
+    name: "欧洲七叶树",
+    nb: 11,
+    tags: [TREE],
+    cost: 1,
+    type: 'tree',
+    effect: "",
+    bonus: "",
+    points: "根据你拥有的欧洲七叶树数量获得分数",
+  },
+
+  HYPSUGOSAVII: {
+    name: "萨维伏翼",
+    nb: 3,
+    tags: [BAT],
+    cost: 1,
+    type: "hCard",
+    effect: "",
+    bonus: "",
+    points: "如果你有至少3种不同的蝙蝠，获得5分",
+  },
+
+  LARIXDECIDUA: {
+    name: "欧洲落叶松",
+    nb: 7,
+    tags: [TREE, MOUNTAIN],
+    cost: 1,
+    type: 'tree',
+    effect: "",
+    bonus: "免费打出一张带有高山符号的牌",
+    points: "获得3分",
+  },
+
+  PINUSCEMBRA: {
+    name: "瑞士石松",
+    nb: 7,
+    tags: [TREE, MOUNTAIN],
+    cost: 2,
+    type: 'tree',
+    effect: "获得1张牌",
+    bonus: "获得1张牌",
+    points: "每张带有高山符号的牌得1分",
+  },
+
+  CRATERELLUSCORNUCOPIODES: {
+    name: "灰号角菇",
+    nb: 2,
+    tags: [MUSHROOM, MOUNTAIN],
+    cost: 2,
+    type: "vCard",
+    effect: "每当你打出一张带有高山符号的牌时，获得1张牌",
+    bonus: "",
+    points: "",
+  },
+
+  PARNASSIUSPHOEBUS: {
+    name: "小阿波罗绢蝶",
+    nb: 4,
+    tags: [BUTTERFLY, MOUNTAIN],
+    cost: 0,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每张不同的蝴蝶牌得1分",
+  },
+
+  GENTIANA: {
+    name: "龙胆草",
+    nb: 3,
+    tags: [PLANT, MOUNTAIN],
+    cost: 0,
+    type: "vCard",
+    effect: "免费打出一张带有蝴蝶符号的牌",
+    bonus: "",
+    points: "每张带有蝴蝶符号的牌得3分",
+  },
+
+  VACCINIUMMYRTILLUS: {
+    name: "越橘",
+    nb: 3,
+    tags: [PLANT, MOUNTAIN],
+    cost: 1,
+    type: "vCard",
+    effect: "免费打出一张带有两栖动物符号的牌",
+    bonus: "",
+    points: "每张不同的鸟类牌得2分",
+  },
+
+  ICHTHYOSAURAALPESTRIS: {
+    name: "高山欧叶螈",
+    nb: 3,
+    tags: [AMPHIBIAN, MOUNTAIN],
+    cost: 1,
+    type: "vCard",
+    effect: "",
+    bonus: "免费打出一张带有高山符号的牌和一张带有昆虫符号的牌",
+    points: "每张带有昆虫符号的牌得2分",
+  },
+
+  AQUILACHRYSAETOS: {
+    name: "金雕",
+    nb: 3,
+    tags: [BIRD, MOUNTAIN],
+    cost: 1,
+    type: "vCard",
+    effect: "",
+    bonus: "",
+    points: "每张带有爪印或两栖动物符号的牌得1分",
+  },
+
+  CORVUSCORAX: {
+    name: "渡鸦",
+    nb: 2,
+    tags: [BIRD, MOUNTAIN],
+    cost: 1,
+    type: "vCard",
+    effect: "获得1张牌",
+    bonus: "",
+    points: "获得5分",
+  },
+
+  LEONTOPODIUMNIVALE: {
+    name: "高山火绒草",
+    nb: 2,
+    tags: [PLANT, MOUNTAIN],
+    cost: 1,
+    type: "vCard",
+    effect: "获得1张牌",
+    bonus: "获得1张牌",
+    points: "获得3分",
+  },
+
+  GYPAETUSBARBATUS: {
+    name: "胡兀鹫",
+    nb: 3,
+    tags: [BIRD, MOUNTAIN],
+    cost: 1,
+    type: "vCard",
+    effect: "将空地上的2张牌放入你的洞穴",
+    bonus: "",
+    points: "你洞穴里的每张牌得1分",
+  },
+
+  CAPRAIBEX: {
+    name: "羱羊",
+    nb: 3,
+    tags: ["Cloven-hoofed animal", MOUNTAIN],
+    cost: 3,
+    type: "hCard",
+    effect: "获得新的回合",
+    bonus: "",
+    points: "获得10分",
+  },
+
+  LEPUSTIMIDUS: {
+    name: "雪兔",
+    nb: 3,
+    tags: [PAW, MOUNTAIN],
+    cost: 0,
+    type: "hCard",
+    effect: "被视为一只欧洲野兔",
+    bonus: "",
+    points: "每有一只欧洲野兔获得1分",
+  },
+
+  MARMOTAMARMOTA: {
+    name: "高山旱獭",
+    nb: 4,
+    tags: [PAW, MOUNTAIN],
+    cost: 1,
+    type: "hCard",
+    effect: "该槽位可以容纳任意数量的高山旱獭",
+    bonus: "",
+    points: "每有一只高山旱獭获得2分",
+  },
+
+  RUPICAPRARUPICAPRA: {
+    name: "臆羚",
+    nb: 3,
+    tags: ["Cloven-hoofed animal", MOUNTAIN],
+    cost: 1,
+    type: "hCard",
+    effect: "",
+    bonus: "",
+    points: "每张不同的植物牌得3分",
+  },
+
+  TETRAOUROGALLUS: {
+    name: "松鸡",
+    nb: 4,
+    tags: [BIRD, MOUNTAIN],
+    cost: 1,
+    type: "hCard",
+    effect: "免费打出一张带有植物符号的牌",
+    bonus: "",
+    points: "每张带有植物符号的牌得1分",
+  },
+
+  SAMBUCUS: {
+    name: "接骨木",
+    nb: 4,
+    tags: [EDGE, SHRUB],
+    cost: 2,
+    type: 'tree',
+    effect: "每当你打出一张带有植物符号的牌时，获得1张牌",
+    bonus: "免费打出一张带有植物符号的牌",
+    points: "",
+  },
+
+  COMMONHAZEL: {
+    name: "欧榛",
+    nb: 4,
+    tags: [EDGE, SHRUB],
+    cost: 2,
+    type: 'tree',
+    effect: "每当你打出一张带有蝙蝠符号的牌时，获得1张牌",
+    bonus: "免费打出一张带有蝙蝠符号的牌",
+    points: "",
+  },
+
+  BLACKTHORN: {
+    name: "黑刺李",
+    nb: 4,
+    tags: [EDGE, SHRUB],
+    cost: 2,
+    type: 'tree',
+    effect: "每当你打出一张带有蝴蝶符号的牌时，获得1张牌",
+    bonus: "免费打出一张带有蝴蝶符号的牌",
+    points: "",
+  },
+
+  WILDBOARFEMALE: {
+    name: "野猪（雌性）",
+    nb: 3,
+    tags: [EDGE, CLOVEN],
+    cost: 2,
+    type: H_CARD,
+    effect: "将空地上所有的牌从游戏中移除",
+    bonus: "免费打出一只小野猪",
+    points: "每有一只小野猪获得10分",
+  },
+
+  BEEHIVE: {
+    name: "蜂群",
+    nb: 3,
+    tags: [EDGE, INSECT],
+    cost: 1,
+    type: H_CARD,
+    effect: "将所有带有植物、灌木或树木符号的卡片放进你的洞穴",
+    bonus: "",
+    points: "每张带有植物符号的卡片得1分",
+  },
+
+  EUROPEANBISON: {
+    name: "欧洲野牛",
+    nb: 3,
+    tags: [EDGE, CLOVEN],
+    cost: 3,
+    type: H_CARD,
+    effect: "获得新的回合",
+    bonus: "",
+    points: "每张带有橡木或山毛榉标志的卡片可获得2分",
+  },
+
+  EUROPEANWILDCAT: {
+    name: "欧洲野猫",
+    nb: 3,
+    tags: [EDGE, PAW],
+    cost: 1,
+    type: H_CARD,
+    effect: "从空地中拿一张牌",
+    bonus: "",
+    points: "每张带有林地边缘符号的牌得1分",
+  },
+
+  COMMONPIPISTRELLE: {
+    name: "伏翼",
+    nb: 3,
+    tags: [EDGE, BAT],
+    cost: 1,
+    type: H_CARD,
+    effect: "",
+    bonus: "",
+    points: "如果你有至少3种不同的蝙蝠，获得5分",
+  },
+
+  SQUEAKEREDGE: {
+    name: "小野猪",
+    nb: 3,
+    tags: [EDGE, CLOVEN],
+    cost: 0,
+    type: H_CARD,
+    effect: "",
+    bonus: "",
+    points: "获得1分",
+  },
+
+  MOSQUITO: {
+    name: "大蚊",
+    nb: 3,
+    tags: [EDGE, INSECT],
+    cost: 1,
+    type: H_CARD,
+    effect: "免费打出任意数量的蝙蝠牌",
+    bonus: "把所有有蝙蝠符号的牌从空地上拿到手里",
+    points: "每张带有蝙蝠符号的牌得1分",
+  },
+
+  EUROPEANPOLECAT: {
+    name: "欧洲林鼬",
+    nb: 3,
+    tags: [EDGE, PAW],
+    cost: 2,
+    type: H_CARD,
+    effect: "",
+    bonus: "获得新的回合",
+    points: "若位于树或灌木上，获得10分",
+  },
+
+  MAPBUTTERFLY: {
+    name: "盛蛱蝶",
+    nb: 4,
+    tags: [EDGE, INSECT, BUTTERFLY],
+    cost: 0,
+    type: V_CARD,
+    effect: "",
+    bonus: "",
+    points: "每张不同的蝴蝶牌得1分",
+  },
+
+  DIGITALIS: {
+    name: "毛地黄",
+    nb: 4,
+    tags: [EDGE, PLANT],
+    cost: 0,
+    type: V_CARD,
+    effect: "",
+    bonus: "",
+    points: "每张不同的植物牌得1分",
+  },
+
+  URTICA: {
+    name: "荨麻",
+    nb: 3,
+    tags: [EDGE, PLANT],
+    cost: 0,
+    type: V_CARD,
+    effect: "任何数量的蝴蝶都可以在这棵树或灌木上共享一个槽",
+    bonus: "",
+    points: "每张带有蝴蝶符号的牌得2分",
+  },
+
+  GREATGREENBUSHCRICKET: {
+    name: "绿丛螽",
+    nb: 3,
+    tags: [EDGE, INSECT],
+    cost: 1,
+    type: V_CARD,
+    effect: "免费打出一张带有鸟符号的牌",
+    bonus: "",
+    points: "每张有昆虫符号的牌得1分",
+  },
+
+  EUROPEANWATERVOLE: {
+    name: "水田鼠",
+    nb: 2,
+    tags: [EDGE, PAW],
+    cost: 2,
+    type: V_CARD,
+    effect: "立即打出任意数量的树苗",
+    bonus: "获得新的回合",
+    points: "",
+  },
+
+  EURASIANMAGPIE: {
+    name: "欧亚喜鹊",
+    nb: 3,
+    tags: [EDGE, BIRD],
+    cost: 1,
+    type: V_CARD,
+    effect: "从空地中拿一张牌",
+    bonus: "从空地上放两张牌到你的洞穴里",
+    points: "获得3分",
+  },
+
+  COMMONNIGHTINGALE: {
+    name: "夜莺",
+    nb: 3,
+    tags: [EDGE, BIRD],
+    cost: 1,
+    type: V_CARD,
+    effect: "",
+    bonus: "获得新的回合",
+    points: "若位于灌木丛上，获得5分",
+  },
+
+  BARNOWL: {
+    name: "仓鸮",
+    nb: 2,
+    tags: [EDGE, BIRD],
+    cost: 2,
+    type: V_CARD,
+    effect: "如果你的森林里至少有一只蝙蝠，获得新的回合",
+    bonus: "",
+    points: "每张带有蝙蝠符号的牌获得3分",
+  },
+}
+
+let $f = (data) => {
+  return {
+    type: data[0], // 卡片类型
+    species: data[1], // 物种：1个或2个，根据卡片类型确定
+    tree_symbol: data[2], // 树木符号
+    deck: data[3], // 牌堆
+  };
+};
+
+// 卡片信息
 const CARDS_DATA = {
+  // 基础卡
   1: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
   2: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
   3: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
@@ -231,9 +1262,9 @@ const CARDS_DATA = {
   72: $f([H_CARD, [EUROPEAN_HARE, RED_FOX], [SILVER_FIR, OAK], BASIC_DECK]),
   73: $f([H_CARD, [RACCOON, EUROPEAN_HARE], [DOUGLAS_FIR, SYCAMORE], BASIC_DECK]),
   74: $f([H_CARD, [WILD_BOAR, EUROPEAN_HARE], [SYCAMORE, SILVER_FIR], BASIC_DECK]),
-  75: $f([H_CARD, ['Brown Long-Eared Bat', EUROPEAN_HARE], [SYCAMORE, LINDEN], BASIC_DECK]),
+  75: $f([H_CARD, [BROWN_LONG_EARED_BAT, EUROPEAN_HARE], [SYCAMORE, LINDEN], BASIC_DECK]),
   76: $f([H_CARD, [RACCOON, ROE_DEER], [SILVER_FIR, BEECH], BASIC_DECK]),
-  77: $f([H_CARD, ['Brown Long-Eared Bat', EUROPEAN_BADGER], [SYCAMORE, DOUGLAS_FIR], BASIC_DECK]),
+  77: $f([H_CARD, [BROWN_LONG_EARED_BAT, EUROPEAN_BADGER], [SYCAMORE, DOUGLAS_FIR], BASIC_DECK]),
   78: $f([H_CARD, [BARBASTELLE_BAT, WILD_BOAR], [HORSE_CHESTNUT, OAK], BASIC_DECK]),
   79: $f([H_CARD, [BROWN_BEAR, RACCOON], [LINDEN, SILVER_FIR], BASIC_DECK]),
   80: $f([H_CARD, [BEECH_MARTEN, BROWN_BEAR], [SYCAMORE, HORSE_CHESTNUT], BASIC_DECK]),
@@ -251,7 +1282,7 @@ const CARDS_DATA = {
   92: $f([H_CARD, [EUROPEAN_FAT_DORMOUSE, BARBASTELLE_BAT], [BEECH, OAK], BASIC_DECK]),
   93: $f([H_CARD, [GREATER_HORSESHOE_BAT, EUROPEAN_FAT_DORMOUSE], [BEECH, DOUGLAS_FIR], BASIC_DECK]),
   94: $f([H_CARD, [RED_FOX, WOLF], [LINDEN, SILVER_FIR], BASIC_DECK]),
-  95: $f([H_CARD, [EUROPEAN_FAT_DORMOUSE, 'Brown Long-Eared Bat'], [SILVER_FIR, BEECH], BASIC_DECK]),
+  95: $f([H_CARD, [EUROPEAN_FAT_DORMOUSE, BROWN_LONG_EARED_BAT], [SILVER_FIR, BEECH], BASIC_DECK]),
   96: $f([H_CARD, [BECHSTEIN, EUROPEAN_FAT_DORMOUSE], [BEECH, OAK], BASIC_DECK]),
   97: $f([H_CARD, [GNAT, VIOLET_CARPENTER_BEE], [BIRCH, DOUGLAS_FIR], BASIC_DECK]),
   98: $f([H_CARD, [WOLF, GNAT], [DOUGLAS_FIR, HORSE_CHESTNUT], BASIC_DECK]),
@@ -274,7 +1305,7 @@ const CARDS_DATA = {
   115: $f([V_CARD, [GREAT_SPOTTED_WOODPECKER, WOOD_ANT], [LINDEN, BIRCH], BASIC_DECK]),
   116: $f([V_CARD, [CHAFFINCH, WOOD_ANT], [BIRCH, BEECH], BASIC_DECK]),
   117: $f([V_CARD, [TAWNY_OWL, STAG_BEETLE], [BEECH, SYCAMORE], BASIC_DECK]),
-  118: $f([V_CARD, ['Silver-Washed Fritillary', FIRE_SALAMANDER], [OAK, HORSE_CHESTNUT], BASIC_DECK]),
+  118: $f([V_CARD, [SILVER_WASHED_FRITILLARY, FIRE_SALAMANDER], [OAK, HORSE_CHESTNUT], BASIC_DECK]),
   119: $f([V_CARD, [PURPLE_EMPEROR, POND_TURTLE], [HORSE_CHESTNUT, SYCAMORE], BASIC_DECK]),
   120: $f([V_CARD, [CAMBERWELL_BEAUTY, POND_TURTLE], [SYCAMORE, BIRCH], BASIC_DECK]),
   121: $f([V_CARD, [LARGE_TORTOISESHELL, FIRE_SALAMANDER], [SILVER_FIR, DOUGLAS_FIR], BASIC_DECK]),
@@ -284,7 +1315,7 @@ const CARDS_DATA = {
   125: $f([V_CARD, [GREAT_SPOTTED_WOODPECKER, COMMON_TOAD], [LINDEN, OAK], BASIC_DECK]),
   126: $f([V_CARD, [EURASIAN_JAY, TREE_FERNS], [BIRCH, HORSE_CHESTNUT], BASIC_DECK]),
   127: $f([V_CARD, [TAWNY_OWL, WILD_STRAWBERRIES], [BEECH, SYCAMORE], BASIC_DECK]),
-  128: $f([V_CARD, ['Silver-Washed Fritillary', BLACKBERRIES], [OAK, SILVER_FIR], BASIC_DECK]),
+  128: $f([V_CARD, [SILVER_WASHED_FRITILLARY, BLACKBERRIES], [OAK, SILVER_FIR], BASIC_DECK]),
   129: $f([V_CARD, [PURPLE_EMPEROR, MOSS], [HORSE_CHESTNUT, DOUGLAS_FIR], BASIC_DECK]),
   130: $f([V_CARD, [CAMBERWELL_BEAUTY, FIREFLIES], [SYCAMORE, LINDEN], BASIC_DECK]),
   131: $f([V_CARD, [LARGE_TORTOISESHELL, BLACKBERRIES], [SILVER_FIR, BIRCH], BASIC_DECK]),
@@ -294,7 +1325,7 @@ const CARDS_DATA = {
   135: $f([V_CARD, [RED_SQUIRREL, FIREFLIES], [HORSE_CHESTNUT, SYCAMORE], BASIC_DECK]),
   136: $f([V_CARD, [CHAFFINCH, COMMON_TOAD], [BEECH, SILVER_FIR], BASIC_DECK]),
   137: $f([V_CARD, [EURASIAN_JAY, FIREFLIES], [BIRCH, DOUGLAS_FIR], BASIC_DECK]),
-  138: $f([V_CARD, ['Silver-Washed Fritillary', MOSS], [BEECH, LINDEN], BASIC_DECK]),
+  138: $f([V_CARD, [SILVER_WASHED_FRITILLARY, MOSS], [BEECH, LINDEN], BASIC_DECK]),
   139: $f([V_CARD, [PEACOCK_BUTTERFLY, CHANTERELLE], [OAK, SILVER_FIR], BASIC_DECK]),
   140: $f([V_CARD, [PEACOCK_BUTTERFLY, FIREFLIES], [HORSE_CHESTNUT, BEECH], BASIC_DECK]),
   141: $f([V_CARD, [LARGE_TORTOISESHELL, MOLE], [SYCAMORE, OAK], BASIC_DECK]),
@@ -312,13 +1343,13 @@ const CARDS_DATA = {
   153: $f([V_CARD, [TAWNY_OWL, COMMON_TOAD], [SYCAMORE, DOUGLAS_FIR], BASIC_DECK]),
   154: $f([V_CARD, [BULLFINCH, TREE_FERNS], [SILVER_FIR, LINDEN], BASIC_DECK]),
   155: $f([V_CARD, [RED_SQUIRREL, WILD_STRAWBERRIES], [OAK, BIRCH], BASIC_DECK]),
-  156: $f([V_CARD, ['Silver-Washed Fritillary', BLACKBERRIES], [OAK, BEECH], BASIC_DECK]),
+  156: $f([V_CARD, [SILVER_WASHED_FRITILLARY, BLACKBERRIES], [OAK, BEECH], BASIC_DECK]),
   157: $f([V_CARD, [PURPLE_EMPEROR, FLY_AGARIC], [LINDEN, OAK], BASIC_DECK]),
   158: $f([V_CARD, [CAMBERWELL_BEAUTY, CHANTERELLE], [HORSE_CHESTNUT, BIRCH], BASIC_DECK]),
   159: $f([V_CARD, [LARGE_TORTOISESHELL, MOLE], [BEECH, SYCAMORE], BASIC_DECK]),
   160: $f([V_CARD, [CHAFFINCH, PARASOL_MUSHROOM], [SYCAMORE, SILVER_FIR], BASIC_DECK]),
   161: $f([V_CARD, [GREAT_SPOTTED_WOODPECKER, PENNY_BUN], [LINDEN, DOUGLAS_FIR], BASIC_DECK]),
-  //Alpine Shuffle from here
+  // 阿尔卑斯扩展
   162: $f([TREE, [LARIX_DECIDUA], [LARIX], ALPINE_DECK]),
   163: $f([TREE, [LARIX_DECIDUA], [LARIX], ALPINE_DECK]),
   164: $f([TREE, [LARIX_DECIDUA], [LARIX], ALPINE_DECK]),
@@ -355,7 +1386,7 @@ const CARDS_DATA = {
   195: $f([V_CARD, [GYPAETUS_BARBATUS, LEONTOPODIUM_NIVALE], [PINUS, LARIX], ALPINE_DECK]),
   196: $f([V_CARD, [AQUILA_CHRYSAETOS, GENTIANA], [SILVER_FIR, PINUS], ALPINE_DECK]),
   197: $f([H_CARD, [HYPSUGO_SAVII, LEPUS_TIMIDUS], [LARIX, PINUS], ALPINE_DECK]),
-  //Edge
+  // 林缘扩展
   198: $f([TREE, [SAMBUCUS], [LINDEN], EDGE_DECK]),
   199: $f([TREE, [SAMBUCUS], [SYCAMORE], EDGE_DECK]),
   200: $f([TREE, [SAMBUCUS], [BIRCH], EDGE_DECK]),
@@ -383,1085 +1414,18 @@ const CARDS_DATA = {
   222: $f([H_CARD, [WILD_BOAR_FEMALE_, BEEHIVE], [BIRCH, SYCAMORE], EDGE_DECK]),
   223: $f([H_CARD, [EUROPEAN_BISON, WILD_BOAR_FEMALE_], [OAK, SYCAMORE], EDGE_DECK]),
   224: $f([H_CARD, [WILD_BOAR_FEMALE_, EUROPEAN_WILDCAT], [SILVER_FIR, HORSE_CHESTNUT], EDGE_DECK]),
-  225: $f([H_CARD, [COMMON_PIPISTRELLE, SQUEAKER_EDGE], [LINDEN, SILVER_FIR], EDGE_DECK]),
-  226: $f([H_CARD, [SQUEAKER_EDGE, MOSQUITO], [HORSE_CHESTNUT, BEECH], EDGE_DECK]),
-  227: $f([H_CARD, [EUROPEAN_POLECAT, SQUEAKER_EDGE], [SILVER_FIR, DOUGLAS_FIR], EDGE_DECK]),
+  225: $f([H_CARD, [COMMON_PIPISTRELLE, SQUEAKER], [LINDEN, SILVER_FIR], EDGE_DECK]),
+  226: $f([H_CARD, [SQUEAKER, MOSQUITO], [HORSE_CHESTNUT, BEECH], EDGE_DECK]),
+  227: $f([H_CARD, [EUROPEAN_POLECAT, SQUEAKER], [SILVER_FIR, DOUGLAS_FIR], EDGE_DECK]),
   228: $f([H_CARD, [BEEHIVE, COMMON_PIPISTRELLE], [BEECH, SYCAMORE], EDGE_DECK]),
   229: $f([H_CARD, [EUROPEAN_WILDCAT, BEEHIVE], [OAK, BIRCH], EDGE_DECK]),
   230: $f([H_CARD, [COMMON_PIPISTRELLE, EUROPEAN_BISON], [BIRCH, BEECH], EDGE_DECK]),
   231: $f([H_CARD, [EUROPEAN_BISON, EUROPEAN_POLECAT], [BEECH, SYCAMORE], EDGE_DECK]),
   232: $f([H_CARD, [MOSQUITO, EUROPEAN_POLECAT], [BIRCH, OAK], EDGE_DECK]),
   233: $f([H_CARD, [EUROPEAN_WILDCAT, MOSQUITO], [SYCAMORE, OAK], EDGE_DECK]),
-
 };
 
-/**
- * Species
- */
-const SPECIES_DATA = {
-  Blackberries: {
-    name: "Blackberries",
-    nb: 3,
-    tags: [PLANT],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 2 points for each card with a plant symbol",
-  },
-
-  Bullfinch: {
-    name: "Bullfinch",
-    nb: 4,
-    tags: [BIRD],
-    cost: 1,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 2 points for each card with an insect symbol",
-  },
-
-  CamberwellBeauty: {
-    name: "Camberwell Beauty",
-    nb: 4,
-    tags: [INSECT, BUTTERFLY],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain points for each set of different butterflies",
-  },
-
-  Chaffinch: {
-    name: "Chaffinch",
-    nb: 4,
-    tags: [BIRD],
-    cost: 1,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "5 points if it's on a Beech",
-  },
-
-  Chanterelle: {
-    name: "Chanterelle",
-    nb: 2,
-    tags: [MUSHROOM],
-    cost: 2,
-    type: "vCard",
-    effect: "Whenever you play a card with a tree symbol receive 1 card",
-    bonus: "",
-    points: "",
-  },
-
-  CommonToad: {
-    name: "Common Toad",
-    nb: 6,
-    tags: [AMPHIBIAN],
-    cost: 0,
-    type: "vCard",
-    effect: "Up to 2 Common Toads may share this spot",
-    bonus: "",
-    points: "Gain 5 points if 2 Common Toads share this spot",
-  },
-
-  EurasianJay: {
-    name: "Eurasian Jay",
-    nb: 4,
-    tags: [BIRD],
-    cost: 1,
-    type: "vCard",
-    effect: "Take another turn after this one",
-    bonus: "",
-    points: "Gain 3 points",
-  },
-
-  FireSalamander: {
-    name: "Fire Salamander",
-    nb: 3,
-    tags: [AMPHIBIAN],
-    cost: 1,
-    type: "vCard",
-    effect: "",
-    bonus:
-      "Play a card with a paw symbol for free (you can’t use its effect or bonus)",
-    points: "Gain points according to the number of Fire Salamander you have",
-  },
-
-  Fireflies: {
-    name: "Fireflies",
-    nb: 4,
-    tags: [INSECT],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain points according to the number of Fireflies you have",
-  },
-
-  FlyAgaric: {
-    name: "Fly Agaric",
-    nb: 2,
-    tags: [MUSHROOM],
-    cost: 2,
-    type: "vCard",
-    effect: "Whenever you play a card with a paw symbol receive 1 card",
-    bonus: "",
-    points: "",
-  },
-
-  Goshawk: {
-    name: "Goshawk",
-    nb: 4,
-    tags: [BIRD],
-    cost: 2,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 3 points for each card with a bird symbol",
-  },
-
-  GreatSpottedWoodpecker: {
-    name: "Great Spotted Woodpecker",
-    nb: 4,
-    tags: [BIRD],
-    cost: 1,
-    type: "vCard",
-    effect: "Receive 1 card",
-    bonus: "",
-    points: "Gain 10 points if no other forest has more trees",
-  },
-
-  Hedgehog: {
-    name: "Hedgehog",
-    nb: 3,
-    tags: [PAW],
-    cost: 1,
-    type: "vCard",
-    effect: "",
-    bonus: "Receive 1 card",
-    points: "Gain 2 points for each card with a butterfly symbol",
-  },
-
-  LargeTortoiseshell: {
-    name: "Large Tortoiseshell",
-    nb: 4,
-    tags: [INSECT, BUTTERFLY],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain points for each set of different butterflies",
-  },
-
-  Mole: {
-    name: "Mole",
-    nb: 2,
-    tags: [PAW],
-    cost: 2,
-    type: "vCard",
-    effect: "immediately play any number of cards by paying their cost",
-    bonus: "",
-    points: "",
-  },
-
-  Moss: {
-    name: "Moss",
-    nb: 3,
-    tags: [PLANT],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 10 points if you have at least 10 trees",
-  },
-
-  ParasolMushroom: {
-    name: "Parasol Mushroom",
-    nb: 2,
-    tags: [MUSHROOM],
-    cost: 2,
-    type: "vCard",
-    effect: "Whenever you play a card below a tree receive 1 card",
-    bonus: "",
-    points: "",
-  },
-
-  PeacockButterfly: {
-    name: "Peacock Butterfly",
-    nb: 4,
-    tags: [INSECT, BUTTERFLY],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain points for each set of different butterflies",
-  },
-
-  PennyBun: {
-    name: "Penny Bun",
-    nb: 2,
-    tags: [MUSHROOM],
-    cost: 2,
-    type: "vCard",
-    effect: "Whenever you play a card atop a tree receive 1 card",
-    bonus: "",
-    points: "",
-  },
-
-  PondTurtle: {
-    name: "Pond Turtle",
-    nb: 2,
-    tags: [AMPHIBIAN],
-    cost: 2,
-    type: "vCard",
-    effect: "Receive 1 card",
-    bonus: "",
-    points: "Gain 5 points",
-  },
-
-  PurpleEmperor: {
-    name: "Purple Emperor",
-    nb: 4,
-    tags: [INSECT, BUTTERFLY],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain points for each set of different butterflies",
-  },
-
-  RedSquirrel: {
-    name: "Red Squirrel",
-    nb: 4,
-    tags: [PAW],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 5 points if it’s on an Oak",
-  },
-
-  SilverWashedFritillary: {
-    name: "Silver-Washed Fritillary",
-    nb: 4,
-    tags: [INSECT, BUTTERFLY],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain points for each set of different butterflies",
-  },
-
-  StagBeetle: {
-    name: "Stag Beetle",
-    nb: 2,
-    tags: [INSECT],
-    cost: 2,
-    type: "vCard",
-    effect: "",
-    bonus:
-      "Play a card with a bird symbol for free (you can’t use its effect or bonus)",
-    points: "Gain 1 point for each card with a paw symbol",
-  },
-
-  TawnyOwl: {
-    name: "Tawny Owl",
-    nb: 4,
-    tags: [BIRD],
-    cost: 2,
-    type: "vCard",
-    effect: "Receive 1 card",
-    bonus: "Receive 2 cards",
-    points: "Gain 5 points",
-  },
-
-  TreeFerns: {
-    name: "Tree Ferns",
-    nb: 3,
-    tags: [PLANT],
-    cost: 1,
-    type: "vCard",
-    effect: "Receive 1 card",
-    bonus: "",
-    points: "Gain 6 point for each card with an amphibian symbol",
-  },
-
-  TreeFrog: {
-    name: "Tree Frog",
-    nb: 3,
-    tags: [AMPHIBIAN],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 5 points for each Gnat",
-  },
-
-  WildStrawberries: {
-    name: "Wild Strawberries",
-    nb: 3,
-    tags: [PLANT],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 10 points if you have all 8 different tree species",
-  },
-
-  WoodAnt: {
-    name: "Wood Ant",
-    nb: 3,
-    tags: [INSECT],
-    cost: 1,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 2 points for each card below a tree",
-  },
-
-  BarbastelleBat: {
-    name: "Barbastelle Bat",
-    nb: 3,
-    tags: [BAT],
-    cost: 1,
-    type: "hCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 5 points if you have at least 3 different bat species",
-  },
-
-  Bechsteinsbat: {
-    name: "Bechstein's Bat",
-    nb: 3,
-    tags: [BAT],
-    cost: 1,
-    type: "hCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 5 points if you have at least 3 different bat species",
-  },
-
-  BeechMarten: {
-    name: "Beech Marten",
-    nb: 5,
-    tags: [PAW],
-    cost: 1,
-    type: "hCard",
-    effect: "Receive 1 card",
-    bonus: "",
-    points: "Gain 5 points per fully occupied tree",
-  },
-
-  BrownBear: {
-    name: "Brown Bear",
-    nb: 3,
-    tags: [PAW],
-    cost: 3,
-    type: "hCard",
-    effect: "Place all cards from the clearing in your cave",
-    bonus: "Receive 1 card and take another turn after this one",
-    points: "",
-  },
-
-  BrownLongEaredBat: {
-    name: "Brown Long-Eared Bat",
-    nb: 3,
-    tags: [BAT],
-    cost: 1,
-    type: "hCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 5 points if you have at least 3 different bat species",
-  },
-
-  EuropeanBadger: {
-    name: "European Badger",
-    nb: 4,
-    tags: [PAW],
-    cost: 1,
-    type: "hCard",
-    effect: "",
-    bonus:
-      "Play a card with a paw symbol for free (you can’t use its effect or bonus)",
-    points: "Gain 2 points",
-  },
-
-  EuropeanFatDormouse: {
-    name: "European Fat Dormouse",
-    nb: 4,
-    tags: [PAW],
-    cost: 1,
-    type: "hCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 15 points if a bat also occupies this tree",
-  },
-
-  EuropeanHare: {
-    name: "European Hare",
-    nb: 11,
-    tags: [PAW],
-    cost: 0,
-    type: "hCard",
-    effect: "Any number of European Hares may share this spot",
-    bonus: "",
-    points: "Gain 1 point for each European Hare",
-  },
-
-  FallowDeer: {
-    name: "Fallow Deer",
-    nb: 4,
-    tags: ["Cloven-hoofed animal", "Deer"],
-    cost: 2,
-    type: "hCard",
-    effect: "",
-    bonus: "Receive 2 cards",
-    points: "Gain 3 points for each card with cloven-hoofed animal symbol",
-  },
-
-  Gnat: {
-    name: "Gnat",
-    nb: 3,
-    tags: [INSECT],
-    cost: 0,
-    type: "hCard",
-    effect: "Play any number of bat cards for free",
-    bonus: "",
-    points: "Gain 1 point for each card with a bat symbol",
-  },
-
-  GreaterHorseshoeBat: {
-    name: "Greater Horseshoe Bat",
-    nb: 3,
-    tags: [BAT],
-    cost: 1,
-    type: "hCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 5 points if you have at least 3 different bat species",
-  },
-
-  Lynx: {
-    name: "Lynx",
-    nb: 6,
-    tags: [PAW],
-    cost: 1,
-    type: "hCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 10 points if you have at least 1 Roe Deer",
-  },
-
-  Raccoon: {
-    name: "Raccoon",
-    nb: 4,
-    tags: [PAW],
-    cost: 1,
-    type: "hCard",
-    effect:
-      "Place any number of cards from hand in your cave; draw an equal number of cards from the deck",
-    bonus: "",
-    points: "",
-  },
-
-  RedDeer: {
-    name: "Red Deer",
-    nb: 5,
-    tags: ["Cloven-hoofed animal", "Deer"],
-    cost: 2,
-    type: "hCard",
-    effect: "",
-    bonus:
-      "Play a card with a deer symbol for free (you can’t use its effect or bonus)",
-    points: "Gain 1 point for each card with a tree or plant symbol",
-  },
-
-  RedFox: {
-    name: "Red Fox",
-    nb: 5,
-    tags: [PAW],
-    cost: 2,
-    type: "hCard",
-    effect: "Receive 1 card for each European Hare",
-    bonus: "",
-    points: "Gain 2 points for each European Hare",
-  },
-
-  RoeDeer: {
-    name: "Roe Deer",
-    nb: 5,
-    tags: ["Cloven-hoofed animal", "Deer"],
-    cost: 2,
-    type: "hCard",
-    effect: "",
-    bonus: "Receive 1 card",
-    points: "Gain 3 points for each card with a matching tree symbol",
-  },
-
-  Squeaker: {
-    name: "Squeaker",
-    nb: 4,
-    tags: ["Cloven-hoofed animal"],
-    cost: 0,
-    type: "hCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 1 point",
-  },
-
-  VioletCarpenterBee: {
-    name: "Violet Carpenter Bee",
-    nb: 4,
-    tags: [INSECT],
-    cost: 1,
-    type: "hCard",
-    effect:
-      "The tree this bee occupies counts as one additional tree of its type",
-    bonus: "",
-    points: "",
-  },
-
-  WildBoar: {
-    name: "Wild Boar",
-    nb: 5,
-    tags: ["Cloven-hoofed animal"],
-    cost: 2,
-    type: "hCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 10 points if you have at least 1 Squeaker",
-  },
-
-  Wolf: {
-    name: "Wolf",
-    nb: 4,
-    tags: [PAW],
-    cost: 3,
-    type: "hCard",
-    effect: "Receive 1 card for each Deer",
-    bonus: "Take another turn after this one",
-    points: "Gain 5 points for each card with a deer symbol",
-  },
-
-  Linden: {
-    name: "Linden",
-    nb: 9,
-    tags: [TREE],
-    cost: 1,
-    type: TREE,
-    effect: "",
-    bonus: "",
-    points: "Gain 1 point or 3 points if no other forest has more Linden Trees",
-  },
-
-  Oak: {
-    name: "Oak",
-    nb: 7,
-    tags: [TREE],
-    cost: 2,
-    type: TREE,
-    effect: "",
-    bonus: "Take another turn after this one",
-    points: "Gain 10 points if you have all 8 different tree species",
-  },
-
-  SilverFir: {
-    name: "Silver Fir",
-    nb: 6,
-    tags: [TREE],
-    cost: 2,
-    type: TREE,
-    effect: "",
-    bonus:
-      "Play a card with a paw symbol for free (you can’t use its effect or bonus)",
-    points: "Gain 2 points for each card attached to this Silver Fir",
-  },
-
-  Birch: {
-    name: "Birch",
-    nb: 10,
-    tags: [TREE],
-    cost: 0,
-    type: TREE,
-    effect: "Receive 1 card",
-    bonus: "",
-    points: "Gain 1 point",
-  },
-
-  Beech: {
-    name: "Beech",
-    nb: 10,
-    tags: [TREE],
-    cost: 1,
-    type: TREE,
-    effect: "Receive 1 card",
-    bonus: "",
-    points: "Gain 5 points if you have at least 4 Beeches",
-  },
-
-  Sycamore: {
-    name: "Sycamore",
-    nb: 6,
-    tags: [TREE],
-    cost: 2,
-    type: TREE,
-    effect: "",
-    bonus: "",
-    points: "Gain 1 point for each card with a tree symbol",
-  },
-  DouglasFir: {
-    name: "Douglas Fir",
-    nb: 7,
-    tags: [TREE],
-    cost: 2,
-    type: TREE,
-    effect: "",
-    bonus: "Take another turn after this one",
-    points: "Gain 5 points",
-  },
-  HorseChestnut: {
-    name: "Horse Chestnut",
-    nb: 11,
-    tags: [TREE],
-    cost: 1,
-    type: TREE,
-    effect: "",
-    bonus: "",
-    points: "Gain points according to the number of Horse Chestnuts you have",
-  },
-
-  //   █████████   ████             ███                          █████████  █████                    ██████     ██████  ████
-  //  ███░░░░░███ ░░███            ░░░                          ███░░░░░███░░███                    ███░░███   ███░░███░░███
-  // ░███    ░███  ░███  ████████  ████  ████████    ██████    ░███    ░░░  ░███████   █████ ████  ░███ ░░░   ░███ ░░░  ░███   ██████
-  // ░███████████  ░███ ░░███░░███░░███ ░░███░░███  ███░░███   ░░█████████  ░███░░███ ░░███ ░███  ███████    ███████    ░███  ███░░███
-  // ░███░░░░░███  ░███  ░███ ░███ ░███  ░███ ░███ ░███████     ░░░░░░░░███ ░███ ░███  ░███ ░███ ░░░███░    ░░░███░     ░███ ░███████
-  // ░███    ░███  ░███  ░███ ░███ ░███  ░███ ░███ ░███░░░      ███    ░███ ░███ ░███  ░███ ░███   ░███       ░███      ░███ ░███░░░
-  // █████   █████ █████ ░███████  █████ ████ █████░░██████    ░░█████████  ████ █████ ░░████████  █████      █████     █████░░██████
-  //░░░░░   ░░░░░ ░░░░░  ░███░░░  ░░░░░ ░░░░ ░░░░░  ░░░░░░      ░░░░░░░░░  ░░░░ ░░░░░   ░░░░░░░░  ░░░░░      ░░░░░     ░░░░░  ░░░░░░
-  //                     ░███
-  //                     █████
-  //                    ░░░░░
-
-  HypsugoSavii: {
-    name: "Hypsugo savii",
-    nb: 3,
-    tags: [BAT],
-    cost: 1,
-    type: "hCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 5 points if you have at least 3 different bat species",
-  },
-
-  LarixDecidua: {
-    name: "Larix decidua",
-    nb: 7,
-    tags: [TREE, MOUNTAIN],
-    cost: 1,
-    type: TREE,
-    effect: "",
-    bonus:
-      "Play a card with a mountain symbol for free (you can’t use its effect or bonus)",
-    points: "Gain 3 points",
-  },
-
-  PinusCembra: {
-    name: "Pinus cembra",
-    nb: 7,
-    tags: [TREE, MOUNTAIN],
-    cost: 2,
-    type: TREE,
-    effect: "Receive 1 card",
-    bonus: "Receive 1 card",
-    points: "Gain 1 point for each card with a mountain symbol",
-  },
-
-  CraterellusCornucopiodes: {
-    name: "Craterellus Cornucopiodes",
-    nb: 2,
-    tags: [MUSHROOM, MOUNTAIN],
-    cost: 2,
-    type: "vCard",
-    effect: "Whenever you play a card with a mountain symbol receive 1 card",
-    bonus: "",
-    points: "",
-  },
-
-  ParnassiusPhoebus: {
-    name: "Parnassius phoebus",
-    nb: 4,
-    tags: [BUTTERFLY, MOUNTAIN],
-    cost: 0,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain points for each set of different butterflies",
-  },
-
-  Gentiana: {
-    name: "Gentiana",
-    nb: 3,
-    tags: [PLANT, MOUNTAIN],
-    cost: 0,
-    type: "vCard",
-    effect:
-      "Play a card with a butterfly symbol for free (you can’t use its effect or bonus)",
-    bonus: "",
-    points: "Gain 3 points for each card with a butterfly symbol",
-  },
-
-  VacciniumMyrtillus: {
-    name: "Vaccinium myrtillus",
-    nb: 3,
-    tags: [PLANT, MOUNTAIN],
-    cost: 1,
-    type: "vCard",
-    effect:
-      "Play a card with a amphibian symbol for free (you can’t use its effect or bonus)",
-    bonus: "",
-    points: "Gain 2 points for each different bird",
-  },
-
-  IchthyosauraAlpestris: {
-    name: "Ichthyosaura Alpestris",
-    nb: 3,
-    tags: [AMPHIBIAN, MOUNTAIN],
-    cost: 1,
-    type: "vCard",
-    effect: "",
-    bonus:
-      "Play a card with a mountain symbol, and a card with an insect symbol for free (you can’t use its effect or bonus)",
-    points: "Gain 2 points for each card with an insect symbol",
-  },
-
-  AquilaChrysaetos: {
-    name: "Aquila chrysaetos",
-    nb: 3,
-    tags: [BIRD, MOUNTAIN],
-    cost: 1,
-    type: "vCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 1 point for each card with a paw or amphibian symbol",
-  },
-
-  CorvusCorax: {
-    name: "Corvus corax",
-    nb: 2,
-    tags: [BIRD, MOUNTAIN],
-    cost: 1,
-    type: "vCard",
-    effect: "Receive 1 card",
-    bonus: "",
-    points: "Gain 5 points",
-  },
-
-  LeontopodiumNivale: {
-    name: "Leontopodium nivale",
-    nb: 2,
-    tags: [PLANT, MOUNTAIN],
-    cost: 1,
-    type: "vCard",
-    effect: "Receive 1 card",
-    bonus: "Receive 1 card",
-    points: "Gain 3 points",
-  },
-
-  GypaetusBarbatus: {
-    name: "Gypaetus barbatus",
-    nb: 3,
-    tags: [BIRD, MOUNTAIN],
-    cost: 1,
-    type: "vCard",
-    effect: "Place 2 cards from the clearing in your cave",
-    bonus: "",
-    points: "Gain 1 point for each card in your cave",
-  },
-
-  CapraIbex: {
-    name: "Capra ibex",
-    nb: 3,
-    tags: ["Cloven-hoofed animal", MOUNTAIN],
-    cost: 3,
-    type: "hCard",
-    effect: "Take another turn after this one",
-    bonus: "",
-    points: "Gain 10 points",
-  },
-
-  LepusTimidus: {
-    name: "Lepus timidus",
-    nb: 3,
-    tags: [PAW, MOUNTAIN],
-    cost: 0,
-    type: "hCard",
-    effect: "Counts as a European Hare",
-    bonus: "",
-    points: "Gain 1 point for each European Hare",
-  },
-
-  MarmotaMarmota: {
-    name: "Marmota marmota",
-    nb: 4,
-    tags: [PAW, MOUNTAIN],
-    cost: 1,
-    type: "hCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 3 points for each different plants",
-  },
-
-  RupicapraRupicapra: {
-    name: "Rupicapra rupicapra",
-    nb: 3,
-    tags: ["Cloven-hoofed animal", MOUNTAIN],
-    cost: 1,
-    type: "hCard",
-    effect: "",
-    bonus: "",
-    points: "Gain 3 points for each card with a matching tree symbol",
-  },
-
-  TetraoUrogallus: {
-    name: "Tetrao urogallus",
-    nb: 4,
-    tags: [BIRD, MOUNTAIN],
-    cost: 1,
-    type: "hCard",
-    effect:
-      "Play a card with a plant symbol for free (you can’t use its effect or bonus)",
-    bonus: "",
-    points: "Gain 1 point for each card with a plant symbol",
-  },
-
-  // ██████████     █████
-  //░░███░░░░░█    ░░███
-  // ░███  █ ░   ███████   ███████  ██████
-  // ░██████    ███░░███  ███░░███ ███░░███
-  // ░███░░█   ░███ ░███ ░███ ░███░███████
-  // ░███ ░   █░███ ░███ ░███ ░███░███░░░
-  // ██████████░░████████░░███████░░██████
-  //░░░░░░░░░░  ░░░░░░░░  ░░░░░███ ░░░░░░
-  //                      ███ ░███
-  //                     ░░██████
-  //                      ░░░░░░
-  Sambucus: {
-    name: "Elderberry",
-    nb: 4,
-    tags: [EDGE, SHRUB],
-    cost: 2,
-    type: TREE,
-    effect: "Whenever you play a card with a plant symbol receive 1 card",
-    bonus:
-      "Play a card with a plant symbol for free (you can’t use its effect or bonus)",
-    points: "",
-  },
-
-  CommonHazel: {
-    name: "Common Hazel",
-    nb: 4,
-    tags: [EDGE, SHRUB],
-    cost: 2,
-    type: TREE,
-    effect: "Whenever you play a card with a bat symbol receive 1 card",
-    bonus:
-      "Play a card with a bat symbol for free (you can’t use its effect or bonus)",
-    points: "",
-  },
-
-  Blackthorn: {
-    name: "Blackthorn",
-    nb: 4,
-    tags: [EDGE, SHRUB],
-    cost: 2,
-    type: TREE,
-    effect: "Whenever you play a card with a butterfly symbol receive 1 card",
-    bonus:
-      "Play a card with a butterfly symbol for free (you can’t use its effect or bonus)",
-    points: "",
-  },
-
-  WildBoarFemale: {
-    name: "Wild Boar (Female)",
-    nb: 3,
-    tags: [EDGE, CLOVEN],
-    cost: 2,
-    type: H_CARD,
-    effect: "Remove all cards in the clearing from the game",
-    bonus: "Play a squeaker for free",
-    points: "Gain 10 points for each squeaker",
-  },
-
-  Beehive: {
-    name: "Bee Swarm",
-    nb: 3,
-    tags: [EDGE, INSECT],
-    cost: 1,
-    type: H_CARD,
-    effect:
-      "Put all cards with a plant, shrub or tree symbol from the clearing in your cave",
-    bonus: "",
-    points: "Gain 1 point for each card with a plant symbol",
-  },
-
-  EuropeanBison: {
-    name: "European Bison",
-    nb: 3,
-    tags: [EDGE, CLOVEN],
-    cost: 3,
-    type: H_CARD,
-    effect: "Take another turn after this one",
-    bonus: "",
-    points: "Gain 2 points for each card with an oak or beech symbol",
-  },
-
-  EuropeanWildcat: {
-    name: "European Wildcat",
-    nb: 3,
-    tags: [EDGE, PAW],
-    cost: 1,
-    type: H_CARD,
-    effect: "Take 1 card from the clearing",
-    bonus: "",
-    points: "Gain 1 point for each card with a woodland edge symbol",
-  },
-
-  CommonPipistrelle: {
-    name: "Common Pipistrelle",
-    nb: 3,
-    tags: [EDGE, BAT],
-    cost: 1,
-    type: H_CARD,
-    effect: "",
-    bonus: "",
-    points: "Gain 5 points if you have at least 3 different bat species",
-  },
-
-  SqueakerEdge: {
-    name: "Squeaker",
-    nb: 3,
-    tags: [EDGE, CLOVEN],
-    cost: 0,
-    type: H_CARD,
-    effect: "",
-    bonus: "",
-    points: "Gain 1 point",
-  },
-
-  Mosquito: {
-    name: "Crane Fly",
-    nb: 3,
-    tags: [EDGE, INSECT],
-    cost: 1,
-    type: H_CARD,
-    effect: "Play any number of bat cards for free",
-    bonus: "Take all cards with a bat symbol from the clearing into your hand",
-    points: "Gain 1 point for each card with a bat symbol",
-  },
-
-  EuropeanPolecat: {
-    name: "European Polecat",
-    nb: 3,
-    tags: [EDGE, PAW],
-    cost: 2,
-    type: H_CARD,
-    effect: "",
-    bonus: "Take another turn after this one",
-    points: "Gain 10 points if this is the only card on a tree or shrub",
-  },
-
-  MapButterfly: {
-    name: "Map Butterfly",
-    nb: 4,
-    tags: [EDGE, INSECT, BUTTERFLY],
-    cost: 0,
-    type: V_CARD,
-    effect: "",
-    bonus: "",
-    points: "Gain points for each set of different butterflies",
-  },
-
-  Digitalis: {
-    name: "Digitalis",
-    nb: 4,
-    tags: [EDGE, PLANT],
-    cost: 0,
-    type: V_CARD,
-    effect: "",
-    bonus: "",
-    points: "Gain points for different plants",
-  },
-
-  Urtica: {
-    name: "Stinging Nettle",
-    nb: 3,
-    tags: [EDGE, PLANT],
-    cost: 0,
-    type: V_CARD,
-    effect: "Any number of butteflies may share a slot on this tree or shrub",
-    bonus: "",
-    points: "Gain 2 points for each card with a butterfly symbol",
-  },
-
-  GreatGreenBushCricket: {
-    name: "Great Green Bush-Cricket",
-    nb: 3,
-    tags: [EDGE, INSECT],
-    cost: 1,
-    type: V_CARD,
-    effect:
-      "Play a card with a bird symbol for free (you can’t use its effect or bonus)",
-    bonus: "",
-    points: "Gain 1 point for each card with an insect symbol",
-  },
-
-  EuropeanWaterVole: {
-    name: "Water Vole",
-    nb: 2,
-    tags: [EDGE, PAW],
-    cost: 2,
-    type: V_CARD,
-    effect: "Immediately play any number of cards from hand as tree saplings",
-    bonus: "Take another turn after this one",
-    points: "",
-  },
-
-  EurasianMagpie: {
-    name: "Eurasian Magpie",
-    nb: 3,
-    tags: [EDGE, BIRD],
-    cost: 1,
-    type: V_CARD,
-    effect: "Take 1 card from the clearing",
-    bonus: "Put 2 cards from the clearing into your cave",
-    points: "Gain 3 points",
-  },
-
-  CommonNightingale: {
-    name: "Nightingale",
-    nb: 3,
-    tags: [EDGE, BIRD],
-    cost: 1,
-    type: V_CARD,
-    effect: "",
-    bonus: "Take another turn after this one",
-    points: "Gain 5 points if it’s on a shrub",
-  },
-
-  BarnOwl: {
-    name: "Barn Owl",
-    nb: 2,
-    tags: [EDGE, BIRD],
-    cost: 2,
-    type: V_CARD,
-    effect:
-      "Take another turn after this one if you have at least one bat in your forest",
-    bonus: "",
-    points: "Gain 3 points for each card with a bat symbol",
-  },
-};
-
+// 获取卡片视图
 const getCardVisual = (card) => {
   if (!card) return { bgImg: "", bgSize: "0 0", cssClass: "" };
   const deck = card.deck;
@@ -1470,50 +1434,48 @@ const getCardVisual = (card) => {
   let cols = 1;
   let rows = 1;
 
+
   if (deck === ALPINE_DECK) {
-    img = remoteMap[MOUNTAIN];
+    img = imgUrl[MOUNTAIN]; // 阿尔卑斯扩展
     cols = 7;
     rows = 4;
-  } else if (deck === EDGE_DECK) {
-    img = remoteMap[W_CARD];
+  } else if (deck === EDGE_DECK) { // 林缘扩展
+    img = imgUrl[W_CARD];
     cols = 6;
     rows = 6;
-  } else {
+  } else { // 基础班
     if (type === TREE || type === W_CARD) {
-      img = remoteMap[TREE];
+      img = imgUrl[TREE];
       cols = 5;
       rows = 5;
     } else if (type === H_CARD) {
-      img = remoteMap[H_CARD];
+      img = imgUrl[H_CARD];
       cols = 7;
       rows = 7;
     } else if (type === V_CARD) {
-      img = remoteMap[V_CARD];
+      img = imgUrl[V_CARD];
       cols = 7;
       rows = 7;
     } else {
-      img = remoteMap[TREE];
+      img = imgUrl[TREE];
       cols = 5;
       rows = 5;
     }
   }
-
-  // 使用 app.wxss 中定义的 card-ID 类名进行定位
   const cssClass = card.id ? `card-${card.id}` : "";
 
   return {
-    bgImg: img, // WXML 中已经包含了 url('')，这里只返回链接
-    bgSize: `${cols * 100}% ${rows * 100}%`,
-    cssClass,
+    bgImg: img, // 图片链接
+    bgSize: `${cols * 100}% ${rows * 100}%`, // 图片大小
+    cssClass, // CSS定位
   };
 };
 
+// 获取树苗视图
 const getSaplingVisual = () => {
-  const img = remoteMap[V_CARD];
-  // vCard sprite sheet is 7x7 based on getCardVisual logic
+  const img = imgUrl[V_CARD];
   const cols = 7;
   const rows = 7;
-  // User says "Last image of vCard". Position at 100% 100% (Row 6, Col 6).
   return {
     bgImg: img,
     bgSize: `${cols * 100}% ${rows * 100}%`,
@@ -1524,11 +1486,11 @@ const getSaplingVisual = () => {
 // 导出常量以便其他模块使用
 module.exports = {
   CARDS_DATA,
-  SPECIES_DATA,
-  getCardVisual,
-  getSaplingVisual,
   TREE,
   H_CARD,
   V_CARD,
   W_CARD,
+  SPECIES_DATA,
+  getCardVisual,
+  getSaplingVisual,
 };

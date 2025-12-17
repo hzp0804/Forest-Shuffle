@@ -201,6 +201,16 @@ const parseActionText = (text) => {
   if (!text) return null;
   const lowerText = text.toLowerCase();
 
+  // --- 触发式逻辑 (Triggered / Passive) ---
+  if (lowerText.includes("whenever")) {
+    // 持续效果
+    return {
+      type: ACTION_TYPES.RULE_CHANGE,
+      trigger: true,
+      raw: text,
+    };
+  }
+
   // --- 摸牌逻辑 (Draw) ---
   // "Receive 1 card", "Receive 2 cards"
   if (lowerText.includes("receive")) {
@@ -209,15 +219,6 @@ const parseActionText = (text) => {
       return {
         type: ACTION_TYPES.DRAW_CARDS,
         count: parseInt(match[1], 10),
-        raw: text,
-      };
-    }
-    // "Whenever you play ... receive 1 card" (Triggered Effect - treated as explanation here)
-    if (lowerText.includes("whenever")) {
-      // 这通常是一个持续效果，可能需要特殊标记
-      return {
-        type: ACTION_TYPES.DRAW_CARDS, // 简化处理，实际逻辑需在 Game Loop 中监听
-        trigger: true,
         raw: text,
       };
     }
@@ -232,7 +233,7 @@ const parseActionText = (text) => {
   }
 
   // --- 免费打牌 (Play Free) ---
-  // カバー: "Play a card with ... for free", "Play a squeaker for free", "Play any number..."
+  // カバー: "Play a card with ... for free", "免费打出一只小野猪", "Play any number..."
   if (
     lowerText.includes("for free") &&
     (lowerText.includes("play") || lowerText.includes("played"))

@@ -386,7 +386,6 @@ Page({
 
     // 游戏进行中不清空座位，保留身份便于后续返回
     if (roomStatus === "playing") {
-      wx.showToast({ title: "已退出，可随时重新进入", icon: "none" });
       this.leaveRoomLocal();
       return;
     }
@@ -806,49 +805,59 @@ Page({
       });
     }
 
-    // 5. 洗整个主牌库 (Fisher-Yates)
+    // 5. 洗基础牌库 (Fisher-Yates)
     for (let i = rawDeck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [rawDeck[i], rawDeck[j]] = [rawDeck[j], rawDeck[i]];
     }
 
     // 6. 插入冬季卡
-    const winterOffset = (roomSettings && roomSettings.winterStartOffset) || 30;
-    const splitIndex = Math.max(0, rawDeck.length - winterOffset);
+    // 逻辑：将冬季卡洗入牌库底部约 1/3 处
+    // 这样保证发初始手牌时绝不会发到冬季卡
+    const oneThird = Math.floor(rawDeck.length / 3);
+    // 也就是底部保留 1/3 的量用于混合冬季卡
+    // splitIndex 是上部和下部的分界点
+    const splitIndex = rawDeck.length - oneThird;
 
     const topPart = rawDeck.slice(0, splitIndex);
     const bottomPart = rawDeck.slice(splitIndex);
 
-    // 添加 3 张冬季卡
+    // 添加 3 张冬季卡 (ID需与前端判定一致，通常用 card.id='Winter' 或 type='WinterCount' 判定)
+    const WINTER_CARD_ID = "Winter";
     for (let w = 1; w <= WINTER_CARD_COUNT; w++) {
-      bottomPart.push({ id: "WINTER", uid: `WINTER_${w}_${Math.random()}` });
+      bottomPart.push({
+        id: WINTER_CARD_ID,
+        uid: `${WINTER_CARD_ID}_${w}_${Math.random().toString(36).slice(2)}`,
+        type: "Winter" // 显式标记类型
+      });
     }
 
-    // 再次洗混底部
+    // 洗混底部区域 (包含冬季卡)
     for (let i = bottomPart.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [bottomPart[i], bottomPart[j]] = [bottomPart[j], bottomPart[i]];
     }
 
+    // 合并：上部安全区 + 混有冬季卡的下部
     const finalDeck = topPart.concat(bottomPart);
 
     console.group("Shuffle Result");
-    console.log(`基础卡牌数 (Base): ${rawDeck.length}`);
-    console.log(`冬季卡牌数 (Winter): ${WINTER_CARD_COUNT}`);
-    console.log(
-      `总卡牌数 (Total): ${finalDeck.length} (Target: ${totalTarget})`
-    );
-    console.log("Deck Details (Array):", finalDeck);
+    console.log(`基础卡牌数: ${rawDeck.length}`);
+    console.log(`冬季卡牌数: ${WINTER_CARD_COUNT}`);
+    console.log(`总卡牌数: ${finalDeck.length}`);
+    console.log(`安全区(Top)数量: ${topPart.length}`);
     console.groupEnd();
 
-    // 4. 发牌 (Initial Hand)
-    // 规则：通常起始手牌是 6 张
+    // 7. 发牌 (Initial Hand)
     const HAND_SIZE = 6;
     const playerStates = {};
     const turnOrder = [];
 
+    // 获取 activePlayers 的 UID/OpenID
+    // 注意：activePlayers 是 seat.occupant 对象
     activePlayers.forEach((p) => {
-      const pid = p.openId || p.uid;
+      // 优先使用 openId 作为唯一标识
+      const pid = p.openId;
       turnOrder.push(pid);
 
       const hand = [];
@@ -861,23 +870,29 @@ Page({
       playerStates[pid] = {
         hand: hand,
         cave: [],
-        forest: [], // 森林区域
+        forest: [],
         score: 0,
       };
     });
 
-    // 5. 初始 GameState
+    // 8. 初始化 GameState
+    // 随机先手
+    const firstPlayer = turnOrder[Math.floor(Math.random() * turnOrder.length)];
+
     const gameState = {
       deck: finalDeck,
-      clearing: [], // 空地/弃牌区
+      clearing: [],
       playerStates: playerStates,
-      turnOrder: turnOrder,
-      currentPlayerIdx: Math.floor(Math.random() * turnOrder.length), // 随机先手
+      activePlayer: firstPlayer, // 确保字段名一致
+      turnOrder: turnOrder, // 记录顺序备用
       roundCount: 1,
-      winterCount: 0, // 抽到的冬季卡数量
+      turnCount: 0,
+      turnReason: "normal",
+      winterCount: 0,
+      logs: [],
     };
 
-    // 6. 写入数据库
+    // 9. 写入数据库
     const db = wx.cloud.database();
     db.collection("rooms")
       .doc(roomId)
@@ -886,11 +901,11 @@ Page({
           status: "playing",
           startTime: db.serverDate(),
           gameState: gameState,
+          activePlayer: firstPlayer, // 顶层也存一份方便查询
         },
         success: () => {
           wx.hideLoading();
           console.log("Game Initialized");
-          // Watcher will handle navigation
         },
         fail: (err) => {
           wx.hideLoading();
