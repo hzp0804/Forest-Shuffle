@@ -1,5 +1,25 @@
 @import "./animations.wxss";
 
+/* Notification Bar State Colors */
+.notification-bar.normal {
+  color: #ecf0f1;
+}
+
+.notification-bar.success {
+  color: #2ecc71;
+  /* Green */
+}
+
+.notification-bar.warning {
+  color: #f1c40f;
+  /* Yellow */
+}
+
+.notification-bar.error {
+  color: #e74c3c;
+  /* Red */
+}
+
 /* 全局容器 */
 .game-container {
   display: flex;
@@ -74,6 +94,12 @@
   /* Priority to Me color if viewing self, or mix? */
   /* Maybe Gold is fine. If viewing self, it's just normal Me state */
   box-shadow: 0 0 20rpx rgba(255, 215, 0, 0.6);
+}
+
+.player-slot.selected {
+  border: 4rpx solid #3498db;
+  box-shadow: 0 0 16rpx rgba(52, 152, 219, 0.6);
+  transform: scale(1.05);
 }
 
 .player-slot.is-empty {
@@ -760,6 +786,19 @@
   align-items: center;
   justify-content: center;
   z-index: 10;
+}
+
+.draw-hint {
+  position: absolute;
+  bottom: -40rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20rpx;
+  color: #666;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 2rpx 8rpx;
+  border-radius: 8rpx;
 }
 
 /* --- Gallery Style Modal (Copied & Adapted) --- */

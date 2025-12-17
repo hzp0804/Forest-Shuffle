@@ -1,1849 +1,626 @@
-// const { calculateScore } = require("../../utils/scoring");
-const calculateScore = (forest, cave) => {
-  // TODO: Restore scoring logic. scoring.js was missing.
-  return 0;
-};
+import Utils from "../../utils/utils";
+const RewardUtils = require("../../utils/reward.js");
+const RoundUtils = require("../../utils/round.js");
+const app = getApp();
+const db = wx.cloud.database();
 
 Page({
   data: {
-    gameData: null,
-    myHand: [],
-    roomId: "",
-    allPlayers: [],
-    clearing: [],
-    myForest: [],
-    myScore: 0,
-    deckCount: 0,
-    instructionText: "",
-    previewCard: null,
-    showDetailModal: false,
-    activeTab: 0,
-    primarySelection: "",
-    targetTreeId: "",
-    targetTreeId: "",
-    selectedSlot: null, // { treeId, side, isValid }
-    selectedClearingIdx: -1,
-    isMyTurn: false,
-    isGameOver: false,
+    roomId: "", // 房间ID
+    players: [], // 玩家列表
+    deck: [], // 牌堆
+    clearing: [], // 空地
+    playerStates: {
+      oN71F18ODPCKs9SzUJKilLyCKwYo: {
+        cave: [], // 洞穴
+        forest: [], // 森林
+        hand: [], // 手牌
+      },
+    },
+
+    openId: "", // 当前登录的openId
+    openId: "", // 当前登录的openId
+    selectedPlayerOpenId: "", // 当前选中的玩家openId
+    primarySelection: "", // 当前选中的主牌UID
+    instructionState: "normal", // 指引状态 (normal, error, warning, success)
+    instructionText: "", // 指引文案
+    lastActivePlayer: "", // 上一个激活的玩家，用于判断轮次切换
+    enableAnimation: true, // 动画开关
   },
 
   onLoad(options) {
-    if (options.roomId) {
-      this.setData({ roomId: options.roomId });
-      this.initGameWatcher(options.roomId);
-    }
+    const app = getApp();
+    const openId = app.globalData.userProfile?.openId; // use const, not let
+    this.setData({
+      roomId: options.roomId,
+      openId,
+      selectedPlayerOpenId: openId,
+    });
+  },
+
+  onShow() {
+    this.startPolling();
+  },
+
+  onHide() {
+    this.stopPolling();
   },
 
   onUnload() {
-    if (this.gameWatcher) {
-      this.gameWatcher.close();
+    this.stopPolling();
+  },
+
+  startPolling() {
+    this.stopPolling();
+    if (!this.data.roomId) return;
+    this.queryGameData(this.data.roomId);
+    this.pollingTimer = setInterval(() => {
+      this.queryGameData(this.data.roomId);
+    }, 2000);
+  },
+
+  stopPolling() {
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = null;
     }
   },
 
-  initGameWatcher(roomId) {
+  async queryGameData(roomId) {
     const db = wx.cloud.database();
-    this.gameWatcher = db
-      .collection("rooms")
-      .doc(roomId)
-      .watch({
-        onChange: (snapshot) => {
-          if (snapshot.docs && snapshot.docs[0]) {
-            const room = snapshot.docs[0];
-            this.handleGameUpdate(room);
-          }
-        },
-        onError: (err) => console.error("Game watch error", err),
-      });
-  },
+    try {
+      const res = await db.collection("rooms").doc(roomId).get();
+      const serverData = res.data;
+      const processedData = Utils.processGameData(res, this.data);
 
-  computeInstruction(
-    isMyTurn,
-    hand,
-    primaryUid,
-    selectedClearingIdx,
-    isGameOver
-  ) {
-    if (isGameOver) return { text: "游戏已结束", state: "normal" };
-    if (!isMyTurn) return { text: "等待其他玩家行动...", state: "normal" };
-    if (selectedClearingIdx > -1)
-      return { text: "点击“拿取”获得该卡牌", state: "success" };
-    if (!primaryUid)
-      return { text: "轮到你了：可摸牌或打出手牌", state: "normal" };
+      // --- 1. 轮次切换提示 & 自动切视角 ---
+      const currentActive =
+        serverData.gameState?.activePlayer || serverData.activePlayer;
 
-    const mainCard = hand.find((c) => c.uid === primaryUid);
-    if (!mainCard)
-      return { text: "轮到你了：可摸牌或打出手牌", state: "normal" };
+      // 使用 turnCount (回合计数) 来精确判断新回合
+      // 只要 turnCount 增加了，说明上一个回合结束了（无论是换人了，还是触发了额外回合）
+      const currentTurnCount = serverData.gameState?.turnCount || 0;
+      const lastTurnCount = this.data.lastTurnCount || -1;
 
-    const paymentCount = hand.filter(
-      (c) => c.selected && c.uid !== primaryUid
-    ).length;
+      let isNewTurn = false;
 
-    let costs = new Set();
-    let specificMode = false;
-    let requiredCost = 0;
-    let specificBonus = "";
-
-    const { selectedSlot } = this.data;
-    // Determines if current selection is compatible with selected slot
-    let isSlotCompatible = false;
-    if (selectedSlot && selectedSlot.isValid) {
-      if (
-        mainCard.type === "H_CARD" &&
-        (selectedSlot.side === "left" || selectedSlot.side === "right")
-      )
-        isSlotCompatible = true;
-      if (
-        mainCard.type === "V_CARD" &&
-        (selectedSlot.side === "top" || selectedSlot.side === "bottom")
-      )
-        isSlotCompatible = true;
-    }
-
-    if (isSlotCompatible) {
-      specificMode = true;
-      const side = selectedSlot.side;
-      let speciesIdx = -1;
-      if (side === "top" || side === "left") speciesIdx = 0;
-      else if (side === "bottom" || side === "right") speciesIdx = 1;
-
-      const speciesList = mainCard.speciesDetails || [];
-      const targetData =
-        speciesIdx !== -1 && speciesList[speciesIdx]
-          ? speciesList[speciesIdx]
-          : mainCard;
-
-      requiredCost =
-        targetData.cost !== undefined
-          ? Number(targetData.cost)
-          : mainCard.cost !== undefined
-          ? Number(mainCard.cost)
-          : 0;
-      if (targetData.bonus) specificBonus = targetData.bonus;
-    } else {
-      if (mainCard.cost !== undefined) costs.add(Number(mainCard.cost));
-      if (mainCard.speciesDetails) {
-        mainCard.speciesDetails.forEach((s) => {
-          if (s.cost !== undefined) costs.add(Number(s.cost));
-        });
+      // 首次加载(lastTurnCount === -1) 且当前是自己，也提示
+      if (lastTurnCount === -1 && currentActive === this.data.openId) {
+        isNewTurn = true;
       }
-      if (costs.size === 0) costs.add(0);
-    }
-
-    if (specificMode) {
-      const diff = paymentCount - requiredCost;
-      if (diff < 0)
-        return {
-          text: `需支付 ${requiredCost} 张牌 (还少 ${-diff} 张)`,
-          state: "warning",
-        };
-      if (diff > 0)
-        return {
-          text: `需支付 ${requiredCost} 张牌 (多了 ${diff} 张)`,
-          state: "error",
-        };
-
-      let bonusText = specificBonus ? `，奖励：${specificBonus}` : "";
-      return {
-        text: `支付 ${requiredCost} 张牌 (完成${bonusText})`,
-        state: "success",
-      };
-    }
-
-    const sortedCosts = Array.from(costs).sort((a, b) => a - b);
-
-    if (sortedCosts.length === 1) {
-      const cost = sortedCosts[0];
-      const diff = paymentCount - cost;
-      if (diff < 0)
-        return {
-          text: `需支付 ${cost} 张牌 (还少 ${-diff} 张)`,
-          state: "warning",
-        };
-      if (diff > 0)
-        return {
-          text: `需支付 ${cost} 张牌 (多了 ${diff} 张)`,
-          state: "error",
-        };
-
-      // Success case - Check for bonuses
-      let bonusText = "";
-      const rawBonuses = new Set();
-      if (mainCard.bonus) rawBonuses.add(mainCard.bonus);
-      if (mainCard.speciesDetails) {
-        mainCard.speciesDetails.forEach((s) => {
-          if (s.bonus) rawBonuses.add(s.bonus);
-        });
+      // 只要回合数增加了，就是新回合
+      else if (currentTurnCount > lastTurnCount) {
+        isNewTurn = true;
       }
-      if (rawBonuses.size > 0) {
-        bonusText = `，奖励：${Array.from(rawBonuses).join(" / ")}`;
+
+      if (isNewTurn) {
+        if (currentActive === this.data.openId) {
+          // 只有轮到自己才提示
+          wx.showToast({ title: "轮到你了！", icon: "none", duration: 2000 });
+          processedData.selectedPlayerOpenId = this.data.openId;
+        }
       }
-      return { text: `支付 ${cost} 张牌 (完成${bonusText})`, state: "success" };
-    } else {
-      const costStr = sortedCosts.join(" 或 ");
-      if (sortedCosts.includes(paymentCount)) {
-        // Success case logic for multi-cost (unlikely for now but safe to add)
-        let bonusText = "";
-        const rawBonuses = new Set();
-        if (mainCard.bonus) rawBonuses.add(mainCard.bonus);
-        if (mainCard.speciesDetails) {
-          mainCard.speciesDetails.forEach((s) => {
-            // Try to match cost if possible? simplified: show all potentials
-            if (s.bonus) rawBonuses.add(s.bonus);
+
+      // 更新记录
+      processedData.lastActivePlayer = currentActive;
+      processedData.lastTurnCount = currentTurnCount;
+
+      // --- 2. 日志弹窗 (Game Log Popup) ---
+      const logs = serverData.gameState?.logs || [];
+      const lastIndex = this.data.lastLogIndex || 0;
+
+      if (logs.length > lastIndex) {
+        const newLogs = logs.slice(lastIndex);
+
+        // 过滤掉自己操作的日志，只显示别人的
+        const othersLogs = newLogs.filter(
+          (log) => log.operator !== this.data.openId
+        );
+
+        if (othersLogs.length > 0) {
+          // 拼接显示
+          const content = othersLogs
+            .map((log) => {
+              // 尝试根据 openId 找昵称
+              const user = (serverData.players || []).find(
+                (p) => p.openId === log.operator
+              );
+              const nick = user ? user.nickName : "对手";
+              return `${nick}: ${log.action}`;
+            })
+            .join("\n");
+
+          wx.showModal({
+            title: "游戏记录",
+            content: content,
+            showCancel: false,
+            confirmText: "知道了",
           });
         }
-        if (rawBonuses.size > 0) {
-          bonusText = `，奖励：${Array.from(rawBonuses).join(" / ")}`;
-        }
-        return {
-          text: `支付 ${paymentCount} 张牌 (完成${bonusText})`,
-          state: "success",
-        };
-      }
-      return {
-        text: `需支付 ${costStr} 张牌 (已选 ${paymentCount})`,
-        state: "warning",
-      };
-    }
-  },
-
-  handleGameUpdate(room) {
-    this.roomCache = room;
-    if (!room) return;
-    const app = getApp();
-    const myOpenId = app.globalData.userProfile?.openId;
-    const prevSelected = new Set(
-      (this.data.myHand || []).filter((c) => c.selected).map((c) => c.uid)
-    );
-    const prevPrimary = this.data.primarySelection || "";
-
-    // 假设 gameState 结构
-    const gameState = room.gameState || {};
-    const playerStates = gameState.playerStates || {};
-    const myState = playerStates[myOpenId];
-
-    // 处理玩家列表 (6个座位)
-    const rawPlayers = room.players || Array(6).fill(null);
-    const allPlayers = rawPlayers.map((p) => {
-      if (!p) return { isEmpty: true };
-
-      const pState = playerStates[p.openId];
-      return {
-        isEmpty: false,
-        openId: p.openId,
-        nickName: p.nickName,
-        avatarUrl: p.avatarUrl,
-        isMe: p.openId === myOpenId,
-        handCount: pState ? (pState.hand || []).length : 0,
-        score: pState ? pState.score : 0,
-      };
-    });
-
-    // 处理手牌：将 ID 映射回详细信息
-    // 处理手牌：将 ID 映射回详细信息
-    const {
-      CARDS_DATA,
-      SPECIES_DATA,
-      getCardVisual,
-    } = require("../../data/cardData.js");
-
-    // --- Count Real Cards in Game ---
-    const realCounts = {};
-    const countItem = (c) => {
-      if (!c || !c.id) return;
-      realCounts[c.id] = (realCounts[c.id] || 0) + 1;
-    };
-
-    if (gameState) {
-      (gameState.deck || []).forEach(countItem);
-      (gameState.clearing || []).forEach(countItem);
-      Object.values(gameState.playerStates || {}).forEach((p) => {
-        (p.hand || []).forEach(countItem);
-        (p.forest || []).forEach((tree) => {
-          countItem(tree.center);
-          if (tree.slots) {
-            Object.values(tree.slots).forEach((s) => {
-              if (s) countItem(s);
-            });
-          }
-        });
-      });
-    }
-
-    // --- Species Metadata Helper ---
-    const tagMap = {
-      Tree: "树",
-      tree: "树",
-      Plant: "植物",
-      plant: "植物",
-      Mushroom: "蘑菇",
-      mushroom: "蘑菇",
-      Bird: "鸟类",
-      bird: "鸟类",
-      Insect: "昆虫",
-      insect: "昆虫",
-      Butterfly: "蝴蝶",
-      butterfly: "蝴蝶",
-      Amphibian: "两栖动物",
-      amphibian: "两栖动物",
-      Paw: "兽类",
-      paw: "兽类",
-      Bat: "蝙蝠",
-      bat: "蝙蝠",
-      Deer: "鹿",
-      deer: "鹿",
-      "Cloven-hoofed animal": "偶蹄动物",
-      "cloven-hoofed animal": "偶蹄动物",
-      Mountain: "山脉",
-      mountain: "山脉",
-      "Woodland Edge": "林缘",
-      "woodland edge": "林缘",
-      Shrub: "灌木",
-      shrub: "灌木",
-    };
-
-    const findSpeciesMeta = (code = "") => {
-      if (!code) return {};
-      if (SPECIES_DATA[code]) return SPECIES_DATA[code];
-      const key = Object.keys(SPECIES_DATA).find(
-        (k) => k.toLowerCase() === code.toLowerCase()
-      );
-      return key ? SPECIES_DATA[key] : {};
-    };
-
-    const enrichCard = (simpleCard) => {
-      if (!simpleCard || !simpleCard.id) return null;
-
-      let base = { ...simpleCard };
-      let initialData = CARDS_DATA[simpleCard.id];
-
-      if (simpleCard.sapling) {
-        base.name = "树苗";
-        base.bgImg = "/images/cards/vCards.jpg";
-        base.bgSize = "700% 700%";
-        base.cssClass = "card-233";
-      } else if (simpleCard.id === "WINTER") {
-        base.name = "冬季卡";
-        base.type = "WINTER";
-        base.color = "#a0d8ef";
-        base.cssClass = "card-67";
-        base.bgImg = "/images/cards/trees.jpg";
-        base.bgSize = "500% 500%";
-      } else if (initialData) {
-        base = { ...initialData, ...simpleCard };
-        const visual = getCardVisual(initialData);
-        base.bgImg = visual.bgImg;
-        base.bgSize = visual.bgSize;
-        base.cssClass = `card-${simpleCard.id}`;
+        // 更新索引
+        processedData.lastLogIndex = logs.length;
       }
 
-      if (base.species) {
-        base.speciesDetails = base.species.map((code) => {
-          const meta = findSpeciesMeta(code);
-          const rawTags = meta.tags || [];
-          const tags = rawTags
-            .map((t) => {
-              const k = (t || "").trim();
-              return tagMap[k] || tagMap[k.toLowerCase()] || k;
-            })
-            .filter(Boolean);
-
-          return {
-            key: code,
-            displayName: meta.name || code,
-            tags: tags,
-            cost: meta.cost,
-            type: meta.type,
-            nb: initialData ? initialData.nb || meta.nb : meta.nb,
-            effect: meta.effect || "",
-            bonus: meta.bonus || "",
-            points: meta.points || "",
-          };
-        });
-
-        if (!base.name && base.speciesDetails.length) {
-          base.name = base.speciesDetails.map((s) => s.displayName).join(" / ");
-        }
-      }
-
-      if (base.type) {
-        let t = String(base.type).toUpperCase();
-        if (t === "VCARD") t = "V_CARD";
-        if (t === "HCARD") t = "H_CARD";
-        base.type = t;
-      }
-
-      return base;
-    };
-
-    // Enrich Logs
-    if (gameState.logs && gameState.logs.length) {
-      gameState.logs = gameState.logs.map((log) => ({
-        ...log,
-        cards: (log.cards || []).map((c) => {
-          const base = enrichCard(c);
-          return { ...base, logType: c.logType };
-        }),
-      }));
+      this.setData(processedData);
+    } catch (e) {
+      console.error("Query Game Data Failed", e);
     }
+  },
 
-    const displayLogs = [...(gameState.logs || [])].reverse();
-
-    const rawHand = myState ? myState.hand : [];
-    const richHand = rawHand
-      .map(enrichCard)
-      .filter((c) => c)
-      .map((c) => ({
-        ...c,
-        selected: prevSelected.has(c.uid),
-      }));
-
-    // 处理空地区域 (Clearing)
-    const rawClearing = gameState.clearing || [];
-    const richClearing = rawClearing.map(enrichCard).filter((c) => c);
-
-    // 处理森林区域 (Display Forest) - Supports viewing other players
-    const viewingId = this.data.viewingPlayerId || myOpenId;
-    const displayState = gameState.playerStates[viewingId];
-    const rawForest = displayState ? displayState.forest || [] : [];
-    // If forest is flat list (legacy), treat them all as separate trees or saplings?
-    // Ideally we assume new structure: objects with { isTree: true, ... } OR { type: 'TREE_GROUP', center: ..., slots: ... }
-    // But since we control the write, let's define the Read structure.
-
-    // We expect gameState.playerStates[x].forest to be an array of "TreeGroup" objects.
-    // If it's a flat array of cards (from previous simple impl), we wrap them as trees for compatibility/migration.
-    let richForest = [];
-    if (rawForest.length > 0 && rawForest[0].id) {
-      // Legacy flat format detection (item has .id directly) -> Wrap as simple trees
-      richForest = rawForest.map((c) => {
-        const rich = enrichCard(c);
-        return {
-          _id: c.uid || Math.random().toString(36),
-          center: rich,
-          slots: { top: null, bottom: null, left: null, right: null },
-        };
-      });
-    } else {
-      // New Format: Array of TreeGroup objects
-      richForest = rawForest.map((g) => ({
-        _id: g._id,
-        center: enrichCard(g.center),
-        slots: {
-          top: enrichCard(g.slots?.top),
-          bottom: enrichCard(g.slots?.bottom),
-          left: enrichCard(g.slots?.left),
-          right: enrichCard(g.slots?.right),
-        },
-      }));
+  onPlayerTap(e) {
+    const targetOpenId = e.currentTarget.dataset.openid;
+    if (targetOpenId) {
+      this.setData({ selectedPlayerOpenId: targetOpenId });
+      // 重新处理数据以刷新视图（因为 processGameData 依赖 selectedPlayer）
+      // 简单触发一次查询即可，或者手动调用 processGameData
+      this.queryGameData(this.data.roomId);
     }
-
-    const deckCount = (gameState.deck || []).length;
-    const winterCount = gameState.winterCount || 0;
-    const isGameOver = gameState.status === "finished" || winterCount >= 3;
-
-    const turnOrder = gameState.turnOrder || [];
-    const currentIdx = gameState.currentPlayerIdx || 0;
-
-    // Robust check for turn
-    let isMyTurn = turnOrder.length > 0 && turnOrder[currentIdx] === myOpenId;
-
-    // Safety fallback for single player: If only 1 player, it MUST be their turn (unless game over)
-    if (turnOrder.length === 1 && turnOrder[0] === myOpenId) {
-      isMyTurn = true;
-    }
-
-    // Vibrate if it becomes my turn
-    if (isMyTurn && !this.data.isMyTurn && !isGameOver) {
-      wx.vibrateShort({ type: "medium" });
-      console.log("Turn changed to me, vibrating...");
-    }
-
-    // --- Turn Summary / Action Log Logic ---
-    if (gameState.lastTurnSummary && gameState.lastTurnSummary.actionTime) {
-      const remoteTime = gameState.lastTurnSummary.actionTime;
-      const localTime = this.data.lastSummaryTime || 0;
-
-      if (remoteTime > localTime) {
-        // Always update time tracking
-        this.setData({ lastSummaryTime: remoteTime });
-
-        const actorId = gameState.lastTurnSummary.playerOpenId;
-        // Only trigger popup if action was by OTHERS
-        if (actorId && actorId !== myOpenId) {
-          this.setData({ showLogModal: true });
-
-          // Auto hide logs after 2 seconds
-          if (this._logTimer) clearTimeout(this._logTimer);
-          this._logTimer = setTimeout(() => {
-            this.setData({ showLogModal: false });
-          }, 2000);
-        }
-      }
-    }
-
-    const nextPrimary = prevSelected.has(prevPrimary)
-      ? prevPrimary
-      : richHand.find((c) => c.selected)?.uid || "";
-    const { text: instructionText, state: instructionState } =
-      this.computeInstruction(isMyTurn, richHand, nextPrimary, -1, isGameOver);
-
-    const deckBack = enrichCard({ sapling: true, id: "DECK" });
-
-    this.setData({
-      gameData: gameState,
-      allPlayers: allPlayers,
-      myHand: richHand,
-      clearing: richClearing,
-      myForest: richForest, // 新增森林数据
-      myScore: calculateScore(richForest, myState ? myState.cave : []),
-      deckCount: deckCount,
-      deckBack: deckBack,
-      instructionText: instructionText,
-      instructionState: instructionState,
-      userProfile: app.globalData.userProfile || {},
-      primarySelection: nextPrimary,
-      targetTreeId: this.data.targetTreeId,
-      isMyTurn: isMyTurn,
-      isGameOver: isGameOver,
-      displayLogs: displayLogs,
-      viewingPlayerNick:
-        viewingId === myOpenId
-          ? "我"
-          : allPlayers.find((p) => p && p.openId === viewingId)?.nickName ||
-            "玩家",
-      isViewingSelf: viewingId === myOpenId,
-      // showTurnSummary removed
-    });
-
-    if (isGameOver && !this.data.hasShownResult) {
-      this.setData({ hasShownResult: true });
-      wx.showModal({
-        title: "游戏结束",
-        content: "第三张冬季卡已出现，游戏结束！\n请查看最终得分。",
-        showCancel: false,
-      });
-    }
-
-    // 动态更新标题
-    wx.setNavigationBarTitle({
-      title: `牌库 (${deckCount}) - 冬季卡 (${winterCount})`,
-    });
   },
 
-  stripCard(card = {}) {
-    const base = { id: card.id, uid: card.uid };
-    if (card.sapling) base.sapling = true;
-    return base;
-  },
-
-  getCardSymbol(card) {
-    if (!card || !card.id) return null;
-    const id = Number(card.id);
-
-    // 1. Trees (Base Game & Alpine)
-    if (id >= 1 && id <= 9) return "LINDEN";
-    if (id >= 10 && id <= 16) return "OAK";
-    if (id >= 17 && id <= 22) return "SILVER_FIR";
-    if (id >= 23 && id <= 32) return "BIRCH";
-    if (id >= 33 && id <= 42) return "BEECH";
-    if (id >= 43 && id <= 48) return "SYCAMORE";
-    if (id >= 49 && id <= 55) return "DOUGLAS_FIR";
-    if (id >= 56 && id <= 66) return "HORSE_CHESTNUT";
-    if (id >= 162 && id <= 168) return "LARCH";
-    if (id >= 169 && id <= 175) return "PINE";
-
-    // 2. Dwellers / Split Cards
-    // TODO: Map remaining IDs to their symbols.
-    // Currently missing data for IDs 70-161 and 176+
-    // For now, return UNKNOWN to block bonus (Strict Mode)
-
-    return "UNKNOWN";
-  },
-
-  checkBonusCondition(mainCard, payCards) {
-    // Rule: To get the bonus, all payment cards must share the same symbol as the played card.
-    const targetSymbol = this.getCardSymbol(mainCard);
-
-    // Strict Mode: If we don't know the symbol, we cannot validate the bonus.
-    // User requirement: "Reward needs to pay corresponding color to trigger".
-    // Therefore, UNKNOWN symbols should NOT trigger bonuses.
-    if (!targetSymbol || targetSymbol === "UNKNOWN") return false;
-
-    return payCards.every((c) => {
-      const sym = this.getCardSymbol(c);
-      return sym === targetSymbol;
-    });
-  },
-
-  getMyOpenId() {
-    return getApp().globalData.userProfile?.openId;
-  },
-
-  isMyTurnNow() {
-    const { gameData } = this.data;
-    const myId = this.getMyOpenId();
-    const order = gameData?.turnOrder || [];
-    if (!order.length) return false;
-    return order[gameData.currentPlayerIdx || 0] === myId;
-  },
-
-  async withLatestState() {
-    const roomId = this.data.roomId;
-    if (!roomId) throw new Error("缺少房间 ID");
-    const db = wx.cloud.database();
-    const res = await db.collection("rooms").doc(roomId).get();
-    const room = res.data;
-    if (!room || !room.gameState) throw new Error("游戏未初始化");
-    const gameState = room.gameState;
-    const myId = this.getMyOpenId();
-    const myState = gameState.playerStates?.[myId];
-    if (!myState) throw new Error("未找到你的玩家状态");
-    return { db, room, gameState, myState, myId };
-  },
-
-  appendLog(gameState, text, cards = []) {
-    const logs = gameState.logs || [];
-    const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
-    logs.push({
-      text: text,
-      time: timeStr,
-      cards: cards,
-    });
-    // Keep last 50 logs
-    if (logs.length > 50) logs.shift();
-    gameState.logs = logs;
-  },
-
-  advanceTurn(state) {
-    const order = state.turnOrder || [];
-    if (!order.length) return state;
-    const nextIdx = ((state.currentPlayerIdx || 0) + 1) % order.length;
-    // Reset draw count and action state for the next player
-    return {
-      ...state,
-      currentPlayerIdx: nextIdx,
-      drawCount: 0,
-      turnAction: null,
-    };
-  },
-
-  onCardTap(e) {
+  onHandTap(e) {
     const uid = e.currentTarget.dataset.uid;
-    const { myHand, primarySelection } = this.data;
-    let nextPrimary = primarySelection;
-    const newHand = (myHand || []).map((c) => {
-      // Toggle selection logic
-      if (c.uid === uid) {
-        const toggled = !c.selected;
-        if (toggled && !nextPrimary) {
-          nextPrimary = uid;
-        } else if (!toggled && nextPrimary === uid) {
-          // If deselecting primary, pick another selected as primary
-          nextPrimary = "";
-        }
-        return { ...c, selected: toggled };
-      }
-      return c;
-    });
-
-    // Re-evaluate primary if we lost it
-    if (!nextPrimary) {
-      const fallback = newHand.find((item) => item.selected);
-      nextPrimary = fallback ? fallback.uid : "";
-    }
-
-    // Selecting hand card clears clearing selection AND slot selection
-    const { text: instructionText, state: instructionState } =
-      this.computeInstruction(
-        this.data.isMyTurn,
-        newHand,
-        nextPrimary,
-        -1,
-        this.data.isGameOver
-      );
-
-    this.setData({
-      myHand: newHand,
-      primarySelection: nextPrimary,
-      selectedClearingIdx: -1,
-      instructionText,
-      instructionState,
-    });
+    const updates = Utils.handleHandTap(uid, this.data);
+    if (updates) this.setData(updates);
   },
 
+
+
+  // 6. 点击空地卡牌
   onClearingCardTap(e) {
-    const idx = Number(e.currentTarget.dataset.idx);
-    const current = this.data.selectedClearingIdx;
-    const next = current === idx ? -1 : idx;
-
-    // Selecting clearing card clears hand selection
-    const newHand = (this.data.myHand || []).map((c) => ({
-      ...c,
-      selected: false,
-    }));
-    const { text: instructionText, state: instructionState } =
-      this.computeInstruction(
-        this.data.isMyTurn,
-        newHand,
-        "",
-        next,
-        this.data.isGameOver
-      );
-
-    this.setData({
-      selectedClearingIdx: next,
-      primarySelection: "",
-      selectedSlot: null,
-      targetTreeId: "",
-      myHand: newHand,
-      instructionText,
-      instructionState,
-    });
-  },
-
-  onTreeTap(e) {
-    const treeId = e.currentTarget.dataset.id;
-    this.setData({
-      targetTreeId: this.data.targetTreeId === treeId ? "" : treeId,
-    });
-  },
-
-  async onDrawCard() {
-    if (!this.isMyTurnNow()) {
-      wx.showToast({ title: "当前不是你的回合", icon: "none" });
-      return;
-    }
-    if (this._actionBusy) return;
-    if (this.data.isGameOver) {
-      wx.showToast({ title: "游戏已结束", icon: "none" });
-      return;
-    }
-
-    this._actionBusy = true;
-    try {
-      const { db, room, gameState, myState, myId } =
-        await this.withLatestState();
-
-      // Check turn
-      const latestOrder = gameState.turnOrder || [];
-      if (latestOrder[gameState.currentPlayerIdx || 0] !== myId) {
-        wx.showToast({ title: "当前不是你的回合", icon: "none" });
-        return;
-      }
-
-      // 1. Check if allowed to draw
-      // Cannot draw if already played a card (action 'play') or full turns
-      if (gameState.turnAction === "play") {
-        wx.showToast({ title: "已打出牌，本回合结束", icon: "none" });
-        // Should have advanced already, but just in case
-        return;
-      }
-
-      // Check hand limit (10)
-      if ((myState.hand || []).length >= 10) {
-        wx.showToast({ title: "手牌已满10张，不能摸牌", icon: "none" });
-        return;
-      }
-
-      const deck = [...(gameState.deck || [])];
-      if (!deck.length) {
-        wx.showToast({ title: "牌库已空", icon: "none" });
-        return;
-      }
-
-      // Perform Draw
-      const drawn = deck.shift();
-      const currentDrawCount = (gameState.drawCount || 0) + 1;
-
-      const nextState = {
-        ...gameState,
-        deck,
-        playerStates: { ...gameState.playerStates },
-        turnAction: "draw",
-        drawCount: currentDrawCount,
-      };
-
-      const nextMine = { ...myState, hand: [...(myState.hand || [])] };
-
-      let message = "摸到 1 张牌";
-      if (drawn.id === "WINTER") {
-        const wCount = (nextState.winterCount || 0) + 1;
-        nextState.winterCount = wCount;
-        if (wCount >= 3) {
-          nextState.status = "finished";
-        }
-        message = "翻出冬季卡";
-      } else {
-        nextMine.hand.push(this.stripCard(drawn));
-      }
-      nextState.playerStates[myId] = nextMine;
-
-      // Check End Valid Conditions
-      // Rule: Draw 2 cards OR draw until hand limit (10).
-      // If hand reaches 10, stop.
-      // If drawCount == 2, stop.
-      const handSize = nextMine.hand.length;
-      let shouldEnd = false;
-      if (currentDrawCount >= 2) shouldEnd = true;
-      if (handSize >= 10) shouldEnd = true;
-
-      let finalState = nextState;
-      if (shouldEnd) {
-        finalState = this.advanceTurn(finalState);
-        message += " (回合结束)";
-      } else {
-        message += " (请再摸一张)";
-      }
-
-      // Add Log
-      const logText =
-        `${this.data.userProfile.nickName} 摸了1张牌` +
-        (drawn.id === "WINTER" ? " (冬季卡)" : "");
-      const logCards =
-        drawn.id === "WINTER"
-          ? [{ ...this.stripCard(drawn), logType: "winter" }]
-          : [];
-      this.appendLog(finalState, logText, logCards);
-
-      await db
-        .collection("rooms")
-        .doc(room._id)
-        .update({
-          data: { gameState: finalState },
-        });
-
-      // Local state update hints
-      this.setData({
-        selectedClearingIdx: -1,
-        selectedSlot: null,
-        targetTreeId: "",
-        primarySelection: "",
-        myHand: (this.data.myHand || []).map((c) => ({
-          ...c,
-          selected: false,
-        })),
-      });
-
-      wx.showToast({ title: message, icon: "none" });
-    } catch (err) {
-      console.error("Draw card failed", err);
-      wx.showToast({ title: err.message || "操作失败，请重试", icon: "none" });
-    } finally {
-      this._actionBusy = false;
-    }
-  },
-
-  checkClearingLimit(clearing) {
-    if (clearing.length >= 10) {
-      return [];
-    }
-    return clearing;
-  },
-
-  async onConfirmTake() {
-    const idx = this.data.selectedClearingIdx;
-    if (idx < 0) {
-      wx.showToast({ title: "请先选择一张空地卡牌", icon: "none" });
-      return;
-    }
-    if (!this.isMyTurnNow()) {
-      wx.showToast({ title: "当前不是你的回合", icon: "none" });
-      return;
-    }
-    if (this._actionBusy) return;
-    if (this.data.isGameOver) {
-      wx.showToast({ title: "游戏已结束", icon: "none" });
-      return;
-    }
-    this._actionBusy = true;
-    try {
-      const { db, room, gameState, myState, myId } =
-        await this.withLatestState();
-
-      // 1. Check turn consistency
-      const latestOrder = gameState.turnOrder || [];
-      if (latestOrder[gameState.currentPlayerIdx || 0] !== myId) {
-        wx.showToast({ title: "当前不是你的回合", icon: "none" });
-        return;
-      }
-
-      // 2. Check restrictions
-      if (gameState.turnAction === "play") {
-        wx.showToast({ title: "已打出牌，本回合结束", icon: "none" });
-        return;
-      }
-      if ((myState.hand || []).length >= 10) {
-        wx.showToast({ title: "手牌已满10张，无法拿取", icon: "none" });
-        return;
-      }
-
-      const clearing = [...(gameState.clearing || [])];
-      const picked = clearing[idx];
-      if (!picked) {
-        wx.showToast({ title: "这个位置没有牌", icon: "none" });
-        return;
-      }
-      clearing.splice(idx, 1);
-
-      const currentDrawCount = (gameState.drawCount || 0) + 1;
-
-      const nextState = {
-        ...gameState,
-        clearing,
-        playerStates: { ...gameState.playerStates },
-        turnAction: "draw",
-        drawCount: currentDrawCount,
-      };
-
-      const nextMine = {
-        ...myState,
-        hand: [...(myState.hand || []), this.stripCard(picked)],
-      };
-      nextState.playerStates[myId] = nextMine;
-
-      // Check End Turn
-      const handSize = nextMine.hand.length;
-      let shouldEnd = false;
-      if (currentDrawCount >= 2) shouldEnd = true;
-      if (handSize >= 10) shouldEnd = true;
-
-      let finalState = nextState;
-      let message = "拿到 1 张牌";
-
-      if (shouldEnd) {
-        finalState = this.advanceTurn(finalState);
-        message += " (回合结束)";
-      } else {
-        message += " (请再拿一张)";
-      }
-
-      // Add Log
-      const logText = `${this.data.userProfile.nickName} 从空地拿取了 ${
-        picked.name || "一张牌"
-      }`;
-      const logCards = [{ ...this.stripCard(picked), logType: "take" }];
-      this.appendLog(finalState, logText, logCards);
-
-      await db
-        .collection("rooms")
-        .doc(room._id)
-        .update({
-          data: { gameState: finalState },
-        });
-      // Clear selection after taking
+    const idx = e.currentTarget.dataset.idx;
+    if (this.data.selectedClearingIdx === idx) {
       this.setData({ selectedClearingIdx: -1 });
-      wx.showToast({ title: message, icon: "none" });
-    } catch (err) {
-      console.error("Take from clearing failed", err);
-      wx.showToast({ title: err.message || "操作失败，请重试", icon: "none" });
-    } finally {
-      this._actionBusy = false;
-    }
-  },
-
-  // New Action: Generic Confirm Play (Plants Tree or Attaches Card)
-  onConfirmPlay() {
-    const { selectedSlot } = this.data;
-
-    // If a VALID slot is selected, play into that slot
-    if (selectedSlot && selectedSlot.isValid) {
-      this.onPlayCard({
-        currentTarget: { dataset: { side: selectedSlot.side } },
-      });
     } else {
-      // Default: Play as Tree (Ignore slot if invalid or null)
-      this.onPlayTree();
+      this.setData({ selectedClearingIdx: idx });
     }
   },
 
-  onPlayTree() {
-    // Wrapper for playing as tree - only valid for TREE or W_CARD
-    const selected = (this.data.myHand || []).filter((c) => c.selected);
-    if (!selected.length) {
-      wx.showToast({ title: "请选择一张手牌", icon: "none" });
-      return;
+
+
+  // 辅助：提交更新
+  async submitGameUpdate(updates, successMsg, logContent) {
+    const db = wx.cloud.database();
+    const _ = db.command;
+
+    // 如果有日志内容，添加到 updates 中
+    if (logContent) {
+      // 构建日志对象
+      const logEntry = {
+        operator: this.data.openId,
+        action: logContent,
+        timestamp: new Date().getTime(),
+      };
+      // 使用数据库操作符 push
+      updates["gameState.logs"] = _.push(logEntry);
     }
 
-    const primaryUid =
-      this.data.primarySelection &&
-      selected.some((c) => c.uid === this.data.primarySelection)
-        ? this.data.primarySelection
-        : selected[0].uid;
-    const mainCard = selected.find((c) => c.uid === primaryUid);
-
-    if (mainCard.type !== "TREE" && mainCard.type !== "W_CARD") {
-      wx.showToast({ title: "该卡牌不能作为树木打出", icon: "none" });
-      return;
+    try {
+      await db.collection("rooms").doc(this.data.roomId).update({
+        data: updates,
+      });
+      wx.hideLoading();
+      this.setData({ selectedClearingIdx: -1, primarySelection: null });
+      this.queryGameData(this.data.roomId);
+      if (successMsg) wx.showToast({ title: successMsg });
+    } catch (err) {
+      wx.hideLoading();
+      console.error("更新失败", err);
+      // wx.showToast({ title: "同步失败，请重试", icon: "none" });
     }
-
-    this.onPlayCard({ currentTarget: { dataset: { side: "tree" } } });
   },
 
+  // 点击森林槽位
   onSlotTap(e) {
+    // 只有自己的回合，且选中了非树木的主牌时，才允许选择槽位
+    // 或者任何时候允许选，但在打出时校验
     const { treeid, side } = e.currentTarget.dataset;
-    if (!treeid || !side) return;
+    const { selectedSlot, primarySelection, playerStates, openId } = this.data;
 
-    // Guard: Can only select slots on OWN forest
+    // 简单校验：如果在这个槽位上再次点击，则取消
     if (
-      this.data.viewingPlayerId &&
-      this.data.viewingPlayerId !== this.getMyOpenId()
-    ) {
-      return;
-    }
-
-    // Toggle off if clicking same slot
-    if (
-      this.data.selectedSlot &&
-      this.data.selectedSlot.treeId === treeid &&
-      this.data.selectedSlot.side === side
+      selectedSlot &&
+      selectedSlot.treeId === treeid &&
+      selectedSlot.side === side
     ) {
       this.setData({ selectedSlot: null });
       return;
     }
 
-    const selected = (this.data.myHand || []).filter((c) => c.selected);
-    // Removed blocking check for empty selection
+    // 选中该槽位
+    const newSelectedSlot = {
+      treeId: treeid,
+      side: side,
+      isValid: true,
+    };
 
-    const primaryUid =
-      this.data.primarySelection &&
-      selected.some((c) => c.uid === this.data.primarySelection)
-        ? this.data.primarySelection
-        : selected.length > 0
-        ? selected[0].uid
-        : "";
-    const mainCard = selected.find((c) => c.uid === primaryUid);
+    const nextData = {
+      ...this.data,
+      selectedSlot: newSelectedSlot,
+    };
 
-    // Default valid if no card selected yet (allow slot selection first)
-    let isValid = true;
-    let reason = "";
-
-    if (mainCard) {
-      if (mainCard.type === "H_CARD") {
-        if (side === "left" || side === "right") isValid = true;
-        else {
-          isValid = false;
-          reason = "左右结构的牌只能放置在左右两侧";
-        }
-      } else if (mainCard.type === "V_CARD") {
-        if (side === "top" || side === "bottom") isValid = true;
-        else {
-          isValid = false;
-          reason = "上下结构的牌只能放置在上下两侧";
-        }
-      } else {
-        isValid = false;
-        reason = "该卡牌不是附属卡，不能插在树下";
-      }
-    }
+    // 重新计算指引 (费用可能根据插槽变化)
+    const { instructionState, instructionText } =
+      Utils.computeInstruction(nextData);
 
     this.setData({
-      selectedSlot: {
-        treeId: treeid,
-        side: side,
-        isValid: isValid,
-        reason: reason,
-      },
-      targetTreeId: treeid,
+      selectedSlot: newSelectedSlot,
+      instructionState,
+      instructionText,
     });
-
-    if (!isValid && reason) {
-      wx.showToast({ title: reason, icon: "none" });
-    }
   },
 
-  async onPlayCard(e) {
-    const side = e.currentTarget.dataset.side || "tree";
+  // 7. 确认打出
+  onConfirmPlay() {
     const {
-      myHand,
       primarySelection,
-      targetTreeId,
-      gameData,
+      playerStates,
+      openId,
+      instructionState,
+      clearing,
       selectedSlot,
-      isGameOver,
     } = this.data;
 
-    if (isGameOver) {
-      wx.showToast({ title: "游戏已结束", icon: "none" });
+    if (!primarySelection) {
+      wx.showToast({ title: "请先选择主牌", icon: "none" });
       return;
     }
-    if (!this.isMyTurnNow()) {
-      wx.showToast({ title: "当前不是你的回合", icon: "none" });
+    if (instructionState === "error") {
+      wx.showToast({ title: "费用未满足", icon: "none" });
       return;
     }
-    if (this._actionBusy) return;
-    this._actionBusy = true;
 
-    try {
-      const selected = (myHand || []).filter((c) => c.selected);
-      const primaryUid =
-        primarySelection && selected.some((c) => c.uid === primarySelection)
-          ? primarySelection
-          : selected.length > 0
-          ? selected[0].uid
-          : "";
+    // 检查回合状态：如果已经摸过牌，则不能出牌 (必须完成摸牌动作或被跳过)
+    const { turnAction } = this.data;
+    if (turnAction && turnAction.drawnCount > 0) {
+      wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
+      return;
+    }
 
-      const mainCard = selected.find((c) => c.uid === primaryUid);
-      if (!mainCard) throw new Error("未选择主牌");
+    wx.showLoading({ title: "出牌中..." });
 
-      const paymentCards = selected.filter((c) => c.uid !== primaryUid);
+    const myState = playerStates[openId];
+    if (!myState) {
+      console.error("[Play Error] No state for user:", openId);
+      wx.hideLoading();
+      this.queryGameData(this.data.roomId);
+      return;
+    }
 
-      // --- 1. Identify Species & Cost ---
-      let cost = 0;
-      let targetSpecies = mainCard;
-      let speciesIdx = -1;
-      const speciesList = mainCard.speciesDetails || [];
+    const hand = [...(myState.hand || [])];
+    const forest = [...(myState.forest || [])];
+    const newClearing = [...(clearing || [])];
 
-      if (side === "tree") {
-        if (mainCard.type === "TREE" || mainCard.type === "W_CARD") {
-          if (mainCard.cost !== undefined) cost = Number(mainCard.cost);
-          else if (speciesList[0] && speciesList[0].cost !== undefined)
-            cost = Number(speciesList[0].cost);
-          targetSpecies = speciesList[0] || mainCard;
-        } else {
-          throw new Error("此牌不能作为树木打出");
-        }
-      } else {
-        // Symbiont check
-        if (side === "top" || side === "left") speciesIdx = 0;
-        else if (side === "bottom" || side === "right") speciesIdx = 1;
+    // 提取主牌和支付牌
+    const primaryCardIndex = hand.findIndex((c) => c.uid === primarySelection);
+    if (primaryCardIndex === -1) {
+      console.error("[Play Error] Primary card not in hand");
+      wx.hideLoading();
+      return;
+    }
+    const primaryCard = hand[primaryCardIndex];
+    const type = primaryCard.type;
 
-        if (speciesIdx === -1) throw new Error("未知的位置方向");
+    console.log("打出的牌：", primaryCard); // 打印打出的手牌数据
 
-        if (!speciesList[speciesIdx]) {
-          targetSpecies = mainCard; // Fallback
-        } else {
-          targetSpecies = speciesList[speciesIdx];
-        }
-        cost = Number(targetSpecies.cost || 0);
+    // --- 校验出牌目标 ---
+    // 1. 如果是树木 (Tree)，不需要选槽位，直接种
+    // 2. 如果是非树木 (hCard, vCard)，必须选槽位
+    if (type !== "Tree") {
+      if (!selectedSlot) {
+        wx.hideLoading();
+        wx.showToast({ title: "请选择森林中的空位", icon: "none" });
+        return;
       }
-
-      // --- 2. validate Cost ---
-      const needPay = Math.max(0, Number(cost));
-      if (paymentCards.length !== needPay) {
-        throw new Error(
-          `需要支付 ${needPay} 张牌，已选 ${paymentCards.length} 张`
-        );
+      // 校验槽位方向是否匹配
+      // hCard -> left, right
+      // vCard -> top, bottom
+      const validSides =
+        type === "hCard" ? ["left", "right"] : ["top", "bottom"];
+      if (!validSides.includes(selectedSlot.side)) {
+        wx.hideLoading();
+        wx.showToast({ title: "卡牌方向与槽位不匹", icon: "none" });
+        return;
       }
+    }
 
-      // --- 3. Validate Bonus ---
-      let isBonusActive = false;
-      if (needPay > 0) {
-        isBonusActive = this.checkBonusCondition(mainCard, paymentCards);
-      }
+    const paymentCards = hand.filter(
+      (c) => c.selected && c.uid !== primarySelection
+    );
 
-      // --- 4. Database Transaction Logic ---
-      const { db, room, gameState, myState, myId } =
-        await this.withLatestState();
+    console.log("[Play Debug] Payment Cards Count:", paymentCards.length);
 
-      const latestOrder = gameState.turnOrder || [];
-      if (latestOrder[gameState.currentPlayerIdx || 0] !== myId) {
-        throw new Error("回合已被抢占，请刷新");
-      }
+    // 移除主牌和支付牌
+    const cardsToRemoveUid = new Set([
+      primarySelection,
+      ...paymentCards.map((c) => c.uid),
+    ]);
+    const newHand = hand.filter((c) => !cardsToRemoveUid.has(c.uid));
 
-      // Check turn action restriction
-      if (gameState.turnAction === "draw") {
-        throw new Error("你已摸牌，不能再打出手牌，请继续摸牌或结束回合");
-      }
-
-      // Update Hand
-      const keptHand = (myState.hand || []).filter(
-        (c) =>
-          c.uid !== mainCard.uid && !paymentCards.some((p) => p.uid === c.uid)
+    // 执行打出逻辑
+    if (type === "Tree") {
+      // 树木：新建一个 TreeGroup 放入森林
+      // 结构参考 utils.js enrichForest
+      const newTreeGroup = {
+        _id: Math.random().toString(36).substr(2, 9), // 生成个临时ID，或者直接存对象，后端处理
+        center: primaryCard,
+        slots: { top: null, bottom: null, left: null, right: null },
+      };
+      forest.push(newTreeGroup);
+    } else {
+      // 附属卡：放入选定槽位
+      const targetTreeIndex = forest.findIndex(
+        (t) => t._id === selectedSlot.treeId
       );
-
-      // Update Clearing
-      const oldClearing = gameState.clearing || [];
-      const strippedPayment = paymentCards.map((c) => this.stripCard(c));
-      let newClearing = [...oldClearing, ...strippedPayment];
-
-      // Update Forest
-      let newForest = [...(myState.forest || [])];
-      let cardToAdd = this.stripCard(mainCard);
-      cardToAdd.playedSpeciesIndex = speciesIdx;
-
-      let drawCount = 0;
-      let extraTurn = false;
-
-      // Parsing Effects
-      const getDrawAmt = (txt) => {
-        const m = txt && txt.match(/获得(\d+)张牌/);
-        return m ? parseInt(m[1]) : 0;
-      };
-      const checkExtraTurn = (txt) => {
-        return txt && txt.includes("再进行一个回合");
-      };
-
-      if (targetSpecies.effect) {
-        drawCount += getDrawAmt(targetSpecies.effect);
-        if (checkExtraTurn(targetSpecies.effect)) extraTurn = true;
-      }
-      if (isBonusActive && targetSpecies.bonus) {
-        drawCount += getDrawAmt(targetSpecies.bonus);
-        if (checkExtraTurn(targetSpecies.bonus)) extraTurn = true;
+      if (targetTreeIndex === -1) {
+        wx.hideLoading();
+        wx.showToast({ title: "目标树木不存在", icon: "none" });
+        return;
       }
 
-      let winterTriggered = false;
-      let actuallyDrawn = 0;
+      // 更新该树木数据
+      // 注意：forest 里的对象结构可能是纯数据 { center: {...}, slots: {...} }
+      // 直接修改 slots
+      const targetTree = { ...forest[targetTreeIndex] };
+      // 确保 slots 对象存在
+      if (!targetTree.slots)
+        targetTree.slots = { top: null, bottom: null, left: null, right: null };
 
-      // Execute Logic for Tree Planting (Draw 1 to clearing if deck not fail)
-      if (side === "tree") {
-        // New Tree Group
-        const newGroup = {
-          _id: `tree_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-          center: cardToAdd,
-          slots: { top: null, bottom: null, left: null, right: null },
-        };
-        newForest.push(newGroup);
-
-        // Draw 1 card to CLEARING (Rule for planting tree)
-        const deck = [...(gameState.deck || [])];
-        if (deck.length > 0) {
-          const drawn = deck.shift();
-          if (drawn.id === "WINTER") {
-            gameState.winterCount = (gameState.winterCount || 0) + 1;
-            winterTriggered = true;
-          } else {
-            newClearing.push(this.stripCard(drawn));
-          }
-        }
-        gameState.deck = deck;
-      } else {
-        // Attach
-        const idx = newForest.findIndex((t) => t._id === targetTreeId);
-        if (idx === -1) throw new Error("目标树木不存在");
-        const group = newForest[idx];
-        if (group.slots[side]) throw new Error("位置已占用");
-
-        const updated = { ...group, slots: { ...group.slots } };
-        updated.slots[side] = cardToAdd;
-        newForest[idx] = updated;
+      // 检查该位置是否已有卡（虽然前端 UI 应该已限制）
+      if (targetTree.slots[selectedSlot.side]) {
+        wx.hideLoading();
+        wx.showToast({ title: "该位置已有卡牌", icon: "none" });
+        return;
       }
 
-      // Check Clearing Limit (Flush if >= 10)
-      // Note: "Flush to box" - here just empty list
-      if (newClearing.length >= 10) {
-        newClearing = [];
-      }
-
-      // Execute Rewards (Draw Cards to HAND)
-      // Note: This modifies gameState.deck and keptHand further
-      if (drawCount > 0) {
-        const deck = gameState.deck; // Ref to current deck state (modified by tree plant maybe)
-        for (let i = 0; i < drawCount; i++) {
-          if (deck.length > 0) {
-            const c = deck.shift();
-            if (c.id === "WINTER") {
-              gameState.winterCount = (gameState.winterCount || 0) + 1;
-              winterTriggered = true;
-            } else {
-              keptHand.push(this.stripCard(c));
-              actuallyDrawn++;
-            }
-          }
-        }
-      }
-
-      if ((gameState.winterCount || 0) >= 3) {
-        gameState.status = "finished";
-      }
-
-      const currentScore = calculateScore(newForest, myState.cave || []);
-
-      const nextPlayerState = {
-        ...myState,
-        hand: keptHand,
-        forest: newForest,
-        score: currentScore,
-      };
-
-      const rawNextGameState = {
-        ...gameState,
-        // deck is already updated in place
-        clearing: newClearing,
-        playerStates: {
-          ...gameState.playerStates,
-          [myId]: nextPlayerState,
-        },
-      };
-
-      if (extraTurn) {
-        rawNextGameState.drawCount = 0;
-        rawNextGameState.turnAction = null;
-      }
-
-      const turnSummary = {
-        playerNick: this.data.userProfile.nickName,
-        playerAvatar: this.data.userProfile.avatarUrl,
-        playerOpenId: this.getMyOpenId(), // Added for filtering own logs
-        playedCard: this.stripCard(mainCard),
-        paidCards: strippedPayment,
-        actionTime: Date.now(),
-      };
-
-      const finalGameState = extraTurn
-        ? rawNextGameState
-        : this.advanceTurn(rawNextGameState);
-      // Attach summary to game state
-      finalGameState.lastTurnSummary = turnSummary;
-
-      // Add Log
-      const logText = `${this.data.userProfile.nickName} 打出了 ${
-        mainCard.name || "Cards"
-      }`;
-      const logCards = [
-        { ...this.stripCard(mainCard), logType: "played" },
-        ...strippedPayment.map((c) => ({
-          ...this.stripCard(c),
-          logType: "paid",
-        })),
-      ];
-      this.appendLog(finalGameState, logText, logCards);
-
-      await db
-        .collection("rooms")
-        .doc(room._id)
-        .update({
-          data: { gameState: finalGameState },
-        });
-
-      const parts = [];
-      if (side === "tree") parts.push("种植成功");
-      else parts.push("打出成功");
-      if (isBonusActive) parts.push("奖励激活");
-      if (actuallyDrawn > 0) parts.push(`摸牌${actuallyDrawn}张`);
-      if (extraTurn) parts.push("获得额外回合");
-
-      wx.showToast({ title: parts.join("，"), icon: "none" });
-
-      if (winterTriggered) {
-        // Additional alert
-        setTimeout(
-          () => wx.showToast({ title: "翻出了冬季卡！", icon: "none" }),
-          1500
-        );
-      }
-
-      this.setData({
-        primarySelection: "",
-        selectedSlot: null,
-        targetTreeId: "",
-        myHand: (this.data.myHand || []).map((c) => ({
-          ...c,
-          selected: false,
-        })),
-        isMyTurn: extraTurn ? true : false,
-      });
-    } catch (err) {
-      console.error(err);
-      wx.showToast({ title: err.message || "出牌失败", icon: "none" });
-    } finally {
-      this._actionBusy = false;
+      // 放置卡牌
+      targetTree.slots[selectedSlot.side] = primaryCard;
+      forest[targetTreeIndex] = targetTree;
     }
-  },
 
-  async onPlayCard_OLD(e) {
-    // Determine Mode: Plant Tree or Attach Symbiont?
-    // Passed via data-side: 'tree', 'top', 'bottom', 'left', 'right'
-    const side = e.currentTarget.dataset.side || "tree";
+    // --- 计算颜色奖励 (Bonus) ---
+    // 引入 reward.js
+    const reward = RewardUtils.calculateColorReward(
+      primaryCard,
+      selectedSlot,
+      paymentCards
+    );
 
-    const selected = (this.data.myHand || []).filter((c) => c.selected);
-    if (!selected.length) {
-      wx.showToast({ title: "请选择要打出的主牌和支付牌", icon: "none" });
-      return;
-    }
-    if (!this.isMyTurnNow()) {
-      wx.showToast({ title: "当前不是你的回合", icon: "none" });
-      return;
-    }
-    if (this._actionBusy) return;
-    this._actionBusy = true;
+    console.log("[Play Debug] Reward Result:", reward); // 打印计算出的奖励结果
+    console.log("[Play Debug] Context -> card:", primaryCard, " slot:", selectedSlot, " payments:", paymentCards);
 
-    try {
-      const primaryUid =
-        this.data.primarySelection &&
-        selected.some((c) => c.uid === this.data.primarySelection)
-          ? this.data.primarySelection
-          : selected[0].uid;
-      const mainCard = selected.find((c) => c.uid === primaryUid);
-      if (!mainCard) throw new Error("未找到主牌");
+    // 提前准备牌库副本，用于可能的摸牌
+    let newDeck = this.data.deck ? [...this.data.deck] : [];
 
-      // --- Validation & Setup ---
-      const isTreeAction = side === "tree";
+    let gainedExtraTurn = false;
+    let nextTurnAction = { drawnCount: 0 }; // 默认重置
 
-      // Cost Calculation
-      // If split card, cost depends on which species we picked.
-      // mainCard.speciesDetails has [0] and [1].
-      let cost = 0;
-      let speciesIndex = 0;
-
-      if (isTreeAction) {
-        // If playing as tree (or sapling logic handled separately), use full card cost?
-        // Trees usually have simple cost.
-        cost = mainCard.cost !== undefined ? mainCard.cost : 0;
-      } else {
-        // Playing as symbiont
-        if (side === "top" || side === "left") speciesIndex = 0;
-        if (side === "bottom" || side === "right") speciesIndex = 1;
-
-        if (mainCard.speciesDetails && mainCard.speciesDetails[speciesIndex]) {
-          cost = mainCard.speciesDetails[speciesIndex].cost || 0;
-        } else {
-          // Fallback
-          cost = mainCard.cost || 0;
-        }
-      }
-
-      const payCards = selected.filter((c) => c.uid !== primaryUid);
-      const needPay = Math.max(0, Number(cost));
-
-      if (payCards.length < needPay) {
-        throw new Error(`需要支付 ${needPay} 张牌，已选 ${payCards.length} 张`);
-      }
-      if (payCards.length > needPay) {
-        throw new Error(
-          `只需支付 ${needPay} 张牌，已多选 ${payCards.length - needPay} 张`
-        );
-      }
-
-      const { db, room, gameState, myState, myId } =
-        await this.withLatestState();
-
-      // Check Game Over again
-      if (
-        gameState.status === "finished" ||
-        (gameState.winterCount || 0) >= 3
-      ) {
-        throw new Error("游戏已结束");
-      }
-
-      // Validate Tree Target if attaching
-      let targetTree = null;
-      let targetTreeIdx = -1;
-      const forest = myState.forest || []; // This is raw data from DB
-
-      if (!isTreeAction) {
-        const tid = this.data.targetTreeId;
-        if (!tid) throw new Error("请先点击选择一棵森林中的树木作为目标");
-
-        targetTreeIdx = forest.findIndex((t) => t._id === tid);
-        if (targetTreeIdx < 0) throw new Error("目标树木不存在");
-        targetTree = forest[targetTreeIdx];
-
-        // Check slot occupancy
-        if (targetTree.slots && targetTree.slots[side]) {
-          throw new Error(`这棵树的${side}位置已被占用`);
-        }
-
-        // Guard: Cannot effect tree if not my turn or VIEWING OTHER PLAYER
-        if (
-          this.data.viewingPlayerId &&
-          this.data.viewingPlayerId !== this.getMyOpenId()
-        ) {
-          throw new Error("只能在自己的森林中打牌");
-        }
-
-        // Validate Card Type for Slot
-        if (side === "left" || side === "right") {
-          if (mainCard.type !== "H_CARD")
-            throw new Error("该位置只能放置左右结构的卡牌");
-        }
-        if (side === "top" || side === "bottom") {
-          if (mainCard.type !== "V_CARD")
-            throw new Error("该位置只能放置上下结构的卡牌");
-        }
-      }
-
-      // --- Execution ---
-      const hand = myState.hand || [];
-      const payList = payCards.slice(0, needPay);
-      const paySet = new Set(payList.map((c) => c.uid));
-      const removeSet = new Set([primaryUid, ...payList.map((c) => c.uid)]);
-      const nextHand = hand.filter((c) => !removeSet.has(c.uid));
-
-      // Prepare the card to add
-      const cardToAdd = this.stripCard(mainCard);
-      // If we are playing a specific species half, we should mark it?
-      // Actually the card data stores the ID.
-      // Ideally we store { ...card, playedIndex: speciesIndex } so we know which half to display active.
-      cardToAdd.playedSpeciesIndex = speciesIndex;
-
-      let nextForest = [...forest];
-
-      if (isTreeAction) {
-        // Plant new tree
-        const newTree = {
-          _id: `tree_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-          center: cardToAdd,
-          slots: { top: null, bottom: null, left: null, right: null },
-        };
-        nextForest.push(newTree);
-
-        // Rule: Draw 1 card to clearing when planting a tree
-        const deck = [...(gameState.deck || [])];
-        let clearing = [...(gameState.clearing || [])];
-
-        if (deck.length > 0) {
-          const drawn = deck.shift();
-          if (drawn.id === "WINTER") {
-            const wCount = (gameState.winterCount || 0) + 1;
-            gameState.winterCount = wCount;
-            if (wCount >= 3) gameState.status = "finished";
-          } else {
-            clearing.push(this.stripCard(drawn));
-          }
-        }
-
-        // Apply Clearing Limit after adding
-        clearing = this.checkClearingLimit(clearing);
-
-        gameState.deck = deck;
-        gameState.clearing = clearing;
-      } else {
-        // Attach to slot
-        const updatedTree = { ...targetTree };
-        updatedTree.slots = { ...updatedTree.slots, [side]: cardToAdd };
-        nextForest[targetTreeIdx] = updatedTree;
-      }
-
-      // Handle Payment -> Clearing
-      // If payment cards exist, add them to CURRENT gameState.clearing
-      // Note: If we planted a tree, we updated gameState.clearing in the 'if' block above.
-      // We must start from that potentially updated clearing.
-      let finalClearing = gameState.clearing || [];
-
-      if (payCards.length > 0) {
-        finalClearing = [
-          ...finalClearing,
-          ...payCards.map((c) => this.stripCard(c)),
-        ];
-      }
-      // Check limit again (once at the end of transaction)
-      finalClearing = this.checkClearingLimit(finalClearing);
-
-      const nextMine = { ...myState, hand: nextHand, forest: nextForest };
-      const nextState = {
-        ...gameState,
-        clearing: finalClearing,
-        playerStates: { ...gameState.playerStates, [myId]: nextMine },
-      };
-
-      const advanced = this.advanceTurn(nextState);
-
-      await db
-        .collection("rooms")
-        .doc(room._id)
-        .update({
-          data: { gameState: advanced },
-        });
-
-      this.setData({
-        primarySelection: "",
-        targetTreeId: "",
-        myHand: (this.data.myHand || []).map((c) => ({
-          ...c,
-          selected: false,
-        })),
-      });
-
-      // --- Execute Bonus / Effects ---
-      let msg = isTreeAction ? "种植成功" : "打出成功";
-
-      // 1. Check & Execute Bonus
-      // Logic: Condition met -> Execute Bonus effects (e.g. Draw Cards)
-      // Note: "Effect" (Always happens) vs "Bonus" (Condition).
-      // Since our data structure puts "Points" in 'points' and immediate actions?
-      // "effect": "获得1张牌" (This is 'Effect')
-      // "bonus": "获得1张牌" (This is 'Bonus')
-
-      let drawCount = 0;
-      let bonusTriggered = false;
-
-      // Determine active species data
-      let activeData = null;
-      if (isTreeAction) {
-        activeData = mainCard; // Trees usually utilize main props
-        if (mainCard.speciesDetails && mainCard.speciesDetails[0]) {
-          // Fallback for tree species data
-          if (!activeData.effect) activeData = mainCard.speciesDetails[0];
-        }
-      } else {
-        // Played as symbiont
-        const spIndex = cardToAdd.playedSpeciesIndex || 0;
-        activeData = mainCard.speciesDetails
-          ? mainCard.speciesDetails[spIndex]
-          : mainCard;
-      }
-
-      if (activeData) {
-        // 1. Always Trigger Effect
-        if (activeData.effect) {
-          if (
-            activeData.effect.includes("获得1张牌") ||
-            activeData.effect.includes("Receive 1 card")
-          ) {
-            drawCount += 1;
-          } else if (
-            activeData.effect.includes("获得2张牌") ||
-            activeData.effect.includes("Receive 2 cards")
-          ) {
-            drawCount += 2;
-          }
-          // TODO: Handle other effects
-        }
-
-        // 2. Check Bonus Condition
-        if (activeData.bonus) {
-          const conditionMet = this.checkBonusCondition(mainCard, payCards);
-          if (conditionMet) {
-            bonusTriggered = true;
-            if (
-              activeData.bonus.includes("获得1张牌") ||
-              activeData.bonus.includes("Receive 1 card")
-            ) {
-              drawCount += 1;
-            } else if (
-              activeData.bonus.includes("获得2张牌") ||
-              activeData.bonus.includes("Receive 2 cards")
-            ) {
-              drawCount += 2;
-            }
-            msg += " (触发奖励!)";
-          }
-        }
-      }
-
-      // Execute Draws
-      if (drawCount > 0) {
-        // Perform Draw Logic
-        // We need to fetch latest state loop or just update local optimism?
-        // Since we just updated `gameState` in cloud, we should ideally chain this.
-        // BUT: The previous `update` call finished. We can call `onDrawCard` logic or manually update.
-        // Calling local draw is risky if state changed.
-        // Let's do a quick optimisic update or separate call for now.
-        // Actually, we should have done this IN the transaction or updated the gameState object before sending.
-        // RETROACTIVE FIX: We already sent the update. We need to send ANOTHER update or move logic up.
-        // Moving logic up is better but `checkBonusCondition` needs `payCards`.
-        // I will do a follow-up draw operation immediately.
-
-        wx.showToast({
-          title: `${msg}\n正在抽取 ${drawCount} 张牌...`,
-          icon: "none",
-        });
-        await this.doBonusDraw(drawCount);
-      } else {
-        wx.showToast({ title: msg, icon: "success" });
-      }
-    } catch (err) {
-      console.error("Play card failed", err);
-      wx.showToast({ title: err.message || "操作失败", icon: "none" });
-    } finally {
-      this._actionBusy = false;
-    }
-  },
-
-  async doBonusDraw(count) {
-    if (count <= 0) return;
-    try {
-      const { db, room, gameState, myState, myId } =
-        await this.withLatestState();
-      const deck = [...(gameState.deck || [])];
-      const nextMine = { ...myState, hand: [...(myState.hand || [])] };
-
+    if (reward.drawCount > 0) {
+      console.log(`[Bonus] Draw ${reward.drawCount} cards.`);
       let actualDrawn = 0;
-      for (let i = 0; i < count; i++) {
-        if (deck.length === 0) break;
-        const drawn = deck.shift();
-        if (drawn.id === "WINTER") {
-          gameState.winterCount = (gameState.winterCount || 0) + 1;
-          if (gameState.winterCount >= 3) gameState.status = "finished";
-        } else {
-          nextMine.hand.push(this.stripCard(drawn));
+      for (let i = 0; i < reward.drawCount; i++) {
+        if (newDeck.length > 0) {
+          const bonusCard = newDeck.shift();
+          newHand.push(bonusCard);
           actualDrawn++;
         }
       }
-
-      gameState.deck = deck;
-      gameState.playerStates[myId] = nextMine;
-
-      await db.collection("rooms").doc(room._id).update({
-        data: { gameState },
-      });
-    } catch (e) {
-      console.error("Bonus draw failed", e);
-    }
-  },
-
-  async onPlaySapling() {
-    const selected = (this.data.myHand || []).filter((c) => c.selected);
-    if (!selected.length) {
-      wx.showToast({ title: "请选择 1 张要当树苗的牌", icon: "none" });
-      return;
-    }
-    if (!this.isMyTurnNow()) {
-      wx.showToast({ title: "当前不是你的回合", icon: "none" });
-      return;
-    }
-    if (this._actionBusy) return;
-    if (this.data.isGameOver) {
-      wx.showToast({ title: "游戏已结束", icon: "none" });
-      return;
-    }
-    this._actionBusy = true;
-
-    try {
-      const primaryUid =
-        this.data.primarySelection &&
-        selected.some((c) => c.uid === this.data.primarySelection)
-          ? this.data.primarySelection
-          : selected[0].uid;
-
-      const { db, room, gameState, myState, myId } =
-        await this.withLatestState();
-      const latestOrder = gameState.turnOrder || [];
-      if (latestOrder[gameState.currentPlayerIdx || 0] !== myId) {
-        wx.showToast({ title: "当前不是你的回合", icon: "none" });
-        return;
+      if (actualDrawn > 0) {
+        wx.showToast({ title: `奖励: 摸${actualDrawn}张`, icon: "none" });
       }
-      const hand = myState.hand || [];
-      const target = hand.find((c) => c.uid === primaryUid);
-      if (!target) throw new Error("这张牌已不在手牌中");
-
-      const nextHand = hand.filter((c) => c.uid !== primaryUid);
-
-      const newSaplingTree = {
-        _id: `tree_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        center: { ...this.stripCard(target), sapling: true },
-        slots: { top: null, bottom: null, left: null, right: null },
+    } else if (reward.playFree) {
+      // 免费打牌奖励
+      console.log("[Bonus] Free Play activated:", reward.playFree);
+      wx.showToast({
+        title: `奖励: 免费打出一张 ${reward.playFree.filter} 牌`,
+        icon: "none",
+        duration: 3000,
+      });
+      gainedExtraTurn = true; // 保持当前玩家
+      // 设置特殊回合状态
+      nextTurnAction = {
+        drawnCount: 0,
+        freePlay: reward.playFree // { filter: '...', multiple: bool }
       };
 
-      const nextMine = {
-        ...myState,
-        hand: nextHand,
-        forest: [...(myState.forest || []), newSaplingTree],
-      };
-
-      // Rule: Draw 1 card to clearing when planting a sapling (Same as Tree)
-      const deck = [...(gameState.deck || [])];
-      let clearing = [...(gameState.clearing || [])];
-
-      if (deck.length > 0) {
-        const drawn = deck.shift();
-        if (drawn.id === "WINTER") {
-          const wCount = (gameState.winterCount || 0) + 1;
-          gameState.winterCount = wCount;
-          if (wCount >= 3) gameState.status = "finished";
-        } else {
-          clearing.push(this.stripCard(drawn));
-        }
+    } else if (reward.bonusText) {
+      wx.showToast({
+        title: `奖励生效: ${reward.bonusText}`,
+        icon: "none",
+        duration: 3000,
+      });
+      if (reward.extraTurn) {
+        gainedExtraTurn = true;
       }
-      clearing = this.checkClearingLimit(clearing);
-
-      const nextState = {
-        ...gameState,
-        deck,
-        clearing,
-        playerStates: { ...gameState.playerStates, [myId]: nextMine },
-      };
-      const advanced = this.advanceTurn(nextState);
-
-      // Add Log
-      const logText = `${this.data.userProfile.nickName} 打出了 ${
-        target.name || "树苗"
-      } (作为树苗)`;
-      const logCards = [{ ...this.stripCard(target), logType: "played" }];
-      this.appendLog(advanced, logText, logCards);
-
-      await db
-        .collection("rooms")
-        .doc(room._id)
-        .update({
-          data: { gameState: advanced },
-        });
-
-      this.setData({
-        primarySelection: "",
-        myHand: (this.data.myHand || []).map((c) => ({
-          ...c,
-          selected: false,
-        })),
-      });
-      wx.showToast({ title: "作为树苗打出", icon: "none" });
-    } catch (err) {
-      console.error("Play sapling failed", err);
-      wx.showToast({ title: err.message || "操作失败，请重试", icon: "none" });
-    } finally {
-      this._actionBusy = false;
-    }
-  },
-
-  onShowDetail(e) {
-    // 兼容点击和长按事件对象的 dataset 获取
-    const { type, uid, idx } = e.currentTarget.dataset;
-    let card = null;
-
-    if (type === "hand") {
-      card = this.data.myHand.find((c) => c.uid === uid);
-    } else if (type === "clearing") {
-      card = this.data.clearing[idx];
     }
 
-    if (card) {
-      this.setData({
-        previewCard: card,
-        showDetailModal: true,
-        activeTab: 0, // Reset tab
-      });
-    }
-  },
-
-  onCloseDetail() {
-    this.setData({
-      showDetailModal: false,
-      previewCard: null,
+    // 支付牌进空地
+    paymentCards.forEach((c) => {
+      const cleanCard = { ...c, selected: false };
+      newClearing.push(cleanCard);
     });
-  },
 
-  onShowLogDetail(e) {
-    const card = e.currentTarget.dataset.card;
-    if (card) {
-      this.setData({
-        previewCard: card,
-        showDetailModal: true,
-        activeTab: 0,
-      });
+    // 规则：如果打出的是树木 (Tree)，且牌库有牌，则从牌库翻一张进空地
+    if (primaryCard.type === "Tree" && newDeck.length > 0) {
+      const topCard = newDeck.shift();
+      if (topCard) {
+        // 确保进空地的牌是干净的
+        newClearing.push({ ...topCard, selected: false });
+      }
     }
+
+    // 规则：空地满10张清空
+    if (newClearing.length >= 10) {
+      newClearing.length = 0;
+    }
+
+    // 计算下一位玩家
+    // 如果获得额外回合，或者单人模式，RoundUtils.getNextPlayer 会返回当前玩家
+    const nextPlayer = RoundUtils.getNextPlayer(
+      openId,
+      this.data.players,
+      gainedExtraTurn
+    );
+
+    const updates = {
+      [`gameState.playerStates.${openId}.hand`]: newHand,
+      [`gameState.playerStates.${openId}.forest`]: forest,
+      [`gameState.clearing`]: newClearing,
+      [`gameState.deck`]: newDeck, // 必须更新牌库，因为可能少了一张
+      [`gameState.activePlayer`]: nextPlayer,
+      [`gameState.turnAction`]: nextTurnAction, // 使用动态计算的状态
+      [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
+    };
+
+    // 成功后清除选中状态
+    this.setData({ selectedSlot: null });
+    const logMsg = primaryCard
+      ? `打出了 ${primaryCard.name || "一张牌"}`
+      : "打出了一张牌";
+    this.submitGameUpdate(updates, "出牌成功", logMsg);
   },
 
-  onCloseSummary() {
-    this.setData({ showTurnSummary: false });
-    if (this._summaryTimer) clearTimeout(this._summaryTimer);
+  // 8. 摸牌 (从牌库)
+  onDrawCard() {
+    const { deck, playerStates, openId, turnAction } = this.data;
+    const db = wx.cloud.database(); // Ensure db is available
+
+    // 1. 手牌上限检查 (10张)
+    const myState = playerStates[openId];
+    const currentHandSize = (myState.hand || []).length;
+    if (currentHandSize >= 10) {
+      wx.showToast({ title: "手牌已满 (上限10张)", icon: "none" });
+      return;
+    }
+
+    // 2. 牌库检查
+    if (!deck || deck.length < 1) {
+      wx.showToast({ title: "牌库到底了", icon: "none" });
+      return;
+    }
+
+    // 3. 回合行动检查
+    const currentDrawn = (turnAction && turnAction.drawnCount) || 0;
+    if (currentDrawn >= 2) {
+      wx.showToast({ title: "本回合摸牌次数已用完", icon: "none" });
+      return;
+    }
+
+    wx.showLoading({ title: "摸牌中..." });
+
+    const newDeck = [...deck];
+    const newHand = [...(myState.hand || [])];
+
+    // 只摸一张
+    const card = newDeck.shift();
+    if (card) newHand.push(card);
+
+    const newDrawnCount = currentDrawn + 1;
+    let nextPlayer = this.data.activePlayer; // 默认不下机
+    let nextTurnAction = { drawnCount: newDrawnCount }; // 更新计数
+
+    const updates = {
+      [`gameState.deck`]: newDeck,
+      [`gameState.playerStates.${openId}.hand`]: newHand,
+      [`gameState.turnAction`]: nextTurnAction,
+      // 注意：摸第一张牌时不增加 turnCount，也不切回合
+    };
+
+    // 4. 判断回合结束
+    if (newDrawnCount >= 2) {
+      nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, false);
+      updates[`gameState.activePlayer`] = nextPlayer;
+      updates[`gameState.turnAction`] = { drawnCount: 0 };
+      updates[`gameState.turnCount`] = db.command.inc(1); // 回合结束，计数+1
+    } else {
+      updates[`gameState.activePlayer`] = nextPlayer; // 保持不变
+    }
+
+    this.submitGameUpdate(
+      updates,
+      null,
+      `摸了一张牌 (本回合第${newDrawnCount}张)`
+    );
   },
 
-  onTabChange(e) {
-    const index = e.currentTarget.dataset.index;
-    this.setData({ activeTab: index });
+  // 9. 确认拿取 (从空地)
+  onConfirmTake() {
+    const { selectedClearingIdx, clearing, playerStates, openId, turnAction } =
+      this.data;
+    const db = wx.cloud.database();
+
+    // 检查回合锁定
+    if (turnAction && turnAction.drawnCount > 0) {
+      wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
+      return;
+    }
+
+    if (selectedClearingIdx === -1 || selectedClearingIdx === undefined) {
+      wx.showToast({ title: "请选择空地卡牌", icon: "none" });
+      return;
+    }
+
+    wx.showLoading({ title: "拿取中..." });
+
+    const newClearing = [...clearing];
+    const myState = playerStates[openId];
+    const newHand = [...(myState.hand || [])];
+
+    if (selectedClearingIdx >= newClearing.length) {
+      wx.hideLoading();
+      return;
+    }
+    const [takenCard] = newClearing.splice(selectedClearingIdx, 1);
+    if (takenCard) {
+      newHand.push(takenCard);
+    }
+
+    const updates = {
+      [`gameState.clearing`]: newClearing,
+      [`gameState.playerStates.${openId}.hand`]: newHand,
+      [`gameState.activePlayer`]: RoundUtils.getNextPlayer(openId, this.data.players, false),
+      [`gameState.turnAction`]: { drawnCount: 0 },
+      [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
+    };
+
+    this.submitGameUpdate(updates, null, "从空地拿了一张牌");
   },
 
+  // 10. 打出树苗
+  onPlaySapling() {
+    const { deck, playerStates, openId } = this.data;
+    const db = wx.cloud.database();
+
+    if (!deck || deck.length === 0) return;
+
+    wx.showLoading({ title: "种植树苗..." });
+
+    const newDeck = [...deck];
+    const myState = playerStates[openId];
+    const forest = [...(myState.forest || [])];
+
+    const topCard = newDeck.shift();
+    if (topCard) {
+      forest.push(topCard);
+    }
+
+    const updates = {
+      [`gameState.deck`]: newDeck,
+      [`gameState.playerStates.${openId}.forest`]: forest,
+      [`gameState.activePlayer`]: RoundUtils.getNextPlayer(openId, this.data.players, false),
+      [`gameState.turnAction`]: { drawnCount: 0 },
+      [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
+    };
+
+    this.submitGameUpdate(updates, null, "由空地打出树苗");
+  },
+
+  // 11. 日志显示
   onShowLogs() {
     this.setData({ showLogModal: true });
   },
-
   onCloseLogs() {
     this.setData({ showLogModal: false });
-    if (this._logTimer) clearTimeout(this._logTimer);
   },
 
-  onPlayerTap(e) {
-    const pid = e.currentTarget.dataset.openid;
-    if (pid && pid !== this.data.viewingPlayerId) {
-      this.setData({ viewingPlayerId: pid }, () => {
-        if (this.roomCache) this.handleGameUpdate(this.roomCache);
-      });
-    }
-  },
-
-  noop() {},
+  noop() { }, // 空函数用于阻止冒泡
 });

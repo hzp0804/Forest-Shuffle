@@ -1463,7 +1463,7 @@ const SPECIES_DATA = {
 };
 
 const getCardVisual = (card) => {
-  if (!card) return { bgImg: "", bgSize: "0 0" };
+  if (!card) return { bgImg: "", bgSize: "0 0", cssClass: "" };
   const deck = card.deck;
   const type = card.type;
   let img = "";
@@ -1497,12 +1497,38 @@ const getCardVisual = (card) => {
       rows = 5;
     }
   }
-  return { bgImg: img, bgSize: `${cols * 100}% ${rows * 100}%` };
+
+  // 使用 app.wxss 中定义的 card-ID 类名进行定位
+  const cssClass = card.id ? `card-${card.id}` : "";
+
+  return {
+    bgImg: img, // WXML 中已经包含了 url('')，这里只返回链接
+    bgSize: `${cols * 100}% ${rows * 100}%`,
+    cssClass,
+  };
 };
 
+const getSaplingVisual = () => {
+  const img = remoteMap[V_CARD];
+  // vCard sprite sheet is 7x7 based on getCardVisual logic
+  const cols = 7;
+  const rows = 7;
+  // User says "Last image of vCard". Position at 100% 100% (Row 6, Col 6).
+  return {
+    bgImg: img,
+    bgSize: `${cols * 100}% ${rows * 100}%`,
+    bgPosition: "100% 100%",
+  };
+};
+
+// 导出常量以便其他模块使用
 module.exports = {
-  remoteMap,
   CARDS_DATA,
   SPECIES_DATA,
   getCardVisual,
+  getSaplingVisual,
+  TREE,
+  H_CARD,
+  V_CARD,
+  W_CARD,
 };

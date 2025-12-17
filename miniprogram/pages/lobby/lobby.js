@@ -647,10 +647,10 @@ Page({
         ...s,
         occupant: p
           ? {
-              uid: p.openId,
-              nickName: p.nickName,
-              avatarUrl: p.avatarUrl,
-            }
+            uid: p.openId,
+            nickName: p.nickName,
+            avatarUrl: p.avatarUrl,
+          }
           : null,
       };
     });
@@ -675,7 +675,7 @@ Page({
       .doc(roomId)
       .watch({
         onChange: (snapshot) => {
-          console.log("Room update:", snapshot);
+          console.log("更新房间:", snapshot);
           // 如果房间被删除
           if (!snapshot.docs || snapshot.docs.length === 0) {
             wx.showToast({ title: "房间已解散", icon: "none" });

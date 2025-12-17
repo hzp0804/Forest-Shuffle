@@ -2,18 +2,15 @@
 const {
   CARDS_DATA,
   SPECIES_DATA,
-  remoteMap,
+  getCardVisual,
+  TREE,
+  H_CARD,
+  V_CARD,
+  W_CARD,
 } = require("../../data/cardData.js");
 
-const BASIC_DECK = "basic";
 const ALPINE_DECK = "alpine";
 const EDGE_DECK = "edge";
-
-const TREE = "Tree";
-const W_CARD = "wCard";
-const H_CARD = "hCard";
-const V_CARD = "vCard";
-const MOUNTAIN = "Mountain";
 
 Page({
   data: {
@@ -47,45 +44,9 @@ Page({
       return speciesDataMap[code] || speciesDataMap[code.toLowerCase()] || {};
     };
 
-    const getImgAndSize = (deck, type) => {
-      let img = "";
-      let cols = 1;
-      let rows = 1;
-
-      if (deck === ALPINE_DECK) {
-        img = remoteMap[MOUNTAIN];
-        cols = 7;
-        rows = 4;
-      } else if (deck === EDGE_DECK) {
-        img = remoteMap[W_CARD]; // Access woodlands.jpg via W_CARD key
-        cols = 6;
-        rows = 6;
-      } else {
-        // Basic
-        if (type === TREE || type === W_CARD) {
-          img = remoteMap[TREE];
-          cols = 5;
-          rows = 5;
-        } else if (type === H_CARD) {
-          img = remoteMap[H_CARD];
-          cols = 7;
-          rows = 7;
-        } else if (type === V_CARD) {
-          img = remoteMap[V_CARD];
-          cols = 7;
-          rows = 7;
-        } else {
-          // Fallback
-          img = remoteMap[TREE];
-          cols = 5;
-          rows = 5;
-        }
-      }
-      return { img, size: `${cols * 100}% ${rows * 100}%` };
-    };
-
     Object.entries(CARDS_DATA).forEach(([id, card]) => {
-      const { img, size } = getImgAndSize(card.deck, card.type);
+      // 使用统一的视觉逻辑，修复 undefined 引用问题
+      const { bgImg, bgSize, cssClass } = getCardVisual({ ...card, id });
 
       // Process species details
       const speciesDetails = (card.species || []).map((code) => {
@@ -100,8 +61,9 @@ Page({
       const displayCard = {
         ...card,
         id, // key comes as string from Object.entries
-        bgImg: img,
-        bgSize: size,
+        bgImg,
+        bgSize,
+        cssClass,
         speciesDetails,
         primaryName: speciesDetails.map((s) => s.displayName).join(" / "),
       };

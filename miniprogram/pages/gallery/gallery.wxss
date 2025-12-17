@@ -53,6 +53,20 @@
   transform: scale(0.96);
 }
 
+.card-id-badge {
+  position: absolute;
+  top: 8rpx;
+  left: 8rpx;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 20rpx;
+  padding: 2rpx 8rpx;
+  border-radius: 8rpx;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* Preview Overlay - Keeping it dark for contrast */
 .preview-overlay {
   position: fixed;
