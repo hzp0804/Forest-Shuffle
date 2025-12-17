@@ -1,14 +1,7 @@
-const {
-  CARDS_DATA,
-  SPECIES_DATA,
-} = require("../data/cardData");
 const { getCardInfoById, getCardVisual, getSaplingVisual } = require("./getCardInfoById");
-
-const { CARD_TYPES } = require("../data/constants");
-const { TREE, H_CARD, V_CARD } = CARD_TYPES;
 const { getCardCost } = require("./cost");
-const RewardUtils = require("./reward");
 const { calculateScore } = require("./score");
+const RewardUtils = require("./reward");
 
 /**
  * 丰富卡片信息 helper 函数

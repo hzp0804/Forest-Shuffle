@@ -1,7 +1,5 @@
-const {
-  CARDS_DATA,
-  SPECIES_DATA,
-} = require("../data/cardData");
+const { CARDS_DATA } = require("../data/cardData");
+const { SPECIES_DATA } = require("../data/speciesData");
 const { CARD_TYPES } = require("../data/constants");
 const { TREE, H_CARD, V_CARD } = CARD_TYPES;
 

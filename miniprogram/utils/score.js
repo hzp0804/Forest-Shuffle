@@ -1,4 +1,5 @@
-const { CARDS_DATA, SPECIES_DATA } = require("../data/cardData");
+const { CARDS_DATA } = require("../data/cardData");
+const { SPECIES_DATA } = require("../data/speciesData");
 const constants = require("../data/constants");
 const { TAGS, SPECIES_NAMES, CARD_TYPES } = constants;
 

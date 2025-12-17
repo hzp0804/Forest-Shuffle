@@ -2,10 +2,8 @@
 // 树木：直接查询卡片信息的csot
 // 附属卡：根据插槽位置确定使用附属卡中的那一张（附属卡是拥有两张卡片在上面的）
 
-const {
-  CARDS_DATA,
-  SPECIES_DATA,
-} = require("../data/cardData");
+const { CARDS_DATA } = require("../data/cardData");
+const { SPECIES_DATA } = require("../data/speciesData");
 const { CARD_TYPES } = require("../data/constants");
 const { TREE, H_CARD, V_CARD } = CARD_TYPES;
 
