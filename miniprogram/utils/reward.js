@@ -1,10 +1,9 @@
 const {
   CARDS_DATA,
   SPECIES_DATA,
-  TREE,
-  H_CARD,
-  V_CARD,
 } = require("../data/cardData");
+const { CARD_TYPES } = require("../data/constants");
+const { TREE, H_CARD, V_CARD } = CARD_TYPES;
 
 /**
  * 奖励类型枚举

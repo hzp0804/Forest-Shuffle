@@ -1,4 +1,6 @@
 const { CARDS_DATA, SPECIES_DATA } = require("../data/cardData");
+const constants = require("../data/constants");
+const { TAGS, SPECIES_NAMES, CARD_TYPES } = constants;
 
 /**
  * 提取森林中所有的卡片实例 (包括树木和附属卡)
@@ -117,29 +119,41 @@ const getCardScore = (card, context) => {
       // 这里建议用 active mapping。
       // 举例: "Gain 1 point for each plant symbol"
       if (txt.includes("plant symbol"))
-        totalScore += pts * (context.tags["Plant"] || 0);
-      else if (txt.includes("tree symbol"))
-        totalScore += pts * (context.tags["Tree"] || 0);
-      else if (txt.includes("bird symbol"))
-        totalScore += pts * (context.tags["Bird"] || 0);
-      else if (txt.includes("butterfly symbol"))
-        totalScore += pts * (context.tags["Butterfly"] || 0);
+        totalScore += pts * (context.tags[TAGS.PLANT] || 0);
+      // Note: The context.tags keys are from SPECIES_DATA tags, which are now constants (e.g. "植物").
+      // But here we are matching against English descriptions?
+      // Wait, the descriptions are in cardData.js points: "每张带有植物符号的牌得2分" (Chinese) in my previous view.
+      // But here the code checks for "plant symbol" (English).
+      // This implies score.js logic was written for English but data is Chinese.
+      // Checking cardData.js again:
+      // points: "每张带有植物符号的牌得2分"
+      // So this logic needs to handle Chinese descriptions!
+
+      else if (txt.includes("植物符号"))
+        totalScore += pts * (context.tags[TAGS.PLANT] || 0);
+      else if (txt.includes("树木符号"))
+        totalScore += pts * (context.tags[CARD_TYPES.TREE] || 0);
+
+      else if (txt.includes("鸟类符号") || txt.includes("鸟符号"))
+        totalScore += pts * (context.tags[TAGS.BIRD] || 0);
+      else if (txt.includes("蝴蝶符号"))
+        totalScore += pts * (context.tags[TAGS.BUTTERFLY] || 0);
       // ... 更多 tag
     }
     // 3. Set Collection (e.g. Different Butterflies)
-    else if (txt.includes("different butterflies")) {
+    else if (txt.includes("different butterflies") || txt.includes("不同的蝴蝶")) { // "每张不同的蝴蝶牌得1分"
       // 需要计算蝴蝶种类数
       // let uniqueButterflies = ...
       // totalScore += scoreTable(uniqueButterflies)
     }
 
     // 4. 特定条件
-    if (name === "Linden") {
+    if (name === SPECIES_NAMES.LINDEN) {
       // 椴树: 如果没有其他森林有更多椴树...
       // 暂时只给 1 分基础
       totalScore += 1;
     }
-    if (name === "Oak") {
+    if (name === SPECIES_NAMES.OAK) {
       // 橡树: 8种树都有给10分
       // if (uniqueTrees >= 8) totalScore += 10
     }

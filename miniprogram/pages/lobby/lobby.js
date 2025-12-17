@@ -1,5 +1,6 @@
+const { GAME_CONFIG } = require("../../data/constants");
 const STORAGE_KEY = "userProfile";
-const BASE_DECK_SIZE = 236; // 官方基础牌库张数（含3张冬季卡）
+const BASE_DECK_SIZE = GAME_CONFIG.BASE_DECK_SIZE;
 
 const getStoredProfile = () => {
   try {
@@ -752,17 +753,16 @@ Page({
       return;
     }
 
-    const BASE_DECK_SIZE = 236; // 官方基础牌库233 + 3张冬季卡
+    const BASE_DECK_SIZE = GAME_CONFIG.BASE_DECK_SIZE;
+    const WINTER_CARD_COUNT = GAME_CONFIG.WINTER_CARD_COUNT;
 
     // 2. 获取目标总数
     let totalTarget = roomSettings.totalCardCount;
     // 兼容旧数据
     if (!totalTarget) {
       // 旧版逻辑是用 setCount * 233，这里近似处理，或者直接设为默认
-      totalTarget = (roomSettings.setCount || 1) * 236;
+      totalTarget = (roomSettings.setCount || 1) * BASE_DECK_SIZE;
     }
-
-    const WINTER_CARD_COUNT = 3;
 
     // 关键调整：用户设置的 totalTarget 是包含冬季卡的。
     // 所以实际需要构建的基础牌数量 = 总数 - 冬季卡数

@@ -5,10 +5,9 @@
 const {
   CARDS_DATA,
   SPECIES_DATA,
-  TREE,
-  H_CARD,
-  V_CARD,
 } = require("../data/cardData");
+const { CARD_TYPES } = require("../data/constants");
+const { TREE, H_CARD, V_CARD } = CARD_TYPES;
 
 /**
  * 获取卡牌在特定位置的费用
@@ -88,7 +87,7 @@ const getCardCost = (card, slotType) => {
         return (
           s.name.toLowerCase() === speciesName.toLowerCase() ||
           s.name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() ===
-            speciesName.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()
+          speciesName.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()
         );
       });
     }

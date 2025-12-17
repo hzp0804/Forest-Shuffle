@@ -1,12 +1,11 @@
 const {
   CARDS_DATA,
   SPECIES_DATA,
-  getCardVisual,
-  getSaplingVisual,
-  TREE,
-  H_CARD,
-  V_CARD,
 } = require("../data/cardData");
+const { getCardInfoById, getCardVisual, getSaplingVisual } = require("./getCardInfoById");
+
+const { CARD_TYPES } = require("../data/constants");
+const { TREE, H_CARD, V_CARD } = CARD_TYPES;
 const { getCardCost } = require("./cost");
 const RewardUtils = require("./reward");
 const { calculateScore } = require("./score");
@@ -24,40 +23,6 @@ const enrichCard = (card) => {
   const info = getCardInfoById(id);
   // 合并信息，保留原 card 中的动态数据（如 uid）并覆盖/补充静态数据
   return { ...info, ...card, id };
-};
-
-/**
- * 根据 ID 获取卡片的静态详细信息
- * 包括：卡片基础类型、关联的物种详情、背景图视觉信息等
- * @param {string|number} id - 卡片ID
- * @returns {Object} - 卡片详细静态信息对象
- */
-const getCardInfoById = (id) => {
-  const cardBasic = CARDS_DATA[id];
-
-  // 如果没有找到卡片基础数据，返回 undefined 或空对象，避免报错
-  if (!cardBasic) return {};
-
-  const speciesDetails = cardBasic.species.map((speciesName) => {
-    if (!speciesName) return null;
-    return (
-      SPECIES_DATA[speciesName] || {
-        name: speciesName,
-        description: "未知物种",
-      }
-    );
-  });
-
-  // 获取视觉信息 (bgImg, bgSize, cssClass)
-  // 注意：cardBasic 本身不含 id，需要手动传入以生成正确的 card-ID 类名
-  const visualInfo = getCardVisual({ ...cardBasic, id });
-
-  return {
-    ...cardBasic,
-    ...visualInfo, // 合并视觉信息
-    speciesDetails, // 包含 species 的详细信息对象数组
-    id: id, // 确保ID也在返回对象中
-  };
 };
 
 /**

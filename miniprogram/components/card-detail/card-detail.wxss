@@ -254,6 +254,7 @@
   /* Can be small */
   font-weight: 600;
   border: 1rpx solid #C8E6C9;
+  line-height: 12rpx;
 }
 
 /* Mechanics Section */

@@ -1,161 +1,10 @@
-// 卡包：基础版 / 阿尔卑斯扩展 / 林缘扩展
-const BASIC_DECK = "basic";
-const ALPINE_DECK = "alpine";
-const EDGE_DECK = "edge";
-
-// 卡片类型
-const TREE = "tree" // 单卡（林缘扩展 / 林地边缘）
-const V_CARD = "vCard" // 垂直附属卡
-const H_CARD = "hCard" // 水平附属卡
-const W_CARD = "wCard" // 冬季卡
-
-// 标签
-const BUTTERFLY = "蝴蝶"
-const INSECT = "昆虫"
-const MUSHROOM = "蘑菇"
-const BIRD = "鸟"
-const BAT = "蝙蝠"
-const PAW = "爪子"
-const AMPHIBIAN = "两栖动物"
-const PLANT = "植物"
-const MOUNTAIN = "高山"
-const LARIX = "落叶松属"
-const PINUS = "松属"
-const CLOVEN = "蹄足"
-const SHRUB = "灌木"
-const EDGE = "林缘"
-
-// 根据卡片类型获取雪碧图，根据卡片ID定位卡片
-const imgUrl = {
-  [TREE]: `https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img/trees.jpg`,
-  [H_CARD]: `https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img/hCards.jpg`,
-  [V_CARD]: `https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img/vCards.jpg`,
-  [W_CARD]: `https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img/woodlands.Jpg`,
-  [MOUNTAIN]: `https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img/mountain.jpg`,
-};
-
-
-// 基础树木
-const LINDEN = "椴树"
-const OAK = "橡树"
-const SILVER_FIR = "银杉"
-const BIRCH = "桦树"
-const BEECH = "山毛榉"
-const SYCAMORE = "梧桐"
-const DOUGLAS_FIR = "冷杉"
-const HORSE_CHESTNUT = "欧洲七叶树"
-// 基础生物
-const EUROPEAN_HARE = "欧洲野兔"
-const EUROPEAN_BADGER = "欧洲獾"
-const GREATER_HORSESHOE_BAT = "马铁菊头蝠"
-const RED_FOX = "赤狐"
-const RACCOON = "浣熊"
-const WILD_BOAR = "野猪"
-const BROWN_LONG_EARED_BAT = "褐大耳蝠"
-const ROE_DEER = "西方狍"
-const BARBASTELLE_BAT = "宽耳犬吻蝠"
-const BROWN_BEAR = "棕熊"
-const BEECH_MARTEN = "石貂"
-const RED_DEER = "马鹿"
-const LYNX = "猞猁"
-const GNAT = "蚊子"
-const VIOLET_CARPENTER_BEE = "紫木蜂"
-const FALLOW_DEER = "小鹿"
-const EUROPEAN_FAT_DORMOUSE = "欧洲睡鼠"
-const WOLF = "狼"
-const BECHSTEIN = "贝希斯坦蝙蝠"
-const SQUEAKER = "小野猪"
-const GOSHAWK = "苍鹰"
-const MOSS = "苔藓"
-const GREAT_SPOTTED_WOODPECKER = "大斑啄木鸟"
-const WOOD_ANT = "红褐林蚁"
-const CHAFFINCH = "苍头燕雀"
-const TAWNY_OWL = "灰林鸮"
-const STAG_BEETLE = "锹甲"
-const SILVER_WASHED_FRITILLARY = "绿豹蛱蝶"
-const FIRE_SALAMANDER = "火蝾螈"
-const PURPLE_EMPEROR = "紫闪蛱蝶"
-const POND_TURTLE = "泽龟"
-const CAMBERWELL_BEAUTY = "黄缘蛱蝶"
-const LARGE_TORTOISESHELL = "榆蛱蝶"
-const BULLFINCH = "红腹灰雀"
-const TREE_FROG = "树蛙"
-const COMMON_TOAD = "大蟾蜍"
-const EURASIAN_JAY = "松鸦"
-const TREE_FERNS = "树蕨"
-const WILD_STRAWBERRIES = "野草莓"
-const BLACKBERRIES = "黑莓"
-const FIREFLIES = "萤火虫"
-const HEDGEHOG = "刺猬"
-const PEACOCK_BUTTERFLY = "孔雀蛱蝶"
-const RED_SQUIRREL = "红松松鼠"
-const CHANTERELLE = "鸡油菌"
-const MOLE = "鼹鼠"
-const FLY_AGARIC = "毒蝇伞"
-const PENNY_BUN = "牛肝菌"
-const PARASOL_MUSHROOM = "高大环柄菇"
-
-// 树木（阿尔卑斯扩展）
-const LARIX_DECIDUA = "欧洲落叶松"
-const PINUS_CEMBRA = "瑞士石松"
-// 阿尔卑斯生物（阿尔卑斯扩展）
-const MARMOTA_MARMOTA = "阿尔卑斯旱獭"
-const RUPICAPRA_RUPICAPRA = "臆羚"
-const TETRAO_UROGALLUS = "松鸡"
-const LEPUS_TIMIDUS = "雪兔"
-const CAPRA_IBEX = "羱羊"
-const HYPSUGO_SAVII = "萨维伏翼"
-const PARNASSIUS_PHOEBUS = "小阿波罗绢蝶"
-const CRATERELLUS_CORNUCOPIODES = "灰号角菇"
-const LEONTOPODIUM_NIVALE = "高山火绒草"
-const VACCINIUM_MYRTILLUS = "黑果越橘"
-const ICHTHYOSAURA_ALPESTRIS = "高山欧叶螈"
-const AQUILA_CHRYSAETOS = "金雕"
-const GYPAETUS_BARBATUS = "胡兀鹫"
-const GENTIANA = "龙胆草"
-const CORVUS_CORAX = "渡鸦"
-
-// 灌木（林缘扩展）
-const SAMBUCUS = "接骨木"
-const COMMON_HAZEL = "欧榛"
-const BLACKTHORN = "黑刺李"
-// 林缘生物（林缘扩展）
-const MAP_BUTTERFLY = "盛蛱蝶"
-const DIGITALIS = "毛地黄"
-const URTICA = "荨麻"
-const GREAT_GREEN_BUSH_CRICKET = "绿丛螽"
-const EUROPEAN_WATER_VOLE = "水田鼠"
-const EURASIAN_MAGPIE = "欧亚喜鹊"
-const COMMON_NIGHTINGALE = "夜莺"
-const BARN_OWL = "仓鸮"
-const WILD_BOAR_FEMALE_ = "野猪（雌性）"
-const BEEHIVE = "蜂群"
-const EUROPEAN_BISON = "欧洲野牛"
-const EUROPEAN_WILDCAT = "欧洲野猫"
-const COMMON_PIPISTRELLE = "伏翼"
-const MOSQUITO = "大蚊"
-const EUROPEAN_POLECAT = "欧洲林鼬"
-// const SQUEAKER_EDGE = "小野猪" // 用SQUEAKER
-
-
-// const WITH_OTHERS = [
-//   FIREFLIES,
-//   HORSE_CHESTNUT,
-//   FIRE_SALAMANDER,
-//   CAMBERWELL_BEAUTY,
-//   LARGE_TORTOISESHELL,
-//   PEACOCK_BUTTERFLY,
-//   PURPLE_EMPEROR,
-//   PARNASSIUS_PHOEBUS,
-//   SILVER_WASHED_FRITILLARY,
-// ];
-// const SLOT_SCORE = [EUROPEAN_HARE, COMMON_TOAD];
+const { DECK_TYPES, CARD_TYPES, TAGS, SPECIES_NAMES } = require('./constants');
 
 const SPECIES_DATA = {
-  BLACKBERRIES: {
+  [SPECIES_NAMES.BLACKBERRIES]: {
     name: "黑莓",
     nb: 3,
-    tags: [PLANT],
+    tags: [TAGS.PLANT],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -163,10 +12,10 @@ const SPECIES_DATA = {
     points: "每张带有植物符号的牌得2分",
   },
 
-  BULLFINCH: {
+  [SPECIES_NAMES.BULLFINCH]: {
     name: "红腹灰雀",
     nb: 4,
-    tags: [BIRD],
+    tags: [TAGS.BIRD],
     cost: 1,
     type: "vCard",
     effect: "",
@@ -174,10 +23,10 @@ const SPECIES_DATA = {
     points: "每张带有昆虫符号的牌得2分",
   },
 
-  CAMBERWELLBEAUTY: {
+  [SPECIES_NAMES.CAMBERWELL_BEAUTY]: {
     name: "黄缘蛱蝶",
     nb: 4,
-    tags: [INSECT, BUTTERFLY],
+    tags: [TAGS.INSECT, TAGS.BUTTERFLY],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -185,10 +34,10 @@ const SPECIES_DATA = {
     points: "每张不同的蝴蝶牌得1分",
   },
 
-  CHAFFINCH: {
+  [SPECIES_NAMES.CHAFFINCH]: {
     name: "苍头燕雀",
     nb: 4,
-    tags: [BIRD],
+    tags: [TAGS.BIRD],
     cost: 1,
     type: "vCard",
     effect: "",
@@ -196,10 +45,10 @@ const SPECIES_DATA = {
     points: "若位于山毛榉上，获得5分",
   },
 
-  CHANTERELLE: {
+  [SPECIES_NAMES.CHANTERELLE]: {
     name: "鸡油菌",
     nb: 2,
-    tags: [MUSHROOM],
+    tags: [TAGS.MUSHROOM],
     cost: 2,
     type: "vCard",
     effect: "每当你打出一张带有树木符号的牌时，获得1张牌",
@@ -207,10 +56,10 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  COMMONTOAD: {
+  [SPECIES_NAMES.COMMON_TOAD]: {
     name: "大蟾蜍",
     nb: 6,
-    tags: [AMPHIBIAN],
+    tags: [TAGS.AMPHIBIAN],
     cost: 0,
     type: "vCard",
     effect: "该槽位最多可容纳2只大蟾蜍",
@@ -218,10 +67,10 @@ const SPECIES_DATA = {
     points: "若2只大蟾蜍共享此槽位，获得5分",
   },
 
-  EURASIANJAY: {
+  [SPECIES_NAMES.EURASIAN_JAY]: {
     name: "松鸦",
     nb: 4,
-    tags: [BIRD],
+    tags: [TAGS.BIRD],
     cost: 1,
     type: "vCard",
     effect: "获得新的回合",
@@ -229,10 +78,10 @@ const SPECIES_DATA = {
     points: "获得3分",
   },
 
-  FIRESALAMANDER: {
+  [SPECIES_NAMES.FIRE_SALAMANDER]: {
     name: "火蛾螈",
     nb: 3,
-    tags: [AMPHIBIAN],
+    tags: [TAGS.AMPHIBIAN],
     cost: 1,
     type: "vCard",
     effect: "",
@@ -240,10 +89,10 @@ const SPECIES_DATA = {
     points: "根据你拥有的火蛾螈数量获得分数",
   },
 
-  FIREFLIES: {
+  [SPECIES_NAMES.FIREFLIES]: {
     name: "萤火虫",
     nb: 4,
-    tags: [INSECT],
+    tags: [TAGS.INSECT],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -251,10 +100,10 @@ const SPECIES_DATA = {
     points: "根据你拥有的萤火虫数量获得分数",
   },
 
-  FLYAGARIC: {
+  [SPECIES_NAMES.FLY_AGARIC]: {
     name: "毒蝇伞",
     nb: 2,
-    tags: [MUSHROOM],
+    tags: [TAGS.MUSHROOM],
     cost: 2,
     type: "vCard",
     effect: "每当你打出一张带有爪印符号的牌时，获得1张牌",
@@ -262,10 +111,10 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  GOSHAWK: {
+  [SPECIES_NAMES.GOSHAWK]: {
     name: "苍鹰",
     nb: 4,
-    tags: [BIRD],
+    tags: [TAGS.BIRD],
     cost: 2,
     type: "vCard",
     effect: "",
@@ -273,10 +122,10 @@ const SPECIES_DATA = {
     points: "每张带有鸟类符号的牌得3分",
   },
 
-  GREATSPOTTEDWOODPECKER: {
+  [SPECIES_NAMES.GREAT_SPOTTED_WOODPECKER]: {
     name: "大斑啄木鸟",
     nb: 4,
-    tags: [BIRD],
+    tags: [TAGS.BIRD],
     cost: 1,
     type: "vCard",
     effect: "获得1张牌",
@@ -284,10 +133,10 @@ const SPECIES_DATA = {
     points: "若没有其他森林的树木数量比你多，获得10分",
   },
 
-  HEDGEHOG: {
+  [SPECIES_NAMES.HEDGEHOG]: {
     name: "刺猬",
     nb: 3,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 1,
     type: "vCard",
     effect: "",
@@ -295,10 +144,10 @@ const SPECIES_DATA = {
     points: "每张带有蝴蝶符号的牌得2分",
   },
 
-  LARGETORTOISESHELL: {
+  [SPECIES_NAMES.LARGE_TORTOISESHELL]: {
     name: "榆蛱蝶",
     nb: 4,
-    tags: [INSECT, BUTTERFLY],
+    tags: [TAGS.INSECT, TAGS.BUTTERFLY],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -306,10 +155,10 @@ const SPECIES_DATA = {
     points: "每张不同的蝴蝶牌得1分",
   },
 
-  MOLE: {
+  [SPECIES_NAMES.MOLE]: {
     name: "鼹鼠",
     nb: 2,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 2,
     type: "vCard",
     effect: "立即支付费用打出任意数量的牌",
@@ -317,10 +166,10 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  MOSS: {
+  [SPECIES_NAMES.MOSS]: {
     name: "苔藓",
     nb: 3,
-    tags: [PLANT],
+    tags: [TAGS.PLANT],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -328,10 +177,10 @@ const SPECIES_DATA = {
     points: "如果你至少拥有10棵树，获得10分",
   },
 
-  PARASOLMUSHROOM: {
+  [SPECIES_NAMES.PARASOL_MUSHROOM]: {
     name: "高大环柄菇",
     nb: 2,
-    tags: [MUSHROOM],
+    tags: [TAGS.MUSHROOM],
     cost: 2,
     type: "vCard",
     effect: "每当你打出一张位于树木下方的牌时，获得1张牌",
@@ -339,10 +188,10 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  PEACOCKBUTTERFLY: {
+  [SPECIES_NAMES.PEACOCK_BUTTERFLY]: {
     name: "孔雀蛱蝶",
     nb: 4,
-    tags: [INSECT, BUTTERFLY],
+    tags: [TAGS.INSECT, TAGS.BUTTERFLY],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -350,10 +199,10 @@ const SPECIES_DATA = {
     points: "每张不同的蝴蝶牌得1分",
   },
 
-  PENNYBUN: {
+  [SPECIES_NAMES.PENNY_BUN]: {
     name: "牛肝菌",
     nb: 2,
-    tags: [MUSHROOM],
+    tags: [TAGS.MUSHROOM],
     cost: 2,
     type: "vCard",
     effect: "每当你往树木顶端打一张牌将会奖励一张牌（仅树木，灌木不算）",
@@ -361,10 +210,10 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  PONDTURTLE: {
+  [SPECIES_NAMES.POND_TURTLE]: {
     name: "泽龟",
     nb: 2,
-    tags: [AMPHIBIAN],
+    tags: [TAGS.AMPHIBIAN],
     cost: 2,
     type: "vCard",
     effect: "获得1张牌",
@@ -372,10 +221,10 @@ const SPECIES_DATA = {
     points: "获得5分",
   },
 
-  PURPLEEMPEROR: {
+  [SPECIES_NAMES.PURPLE_EMPEROR]: {
     name: "紫闪蛱蝶",
     nb: 4,
-    tags: [INSECT, BUTTERFLY],
+    tags: [TAGS.INSECT, TAGS.BUTTERFLY],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -383,10 +232,10 @@ const SPECIES_DATA = {
     points: "每张不同的蝴蝶牌得1分",
   },
 
-  REDSQUIRREL: {
+  [SPECIES_NAMES.RED_SQUIRREL]: {
     name: "红松鼠",
     nb: 4,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -394,10 +243,10 @@ const SPECIES_DATA = {
     points: "若位于橡树上，获得5分",
   },
 
-  SILVERWASHEDFRITILLARY: {
+  [SPECIES_NAMES.SILVER_WASHED_FRITILLARY]: {
     name: "绿豹蛱蝶",
     nb: 4,
-    tags: [INSECT, BUTTERFLY],
+    tags: [TAGS.INSECT, TAGS.BUTTERFLY],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -405,10 +254,10 @@ const SPECIES_DATA = {
     points: "每张不同的蝴蝶牌得1分",
   },
 
-  STAGBEETLE: {
+  [SPECIES_NAMES.STAG_BEETLE]: {
     name: "锹甲",
     nb: 2,
-    tags: [INSECT],
+    tags: [TAGS.INSECT],
     cost: 2,
     type: "vCard",
     effect: "",
@@ -416,10 +265,10 @@ const SPECIES_DATA = {
     points: "每张带有爪印符号的牌得1分",
   },
 
-  TAWNYOWL: {
+  [SPECIES_NAMES.TAWNY_OWL]: {
     name: "灰林鸮",
     nb: 4,
-    tags: [BIRD],
+    tags: [TAGS.BIRD],
     cost: 2,
     type: "vCard",
     effect: "获得1张牌",
@@ -427,10 +276,10 @@ const SPECIES_DATA = {
     points: "获得5分",
   },
 
-  TREEFERNS: {
+  [SPECIES_NAMES.TREE_FERNS]: {
     name: "树蕨",
     nb: 3,
-    tags: [PLANT],
+    tags: [TAGS.PLANT],
     cost: 1,
     type: "vCard",
     effect: "获得1张牌",
@@ -438,10 +287,10 @@ const SPECIES_DATA = {
     points: "每张带有两栖动物符号的牌得6分",
   },
 
-  TREEFROG: {
+  [SPECIES_NAMES.TREE_FROG]: {
     name: "树蛙",
     nb: 3,
-    tags: [AMPHIBIAN],
+    tags: [TAGS.AMPHIBIAN],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -449,10 +298,10 @@ const SPECIES_DATA = {
     points: "每有一只蚊子获得5分",
   },
 
-  WILDSTRAWBERRIES: {
+  [SPECIES_NAMES.WILD_STRAWBERRIES]: {
     name: "野草莓",
     nb: 3,
-    tags: [PLANT],
+    tags: [TAGS.PLANT],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -460,10 +309,10 @@ const SPECIES_DATA = {
     points: "如果你集齐所有8种不同的树木，获得10分",
   },
 
-  WOODANT: {
+  [SPECIES_NAMES.WOOD_ANT]: {
     name: "红褐林蚁",
     nb: 3,
-    tags: [INSECT],
+    tags: [TAGS.INSECT],
     cost: 1,
     type: "vCard",
     effect: "",
@@ -471,10 +320,10 @@ const SPECIES_DATA = {
     points: "每张树下的牌得2分",
   },
 
-  BARBASTELLEBAT: {
+  [SPECIES_NAMES.BARBASTELLE_BAT]: {
     name: "宽耳犬吻蝠",
     nb: 3,
-    tags: [BAT],
+    tags: [TAGS.BAT],
     cost: 1,
     type: "hCard",
     effect: "",
@@ -485,7 +334,7 @@ const SPECIES_DATA = {
   BECHSTEINSBAT: {
     name: "贝希斯坦蝙蝠",
     nb: 3,
-    tags: [BAT],
+    tags: [TAGS.BAT],
     cost: 1,
     type: "hCard",
     effect: "",
@@ -493,10 +342,10 @@ const SPECIES_DATA = {
     points: "如果你有至少3种不同的蝙蝠，获得5分",
   },
 
-  BEECHMARTEN: {
+  [SPECIES_NAMES.BEECH_MARTEN]: {
     name: "石貂",
     nb: 5,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 1,
     type: "hCard",
     effect: "获得1张牌",
@@ -504,10 +353,10 @@ const SPECIES_DATA = {
     points: "每棵完全被占据的树木得5分",
   },
 
-  BROWNBEAR: {
+  [SPECIES_NAMES.BROWN_BEAR]: {
     name: "棕熊",
     nb: 3,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 3,
     type: "hCard",
     effect: "将空地上的所有卡牌放入你的洞穴",
@@ -515,10 +364,10 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  BROWNLONGEAREDBAT: {
+  [SPECIES_NAMES.BROWN_LONG_EARED_BAT]: {
     name: "褐大耳蝠",
     nb: 3,
-    tags: [BAT],
+    tags: [TAGS.BAT],
     cost: 1,
     type: "hCard",
     effect: "",
@@ -526,10 +375,10 @@ const SPECIES_DATA = {
     points: "如果你有至少3种不同的蝙蝠，获得5分",
   },
 
-  EUROPEANBADGER: {
+  [SPECIES_NAMES.EUROPEAN_BADGER]: {
     name: "欧洲獾",
     nb: 4,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 1,
     type: "hCard",
     effect: "",
@@ -537,10 +386,10 @@ const SPECIES_DATA = {
     points: "获得2分",
   },
 
-  EUROPEANFATDORMOUSE: {
+  [SPECIES_NAMES.EUROPEAN_FAT_DORMOUSE]: {
     name: "欧洲睡鼠",
     nb: 4,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 1,
     type: "hCard",
     effect: "",
@@ -548,10 +397,10 @@ const SPECIES_DATA = {
     points: "如果该树上也有一只蝙蝠，获得15分",
   },
 
-  EUROPEANHARE: {
+  [SPECIES_NAMES.EUROPEAN_HARE]: {
     name: "欧洲野兔",
     nb: 11,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 0,
     type: "hCard",
     effect: "该槽位可以容纳任意数量的欧洲野兔",
@@ -559,7 +408,7 @@ const SPECIES_DATA = {
     points: "每有一只欧洲野兔获得1分",
   },
 
-  FALLOWDEER: {
+  [SPECIES_NAMES.FALLOW_DEER]: {
     name: "小鹿",
     nb: 4,
     tags: ["Cloven-hoofed animal", "Deer"],
@@ -570,10 +419,10 @@ const SPECIES_DATA = {
     points: "每张带有偶蹄动物符号的牌得3分",
   },
 
-  GNAT: {
+  [SPECIES_NAMES.GNAT]: {
     name: "蚊子",
     nb: 3,
-    tags: [INSECT],
+    tags: [TAGS.INSECT],
     cost: 0,
     type: "hCard",
     effect: "免费打出任意数量的蝙蝠牌",
@@ -581,10 +430,10 @@ const SPECIES_DATA = {
     points: "每张带有蝙蝠符号的牌得1分",
   },
 
-  GREATERHORSESHOEBAT: {
+  [SPECIES_NAMES.GREATER_HORSESHOE_BAT]: {
     name: "马铁菊头蝠",
     nb: 3,
-    tags: [BAT],
+    tags: [TAGS.BAT],
     cost: 1,
     type: "hCard",
     effect: "",
@@ -592,10 +441,10 @@ const SPECIES_DATA = {
     points: "如果你有至少3种不同的蝙蝠，获得5分",
   },
 
-  LYNX: {
+  [SPECIES_NAMES.LYNX]: {
     name: "猞猁",
     nb: 6,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 1,
     type: "hCard",
     effect: "",
@@ -603,10 +452,10 @@ const SPECIES_DATA = {
     points: "如果你至少有1只西方狍，获得10分",
   },
 
-  RACCOON: {
+  [SPECIES_NAMES.RACCOON]: {
     name: "浣熊",
     nb: 4,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 1,
     type: "hCard",
     effect: "将手牌中任意数量的卡牌放入你的洞穴；从牌库中抽出相同数量的牌",
@@ -614,7 +463,7 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  REDDEER: {
+  [SPECIES_NAMES.RED_DEER]: {
     name: "马鹿",
     nb: 5,
     tags: ["Cloven-hoofed animal", "Deer"],
@@ -625,10 +474,10 @@ const SPECIES_DATA = {
     points: "每张带有树木或植物符号的牌得1分",
   },
 
-  REDFOX: {
+  [SPECIES_NAMES.RED_FOX]: {
     name: "赤狐",
     nb: 5,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 2,
     type: "hCard",
     effect: "每有一只欧洲野兔获得1张牌",
@@ -636,7 +485,7 @@ const SPECIES_DATA = {
     points: "每有一只欧洲野兔获得2分",
   },
 
-  ROEDEER: {
+  [SPECIES_NAMES.ROE_DEER]: {
     name: "西方狍",
     nb: 5,
     tags: ["Cloven-hoofed animal", "Deer"],
@@ -647,7 +496,7 @@ const SPECIES_DATA = {
     points: "每张带有匹配树木符号的牌得3分",
   },
 
-  SQUEAKER: {
+  [SPECIES_NAMES.SQUEAKER]: {
     name: "小野猪",
     nb: 4,
     tags: ["Cloven-hoofed animal"],
@@ -658,10 +507,10 @@ const SPECIES_DATA = {
     points: "获得1分",
   },
 
-  VIOLETCARPENTERBEE: {
+  [SPECIES_NAMES.VIOLET_CARPENTER_BEE]: {
     name: "紫木蜂",
     nb: 4,
-    tags: [INSECT],
+    tags: [TAGS.INSECT],
     cost: 1,
     type: "hCard",
     effect: "这只蜜蜂占据的树木被算作同类型的一棵额外树木",
@@ -669,7 +518,7 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  WILDBOAR: {
+  [SPECIES_NAMES.WILD_BOAR]: {
     name: "野猪",
     nb: 5,
     tags: ["Cloven-hoofed animal"],
@@ -680,10 +529,10 @@ const SPECIES_DATA = {
     points: "如果你至少有1只小野猪，获得10分",
   },
 
-  WOLF: {
+  [SPECIES_NAMES.WOLF]: {
     name: "狼",
     nb: 4,
-    tags: [PAW],
+    tags: [TAGS.PAW],
     cost: 3,
     type: "hCard",
     effect: "每有一只鹿获得1张牌",
@@ -691,10 +540,10 @@ const SPECIES_DATA = {
     points: "每张带有鹿符号的牌得5分",
   },
 
-  LINDEN: {
+  [SPECIES_NAMES.LINDEN]: {
     name: "椴树",
     nb: 9,
-    tags: [TREE],
+    tags: [CARD_TYPES.TREE],
     cost: 1,
     type: 'tree',
     effect: "",
@@ -702,10 +551,10 @@ const SPECIES_DATA = {
     points: "获得1分，若没有其他森林的椴树数量比你多，则改为获得3分",
   },
 
-  OAK: {
+  [SPECIES_NAMES.OAK]: {
     name: "橡树",
     nb: 7,
-    tags: [TREE],
+    tags: [CARD_TYPES.TREE],
     cost: 2,
     type: 'tree',
     effect: "",
@@ -713,10 +562,10 @@ const SPECIES_DATA = {
     points: "如果你集齐所有8种不同的树木，获得10分",
   },
 
-  SILVERFIR: {
+  [SPECIES_NAMES.SILVER_FIR]: {
     name: "银杉",
     nb: 6,
-    tags: [TREE],
+    tags: [CARD_TYPES.TREE],
     cost: 2,
     type: 'tree',
     effect: "",
@@ -724,10 +573,10 @@ const SPECIES_DATA = {
     points: "连接到这棵银冷杉的每张牌得2分",
   },
 
-  BIRCH: {
+  [SPECIES_NAMES.BIRCH]: {
     name: "桦树",
     nb: 10,
-    tags: [TREE],
+    tags: [CARD_TYPES.TREE],
     cost: 0,
     type: 'tree',
     effect: "获得1张牌",
@@ -735,10 +584,10 @@ const SPECIES_DATA = {
     points: "获得1分",
   },
 
-  BEECH: {
+  [SPECIES_NAMES.BEECH]: {
     name: "山毛榉",
     nb: 10,
-    tags: [TREE],
+    tags: [CARD_TYPES.TREE],
     cost: 1,
     type: 'tree',
     effect: "获得1张牌",
@@ -746,10 +595,10 @@ const SPECIES_DATA = {
     points: "如果你至少有4棵山毛榉，获得5分",
   },
 
-  SYCAMORE: {
+  [SPECIES_NAMES.SYCAMORE]: {
     name: "梧桐",
     nb: 6,
-    tags: [TREE],
+    tags: [CARD_TYPES.TREE],
     cost: 2,
     type: 'tree',
     effect: "",
@@ -757,10 +606,10 @@ const SPECIES_DATA = {
     points: "每张带有树木符号的牌得1分",
   },
 
-  DOUGLASFIR: {
+  [SPECIES_NAMES.DOUGLAS_FIR]: {
     name: "冷杉",
     nb: 7,
-    tags: [TREE],
+    tags: [CARD_TYPES.TREE],
     cost: 2,
     type: 'tree',
     effect: "",
@@ -768,10 +617,10 @@ const SPECIES_DATA = {
     points: "获得5分",
   },
 
-  HORSECHESTNUT: {
+  [SPECIES_NAMES.HORSE_CHESTNUT]: {
     name: "欧洲七叶树",
     nb: 11,
-    tags: [TREE],
+    tags: [CARD_TYPES.TREE],
     cost: 1,
     type: 'tree',
     effect: "",
@@ -779,10 +628,10 @@ const SPECIES_DATA = {
     points: "根据你拥有的欧洲七叶树数量获得分数",
   },
 
-  HYPSUGOSAVII: {
+  [SPECIES_NAMES.HYPSUGO_SAVII]: {
     name: "萨维伏翼",
     nb: 3,
-    tags: [BAT],
+    tags: [TAGS.BAT],
     cost: 1,
     type: "hCard",
     effect: "",
@@ -790,10 +639,10 @@ const SPECIES_DATA = {
     points: "如果你有至少3种不同的蝙蝠，获得5分",
   },
 
-  LARIXDECIDUA: {
+  [SPECIES_NAMES.LARIX_DECIDUA]: {
     name: "欧洲落叶松",
     nb: 7,
-    tags: [TREE, MOUNTAIN],
+    tags: [CARD_TYPES.TREE, TAGS.MOUNTAIN],
     cost: 1,
     type: 'tree',
     effect: "",
@@ -801,10 +650,10 @@ const SPECIES_DATA = {
     points: "获得3分",
   },
 
-  PINUSCEMBRA: {
+  [SPECIES_NAMES.PINUS_CEMBRA]: {
     name: "瑞士石松",
     nb: 7,
-    tags: [TREE, MOUNTAIN],
+    tags: [CARD_TYPES.TREE, TAGS.MOUNTAIN],
     cost: 2,
     type: 'tree',
     effect: "获得1张牌",
@@ -812,10 +661,10 @@ const SPECIES_DATA = {
     points: "每张带有高山符号的牌得1分",
   },
 
-  CRATERELLUSCORNUCOPIODES: {
+  [SPECIES_NAMES.CRATERELLUS_CORNUCOPIODES]: {
     name: "灰号角菇",
     nb: 2,
-    tags: [MUSHROOM, MOUNTAIN],
+    tags: [TAGS.MUSHROOM, TAGS.MOUNTAIN],
     cost: 2,
     type: "vCard",
     effect: "每当你打出一张带有高山符号的牌时，获得1张牌",
@@ -823,10 +672,10 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  PARNASSIUSPHOEBUS: {
+  [SPECIES_NAMES.PARNASSIUS_PHOEBUS]: {
     name: "小阿波罗绢蝶",
     nb: 4,
-    tags: [BUTTERFLY, MOUNTAIN],
+    tags: [TAGS.BUTTERFLY, TAGS.MOUNTAIN],
     cost: 0,
     type: "vCard",
     effect: "",
@@ -834,10 +683,10 @@ const SPECIES_DATA = {
     points: "每张不同的蝴蝶牌得1分",
   },
 
-  GENTIANA: {
+  [SPECIES_NAMES.GENTIANA]: {
     name: "龙胆草",
     nb: 3,
-    tags: [PLANT, MOUNTAIN],
+    tags: [TAGS.PLANT, TAGS.MOUNTAIN],
     cost: 0,
     type: "vCard",
     effect: "免费打出一张带有蝴蝶符号的牌",
@@ -845,10 +694,10 @@ const SPECIES_DATA = {
     points: "每张带有蝴蝶符号的牌得3分",
   },
 
-  VACCINIUMMYRTILLUS: {
+  [SPECIES_NAMES.VACCINIUM_MYRTILLUS]: {
     name: "越橘",
     nb: 3,
-    tags: [PLANT, MOUNTAIN],
+    tags: [TAGS.PLANT, TAGS.MOUNTAIN],
     cost: 1,
     type: "vCard",
     effect: "免费打出一张带有两栖动物符号的牌",
@@ -856,10 +705,10 @@ const SPECIES_DATA = {
     points: "每张不同的鸟类牌得2分",
   },
 
-  ICHTHYOSAURAALPESTRIS: {
+  [SPECIES_NAMES.ICHTHYOSAURA_ALPESTRIS]: {
     name: "高山欧叶螈",
     nb: 3,
-    tags: [AMPHIBIAN, MOUNTAIN],
+    tags: [TAGS.AMPHIBIAN, TAGS.MOUNTAIN],
     cost: 1,
     type: "vCard",
     effect: "",
@@ -867,10 +716,10 @@ const SPECIES_DATA = {
     points: "每张带有昆虫符号的牌得2分",
   },
 
-  AQUILACHRYSAETOS: {
+  [SPECIES_NAMES.AQUILA_CHRYSAETOS]: {
     name: "金雕",
     nb: 3,
-    tags: [BIRD, MOUNTAIN],
+    tags: [TAGS.BIRD, TAGS.MOUNTAIN],
     cost: 1,
     type: "vCard",
     effect: "",
@@ -878,10 +727,10 @@ const SPECIES_DATA = {
     points: "每张带有爪印或两栖动物符号的牌得1分",
   },
 
-  CORVUSCORAX: {
+  [SPECIES_NAMES.CORVUS_CORAX]: {
     name: "渡鸦",
     nb: 2,
-    tags: [BIRD, MOUNTAIN],
+    tags: [TAGS.BIRD, TAGS.MOUNTAIN],
     cost: 1,
     type: "vCard",
     effect: "获得1张牌",
@@ -889,10 +738,10 @@ const SPECIES_DATA = {
     points: "获得5分",
   },
 
-  LEONTOPODIUMNIVALE: {
+  [SPECIES_NAMES.LEONTOPODIUM_NIVALE]: {
     name: "高山火绒草",
     nb: 2,
-    tags: [PLANT, MOUNTAIN],
+    tags: [TAGS.PLANT, TAGS.MOUNTAIN],
     cost: 1,
     type: "vCard",
     effect: "获得1张牌",
@@ -900,10 +749,10 @@ const SPECIES_DATA = {
     points: "获得3分",
   },
 
-  GYPAETUSBARBATUS: {
+  [SPECIES_NAMES.GYPAETUS_BARBATUS]: {
     name: "胡兀鹫",
     nb: 3,
-    tags: [BIRD, MOUNTAIN],
+    tags: [TAGS.BIRD, TAGS.MOUNTAIN],
     cost: 1,
     type: "vCard",
     effect: "将空地上的2张牌放入你的洞穴",
@@ -911,10 +760,10 @@ const SPECIES_DATA = {
     points: "你洞穴里的每张牌得1分",
   },
 
-  CAPRAIBEX: {
+  [SPECIES_NAMES.CAPRA_IBEX]: {
     name: "羱羊",
     nb: 3,
-    tags: ["Cloven-hoofed animal", MOUNTAIN],
+    tags: ["Cloven-hoofed animal", TAGS.MOUNTAIN],
     cost: 3,
     type: "hCard",
     effect: "获得新的回合",
@@ -922,10 +771,10 @@ const SPECIES_DATA = {
     points: "获得10分",
   },
 
-  LEPUSTIMIDUS: {
+  [SPECIES_NAMES.LEPUS_TIMIDUS]: {
     name: "雪兔",
     nb: 3,
-    tags: [PAW, MOUNTAIN],
+    tags: [TAGS.PAW, TAGS.MOUNTAIN],
     cost: 0,
     type: "hCard",
     effect: "被视为一只欧洲野兔",
@@ -933,10 +782,10 @@ const SPECIES_DATA = {
     points: "每有一只欧洲野兔获得1分",
   },
 
-  MARMOTAMARMOTA: {
+  [SPECIES_NAMES.MARMOTA_MARMOTA]: {
     name: "高山旱獭",
     nb: 4,
-    tags: [PAW, MOUNTAIN],
+    tags: [TAGS.PAW, TAGS.MOUNTAIN],
     cost: 1,
     type: "hCard",
     effect: "该槽位可以容纳任意数量的高山旱獭",
@@ -944,10 +793,10 @@ const SPECIES_DATA = {
     points: "每有一只高山旱獭获得2分",
   },
 
-  RUPICAPRARUPICAPRA: {
+  [SPECIES_NAMES.RUPICAPRA_RUPICAPRA]: {
     name: "臆羚",
     nb: 3,
-    tags: ["Cloven-hoofed animal", MOUNTAIN],
+    tags: ["Cloven-hoofed animal", TAGS.MOUNTAIN],
     cost: 1,
     type: "hCard",
     effect: "",
@@ -955,10 +804,10 @@ const SPECIES_DATA = {
     points: "每张不同的植物牌得3分",
   },
 
-  TETRAOUROGALLUS: {
+  [SPECIES_NAMES.TETRAO_UROGALLUS]: {
     name: "松鸡",
     nb: 4,
-    tags: [BIRD, MOUNTAIN],
+    tags: [TAGS.BIRD, TAGS.MOUNTAIN],
     cost: 1,
     type: "hCard",
     effect: "免费打出一张带有植物符号的牌",
@@ -966,10 +815,10 @@ const SPECIES_DATA = {
     points: "每张带有植物符号的牌得1分",
   },
 
-  SAMBUCUS: {
+  [SPECIES_NAMES.SAMBUCUS]: {
     name: "接骨木",
     nb: 4,
-    tags: [EDGE, SHRUB],
+    tags: [TAGS.EDGE, TAGS.SHRUB],
     cost: 2,
     type: 'tree',
     effect: "每当你打出一张带有植物符号的牌时，获得1张牌",
@@ -977,10 +826,10 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  COMMONHAZEL: {
+  [SPECIES_NAMES.COMMON_HAZEL]: {
     name: "欧榛",
     nb: 4,
-    tags: [EDGE, SHRUB],
+    tags: [TAGS.EDGE, TAGS.SHRUB],
     cost: 2,
     type: 'tree',
     effect: "每当你打出一张带有蝙蝠符号的牌时，获得1张牌",
@@ -988,10 +837,10 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  BLACKTHORN: {
+  [SPECIES_NAMES.BLACKTHORN]: {
     name: "黑刺李",
     nb: 4,
-    tags: [EDGE, SHRUB],
+    tags: [TAGS.EDGE, TAGS.SHRUB],
     cost: 2,
     type: 'tree',
     effect: "每当你打出一张带有蝴蝶符号的牌时，获得1张牌",
@@ -999,56 +848,56 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  WILDBOARFEMALE: {
+  [SPECIES_NAMES.WILD_BOAR_FEMALE_]: {
     name: "野猪（雌性）",
     nb: 3,
-    tags: [EDGE, CLOVEN],
+    tags: [TAGS.EDGE, TAGS.CLOVEN],
     cost: 2,
-    type: H_CARD,
+    type: CARD_TYPES.H_CARD,
     effect: "将空地上所有的牌从游戏中移除",
     bonus: "免费打出一只小野猪",
     points: "每有一只小野猪获得10分",
   },
 
-  BEEHIVE: {
+  [SPECIES_NAMES.BEEHIVE]: {
     name: "蜂群",
     nb: 3,
-    tags: [EDGE, INSECT],
+    tags: [TAGS.EDGE, TAGS.INSECT],
     cost: 1,
-    type: H_CARD,
+    type: CARD_TYPES.H_CARD,
     effect: "将所有带有植物、灌木或树木符号的卡片放进你的洞穴",
     bonus: "",
     points: "每张带有植物符号的卡片得1分",
   },
 
-  EUROPEANBISON: {
+  [SPECIES_NAMES.EUROPEAN_BISON]: {
     name: "欧洲野牛",
     nb: 3,
-    tags: [EDGE, CLOVEN],
+    tags: [TAGS.EDGE, TAGS.CLOVEN],
     cost: 3,
-    type: H_CARD,
+    type: CARD_TYPES.H_CARD,
     effect: "获得新的回合",
     bonus: "",
     points: "每张带有橡木或山毛榉标志的卡片可获得2分",
   },
 
-  EUROPEANWILDCAT: {
+  [SPECIES_NAMES.EUROPEAN_WILDCAT]: {
     name: "欧洲野猫",
     nb: 3,
-    tags: [EDGE, PAW],
+    tags: [TAGS.EDGE, TAGS.PAW],
     cost: 1,
-    type: H_CARD,
+    type: CARD_TYPES.H_CARD,
     effect: "从空地中拿一张牌",
     bonus: "",
     points: "每张带有林地边缘符号的牌得1分",
   },
 
-  COMMONPIPISTRELLE: {
+  [SPECIES_NAMES.COMMON_PIPISTRELLE]: {
     name: "伏翼",
     nb: 3,
-    tags: [EDGE, BAT],
+    tags: [TAGS.EDGE, TAGS.BAT],
     cost: 1,
-    type: H_CARD,
+    type: CARD_TYPES.H_CARD,
     effect: "",
     bonus: "",
     points: "如果你有至少3种不同的蝙蝠，获得5分",
@@ -1057,119 +906,119 @@ const SPECIES_DATA = {
   SQUEAKEREDGE: {
     name: "小野猪",
     nb: 3,
-    tags: [EDGE, CLOVEN],
+    tags: [TAGS.EDGE, TAGS.CLOVEN],
     cost: 0,
-    type: H_CARD,
+    type: CARD_TYPES.H_CARD,
     effect: "",
     bonus: "",
     points: "获得1分",
   },
 
-  MOSQUITO: {
+  [SPECIES_NAMES.MOSQUITO]: {
     name: "大蚊",
     nb: 3,
-    tags: [EDGE, INSECT],
+    tags: [TAGS.EDGE, TAGS.INSECT],
     cost: 1,
-    type: H_CARD,
+    type: CARD_TYPES.H_CARD,
     effect: "免费打出任意数量的蝙蝠牌",
     bonus: "把所有有蝙蝠符号的牌从空地上拿到手里",
     points: "每张带有蝙蝠符号的牌得1分",
   },
 
-  EUROPEANPOLECAT: {
+  [SPECIES_NAMES.EUROPEAN_POLECAT]: {
     name: "欧洲林鼬",
     nb: 3,
-    tags: [EDGE, PAW],
+    tags: [TAGS.EDGE, TAGS.PAW],
     cost: 2,
-    type: H_CARD,
+    type: CARD_TYPES.H_CARD,
     effect: "",
     bonus: "获得新的回合",
     points: "若位于树或灌木上，获得10分",
   },
 
-  MAPBUTTERFLY: {
+  [SPECIES_NAMES.MAP_BUTTERFLY]: {
     name: "盛蛱蝶",
     nb: 4,
-    tags: [EDGE, INSECT, BUTTERFLY],
+    tags: [TAGS.EDGE, TAGS.INSECT, TAGS.BUTTERFLY],
     cost: 0,
-    type: V_CARD,
+    type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "",
     points: "每张不同的蝴蝶牌得1分",
   },
 
-  DIGITALIS: {
+  [SPECIES_NAMES.DIGITALIS]: {
     name: "毛地黄",
     nb: 4,
-    tags: [EDGE, PLANT],
+    tags: [TAGS.EDGE, TAGS.PLANT],
     cost: 0,
-    type: V_CARD,
+    type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "",
     points: "每张不同的植物牌得1分",
   },
 
-  URTICA: {
+  [SPECIES_NAMES.URTICA]: {
     name: "荨麻",
     nb: 3,
-    tags: [EDGE, PLANT],
+    tags: [TAGS.EDGE, TAGS.PLANT],
     cost: 0,
-    type: V_CARD,
+    type: CARD_TYPES.V_CARD,
     effect: "任何数量的蝴蝶都可以在这棵树或灌木上共享一个槽",
     bonus: "",
     points: "每张带有蝴蝶符号的牌得2分",
   },
 
-  GREATGREENBUSHCRICKET: {
+  [SPECIES_NAMES.GREAT_GREEN_BUSH_CRICKET]: {
     name: "绿丛螽",
     nb: 3,
-    tags: [EDGE, INSECT],
+    tags: [TAGS.EDGE, TAGS.INSECT],
     cost: 1,
-    type: V_CARD,
+    type: CARD_TYPES.V_CARD,
     effect: "免费打出一张带有鸟符号的牌",
     bonus: "",
     points: "每张有昆虫符号的牌得1分",
   },
 
-  EUROPEANWATERVOLE: {
+  [SPECIES_NAMES.EUROPEAN_WATER_VOLE]: {
     name: "水田鼠",
     nb: 2,
-    tags: [EDGE, PAW],
+    tags: [TAGS.EDGE, TAGS.PAW],
     cost: 2,
-    type: V_CARD,
+    type: CARD_TYPES.V_CARD,
     effect: "立即打出任意数量的树苗",
     bonus: "获得新的回合",
     points: "",
   },
 
-  EURASIANMAGPIE: {
+  [SPECIES_NAMES.EURASIAN_MAGPIE]: {
     name: "欧亚喜鹊",
     nb: 3,
-    tags: [EDGE, BIRD],
+    tags: [TAGS.EDGE, TAGS.BIRD],
     cost: 1,
-    type: V_CARD,
+    type: CARD_TYPES.V_CARD,
     effect: "从空地中拿一张牌",
     bonus: "从空地上放两张牌到你的洞穴里",
     points: "获得3分",
   },
 
-  COMMONNIGHTINGALE: {
+  [SPECIES_NAMES.COMMON_NIGHTINGALE]: {
     name: "夜莺",
     nb: 3,
-    tags: [EDGE, BIRD],
+    tags: [TAGS.EDGE, TAGS.BIRD],
     cost: 1,
-    type: V_CARD,
+    type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "获得新的回合",
     points: "若位于灌木丛上，获得5分",
   },
 
-  BARNOWL: {
+  [SPECIES_NAMES.BARN_OWL]: {
     name: "仓鸮",
     nb: 2,
-    tags: [EDGE, BIRD],
+    tags: [TAGS.EDGE, TAGS.BIRD],
     cost: 2,
-    type: V_CARD,
+    type: CARD_TYPES.V_CARD,
     effect: "如果你的森林里至少有一只蝙蝠，获得新的回合",
     bonus: "",
     points: "每张带有蝙蝠符号的牌获得3分",
@@ -1188,309 +1037,245 @@ let $f = (data) => {
 // 卡片信息
 const CARDS_DATA = {
   // 基础卡
-  1: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
-  2: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
-  3: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
-  4: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
-  5: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
-  6: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
-  7: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
-  8: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
-  9: $f([TREE, [LINDEN], [LINDEN], BASIC_DECK]),
-  10: $f([TREE, [OAK], [OAK], BASIC_DECK]),
-  11: $f([TREE, [OAK], [OAK], BASIC_DECK]),
-  12: $f([TREE, [OAK], [OAK], BASIC_DECK]),
-  13: $f([TREE, [OAK], [OAK], BASIC_DECK]),
-  14: $f([TREE, [OAK], [OAK], BASIC_DECK]),
-  15: $f([TREE, [OAK], [OAK], BASIC_DECK]),
-  16: $f([TREE, [OAK], [OAK], BASIC_DECK]),
-  17: $f([TREE, [SILVER_FIR], [SILVER_FIR], BASIC_DECK]),
-  18: $f([TREE, [SILVER_FIR], [SILVER_FIR], BASIC_DECK]),
-  19: $f([TREE, [SILVER_FIR], [SILVER_FIR], BASIC_DECK]),
-  20: $f([TREE, [SILVER_FIR], [SILVER_FIR], BASIC_DECK]),
-  21: $f([TREE, [SILVER_FIR], [SILVER_FIR], BASIC_DECK]),
-  22: $f([TREE, [SILVER_FIR], [SILVER_FIR], BASIC_DECK]),
-  23: $f([TREE, [BIRCH], [BIRCH], BASIC_DECK]),
-  24: $f([TREE, [BIRCH], [BIRCH], BASIC_DECK]),
-  25: $f([TREE, [BIRCH], [BIRCH], BASIC_DECK]),
-  26: $f([TREE, [BIRCH], [BIRCH], BASIC_DECK]),
-  27: $f([TREE, [BIRCH], [BIRCH], BASIC_DECK]),
-  28: $f([TREE, [BIRCH], [BIRCH], BASIC_DECK]),
-  29: $f([TREE, [BIRCH], [BIRCH], BASIC_DECK]),
-  30: $f([TREE, [BIRCH], [BIRCH], BASIC_DECK]),
-  31: $f([TREE, [BIRCH], [BIRCH], BASIC_DECK]),
-  32: $f([TREE, [BIRCH], [BIRCH], BASIC_DECK]),
-  33: $f([TREE, [BEECH], [BEECH], BASIC_DECK]),
-  34: $f([TREE, [BEECH], [BEECH], BASIC_DECK]),
-  35: $f([TREE, [BEECH], [BEECH], BASIC_DECK]),
-  36: $f([TREE, [BEECH], [BEECH], BASIC_DECK]),
-  37: $f([TREE, [BEECH], [BEECH], BASIC_DECK]),
-  38: $f([TREE, [BEECH], [BEECH], BASIC_DECK]),
-  39: $f([TREE, [BEECH], [BEECH], BASIC_DECK]),
-  40: $f([TREE, [BEECH], [BEECH], BASIC_DECK]),
-  41: $f([TREE, [BEECH], [BEECH], BASIC_DECK]),
-  42: $f([TREE, [BEECH], [BEECH], BASIC_DECK]),
-  43: $f([TREE, [SYCAMORE], [SYCAMORE], BASIC_DECK]),
-  44: $f([TREE, [SYCAMORE], [SYCAMORE], BASIC_DECK]),
-  45: $f([TREE, [SYCAMORE], [SYCAMORE], BASIC_DECK]),
-  46: $f([TREE, [SYCAMORE], [SYCAMORE], BASIC_DECK]),
-  47: $f([TREE, [SYCAMORE], [SYCAMORE], BASIC_DECK]),
-  48: $f([TREE, [SYCAMORE], [SYCAMORE], BASIC_DECK]),
-  49: $f([TREE, [DOUGLAS_FIR], [DOUGLAS_FIR], BASIC_DECK]),
-  50: $f([TREE, [DOUGLAS_FIR], [DOUGLAS_FIR], BASIC_DECK]),
-  51: $f([TREE, [DOUGLAS_FIR], [DOUGLAS_FIR], BASIC_DECK]),
-  52: $f([TREE, [DOUGLAS_FIR], [DOUGLAS_FIR], BASIC_DECK]),
-  53: $f([TREE, [DOUGLAS_FIR], [DOUGLAS_FIR], BASIC_DECK]),
-  54: $f([TREE, [DOUGLAS_FIR], [DOUGLAS_FIR], BASIC_DECK]),
-  55: $f([TREE, [DOUGLAS_FIR], [DOUGLAS_FIR], BASIC_DECK]),
-  56: $f([TREE, [HORSE_CHESTNUT], [HORSE_CHESTNUT], BASIC_DECK]),
-  57: $f([TREE, [HORSE_CHESTNUT], [HORSE_CHESTNUT], BASIC_DECK]),
-  58: $f([TREE, [HORSE_CHESTNUT], [HORSE_CHESTNUT], BASIC_DECK]),
-  59: $f([TREE, [HORSE_CHESTNUT], [HORSE_CHESTNUT], BASIC_DECK]),
-  60: $f([TREE, [HORSE_CHESTNUT], [HORSE_CHESTNUT], BASIC_DECK]),
-  61: $f([TREE, [HORSE_CHESTNUT], [HORSE_CHESTNUT], BASIC_DECK]),
-  62: $f([TREE, [HORSE_CHESTNUT], [HORSE_CHESTNUT], BASIC_DECK]),
-  63: $f([TREE, [HORSE_CHESTNUT], [HORSE_CHESTNUT], BASIC_DECK]),
-  64: $f([TREE, [HORSE_CHESTNUT], [HORSE_CHESTNUT], BASIC_DECK]),
-  65: $f([TREE, [HORSE_CHESTNUT], [HORSE_CHESTNUT], BASIC_DECK]),
-  66: $f([TREE, [HORSE_CHESTNUT], [HORSE_CHESTNUT], BASIC_DECK]),
-  67: $f([W_CARD, [''], [''], BASIC_DECK]),
-  68: $f([W_CARD, [''], [''], BASIC_DECK]),
-  69: $f([W_CARD, [''], [''], BASIC_DECK]),
-  70: $f([H_CARD, [EUROPEAN_HARE, EUROPEAN_BADGER], [LINDEN, DOUGLAS_FIR], BASIC_DECK]),
-  71: $f([H_CARD, [EUROPEAN_HARE, GREATER_HORSESHOE_BAT], [OAK, LINDEN], BASIC_DECK]),
-  72: $f([H_CARD, [EUROPEAN_HARE, RED_FOX], [SILVER_FIR, OAK], BASIC_DECK]),
-  73: $f([H_CARD, [RACCOON, EUROPEAN_HARE], [DOUGLAS_FIR, SYCAMORE], BASIC_DECK]),
-  74: $f([H_CARD, [WILD_BOAR, EUROPEAN_HARE], [SYCAMORE, SILVER_FIR], BASIC_DECK]),
-  75: $f([H_CARD, [BROWN_LONG_EARED_BAT, EUROPEAN_HARE], [SYCAMORE, LINDEN], BASIC_DECK]),
-  76: $f([H_CARD, [RACCOON, ROE_DEER], [SILVER_FIR, BEECH], BASIC_DECK]),
-  77: $f([H_CARD, [BROWN_LONG_EARED_BAT, EUROPEAN_BADGER], [SYCAMORE, DOUGLAS_FIR], BASIC_DECK]),
-  78: $f([H_CARD, [BARBASTELLE_BAT, WILD_BOAR], [HORSE_CHESTNUT, OAK], BASIC_DECK]),
-  79: $f([H_CARD, [BROWN_BEAR, RACCOON], [LINDEN, SILVER_FIR], BASIC_DECK]),
-  80: $f([H_CARD, [BEECH_MARTEN, BROWN_BEAR], [SYCAMORE, HORSE_CHESTNUT], BASIC_DECK]),
-  81: $f([H_CARD, [RED_DEER, BROWN_BEAR], [LINDEN, BEECH], BASIC_DECK]),
-  82: $f([H_CARD, [BARBASTELLE_BAT, BEECH_MARTEN], [SILVER_FIR, HORSE_CHESTNUT], BASIC_DECK]),
-  83: $f([H_CARD, [LYNX, EUROPEAN_HARE], [DOUGLAS_FIR, BIRCH], BASIC_DECK]),
-  84: $f([H_CARD, [WILD_BOAR, BEECH_MARTEN], [BIRCH, OAK], BASIC_DECK]),
-  85: $f([H_CARD, [EUROPEAN_BADGER, GNAT], [HORSE_CHESTNUT, OAK], BASIC_DECK]),
-  86: $f([H_CARD, [RED_FOX, VIOLET_CARPENTER_BEE], [LINDEN, DOUGLAS_FIR], BASIC_DECK]),
-  87: $f([H_CARD, [WILD_BOAR, ROE_DEER], [SYCAMORE, HORSE_CHESTNUT], BASIC_DECK]),
-  88: $f([H_CARD, [FALLOW_DEER, WILD_BOAR], [LINDEN, DOUGLAS_FIR], BASIC_DECK]),
-  89: $f([H_CARD, [FALLOW_DEER, ROE_DEER], [LINDEN, BIRCH], BASIC_DECK]),
-  90: $f([H_CARD, [RED_DEER, FALLOW_DEER], [SILVER_FIR, SYCAMORE], BASIC_DECK]),
-  91: $f([H_CARD, [VIOLET_CARPENTER_BEE, LYNX], [DOUGLAS_FIR, BEECH], BASIC_DECK]),
-  92: $f([H_CARD, [EUROPEAN_FAT_DORMOUSE, BARBASTELLE_BAT], [BEECH, OAK], BASIC_DECK]),
-  93: $f([H_CARD, [GREATER_HORSESHOE_BAT, EUROPEAN_FAT_DORMOUSE], [BEECH, DOUGLAS_FIR], BASIC_DECK]),
-  94: $f([H_CARD, [RED_FOX, WOLF], [LINDEN, SILVER_FIR], BASIC_DECK]),
-  95: $f([H_CARD, [EUROPEAN_FAT_DORMOUSE, BROWN_LONG_EARED_BAT], [SILVER_FIR, BEECH], BASIC_DECK]),
-  96: $f([H_CARD, [BECHSTEIN, EUROPEAN_FAT_DORMOUSE], [BEECH, OAK], BASIC_DECK]),
-  97: $f([H_CARD, [GNAT, VIOLET_CARPENTER_BEE], [BIRCH, DOUGLAS_FIR], BASIC_DECK]),
-  98: $f([H_CARD, [WOLF, GNAT], [DOUGLAS_FIR, HORSE_CHESTNUT], BASIC_DECK]),
-  99: $f([H_CARD, [ROE_DEER, SQUEAKER], [LINDEN, SYCAMORE], BASIC_DECK]),
-  100: $f([H_CARD, [BECHSTEIN, WOLF], [OAK, SILVER_FIR], BASIC_DECK]),
-  101: $f([H_CARD, [ROE_DEER, LYNX], [SILVER_FIR, LINDEN], BASIC_DECK]),
-  102: $f([H_CARD, [BEECH_MARTEN, BECHSTEIN], [BEECH, BIRCH], BASIC_DECK]),
-  103: $f([H_CARD, [EUROPEAN_HARE, RED_DEER], [BEECH, HORSE_CHESTNUT], BASIC_DECK]),
-  104: $f([H_CARD, [WOLF, GREATER_HORSESHOE_BAT], [SYCAMORE, LINDEN], BASIC_DECK]),
-  105: $f([H_CARD, [SQUEAKER, RED_DEER], [HORSE_CHESTNUT, OAK], BASIC_DECK]),
-  106: $f([H_CARD, [RED_FOX, SQUEAKER], [BEECH, OAK], BASIC_DECK]),
-  107: $f([H_CARD, [LYNX, RACCOON], [DOUGLAS_FIR, BIRCH], BASIC_DECK]),
-  108: $f([H_CARD, [SQUEAKER, LYNX], [OAK, SILVER_FIR], BASIC_DECK]),
-  109: $f([H_CARD, [EUROPEAN_HARE, BEECH_MARTEN], [BIRCH, HORSE_CHESTNUT], BASIC_DECK]),
-  110: $f([H_CARD, [LYNX, RED_FOX], [HORSE_CHESTNUT, DOUGLAS_FIR], BASIC_DECK]),
-  111: $f([H_CARD, [EUROPEAN_HARE, RED_DEER], [BIRCH, HORSE_CHESTNUT], BASIC_DECK]),
-  112: $f([H_CARD, [VIOLET_CARPENTER_BEE, EUROPEAN_HARE], [SILVER_FIR, SYCAMORE], BASIC_DECK]),
-  113: $f([H_CARD, [EUROPEAN_BADGER, FALLOW_DEER], [HORSE_CHESTNUT, BIRCH], BASIC_DECK]),
-  114: $f([V_CARD, [GOSHAWK, MOSS], [DOUGLAS_FIR, LINDEN], BASIC_DECK]),
-  115: $f([V_CARD, [GREAT_SPOTTED_WOODPECKER, WOOD_ANT], [LINDEN, BIRCH], BASIC_DECK]),
-  116: $f([V_CARD, [CHAFFINCH, WOOD_ANT], [BIRCH, BEECH], BASIC_DECK]),
-  117: $f([V_CARD, [TAWNY_OWL, STAG_BEETLE], [BEECH, SYCAMORE], BASIC_DECK]),
-  118: $f([V_CARD, [SILVER_WASHED_FRITILLARY, FIRE_SALAMANDER], [OAK, HORSE_CHESTNUT], BASIC_DECK]),
-  119: $f([V_CARD, [PURPLE_EMPEROR, POND_TURTLE], [HORSE_CHESTNUT, SYCAMORE], BASIC_DECK]),
-  120: $f([V_CARD, [CAMBERWELL_BEAUTY, POND_TURTLE], [SYCAMORE, BIRCH], BASIC_DECK]),
-  121: $f([V_CARD, [LARGE_TORTOISESHELL, FIRE_SALAMANDER], [SILVER_FIR, DOUGLAS_FIR], BASIC_DECK]),
-  122: $f([V_CARD, [BULLFINCH, TREE_FROG], [DOUGLAS_FIR, LINDEN], BASIC_DECK]),
-  123: $f([V_CARD, [CHAFFINCH, STAG_BEETLE], [SYCAMORE, BIRCH], BASIC_DECK]),
-  124: $f([V_CARD, [GOSHAWK, WOOD_ANT], [SILVER_FIR, BEECH], BASIC_DECK]),
-  125: $f([V_CARD, [GREAT_SPOTTED_WOODPECKER, COMMON_TOAD], [LINDEN, OAK], BASIC_DECK]),
-  126: $f([V_CARD, [EURASIAN_JAY, TREE_FERNS], [BIRCH, HORSE_CHESTNUT], BASIC_DECK]),
-  127: $f([V_CARD, [TAWNY_OWL, WILD_STRAWBERRIES], [BEECH, SYCAMORE], BASIC_DECK]),
-  128: $f([V_CARD, [SILVER_WASHED_FRITILLARY, BLACKBERRIES], [OAK, SILVER_FIR], BASIC_DECK]),
-  129: $f([V_CARD, [PURPLE_EMPEROR, MOSS], [HORSE_CHESTNUT, DOUGLAS_FIR], BASIC_DECK]),
-  130: $f([V_CARD, [CAMBERWELL_BEAUTY, FIREFLIES], [SYCAMORE, LINDEN], BASIC_DECK]),
-  131: $f([V_CARD, [LARGE_TORTOISESHELL, BLACKBERRIES], [SILVER_FIR, BIRCH], BASIC_DECK]),
-  132: $f([V_CARD, [BULLFINCH, HEDGEHOG], [DOUGLAS_FIR, BEECH], BASIC_DECK]),
-  133: $f([V_CARD, [PEACOCK_BUTTERFLY, HEDGEHOG], [SILVER_FIR, OAK], BASIC_DECK]),
-  134: $f([V_CARD, [RED_SQUIRREL, COMMON_TOAD], [DOUGLAS_FIR, HORSE_CHESTNUT], BASIC_DECK]),
-  135: $f([V_CARD, [RED_SQUIRREL, FIREFLIES], [HORSE_CHESTNUT, SYCAMORE], BASIC_DECK]),
-  136: $f([V_CARD, [CHAFFINCH, COMMON_TOAD], [BEECH, SILVER_FIR], BASIC_DECK]),
-  137: $f([V_CARD, [EURASIAN_JAY, FIREFLIES], [BIRCH, DOUGLAS_FIR], BASIC_DECK]),
-  138: $f([V_CARD, [SILVER_WASHED_FRITILLARY, MOSS], [BEECH, LINDEN], BASIC_DECK]),
-  139: $f([V_CARD, [PEACOCK_BUTTERFLY, CHANTERELLE], [OAK, SILVER_FIR], BASIC_DECK]),
-  140: $f([V_CARD, [PEACOCK_BUTTERFLY, FIREFLIES], [HORSE_CHESTNUT, BEECH], BASIC_DECK]),
-  141: $f([V_CARD, [LARGE_TORTOISESHELL, MOLE], [SYCAMORE, OAK], BASIC_DECK]),
-  142: $f([V_CARD, [GOSHAWK, HEDGEHOG], [SILVER_FIR, HORSE_CHESTNUT], BASIC_DECK]),
-  143: $f([V_CARD, [GREAT_SPOTTED_WOODPECKER, WILD_STRAWBERRIES], [DOUGLAS_FIR, SYCAMORE], BASIC_DECK]),
-  144: $f([V_CARD, [EURASIAN_JAY, FLY_AGARIC], [SYCAMORE, SILVER_FIR], BASIC_DECK]),
-  145: $f([V_CARD, [TAWNY_OWL, PENNY_BUN], [BIRCH, DOUGLAS_FIR], BASIC_DECK]),
-  146: $f([V_CARD, [RED_SQUIRREL, FIRE_SALAMANDER], [BEECH, LINDEN], BASIC_DECK]),
-  147: $f([V_CARD, [PURPLE_EMPEROR, TREE_FROG], [BIRCH, OAK], BASIC_DECK]),
-  148: $f([V_CARD, [PEACOCK_BUTTERFLY, COMMON_TOAD], [LINDEN, BEECH], BASIC_DECK]),
-  149: $f([V_CARD, [CAMBERWELL_BEAUTY, TREE_FROG], [BIRCH, OAK], BASIC_DECK]),
-  150: $f([V_CARD, [BULLFINCH, PARASOL_MUSHROOM], [DOUGLAS_FIR, HORSE_CHESTNUT], BASIC_DECK]),
-  151: $f([V_CARD, [GOSHAWK, COMMON_TOAD], [OAK, SYCAMORE], BASIC_DECK]),
-  152: $f([V_CARD, [EURASIAN_JAY, TREE_FERNS], [HORSE_CHESTNUT, SILVER_FIR], BASIC_DECK]),
-  153: $f([V_CARD, [TAWNY_OWL, COMMON_TOAD], [SYCAMORE, DOUGLAS_FIR], BASIC_DECK]),
-  154: $f([V_CARD, [BULLFINCH, TREE_FERNS], [SILVER_FIR, LINDEN], BASIC_DECK]),
-  155: $f([V_CARD, [RED_SQUIRREL, WILD_STRAWBERRIES], [OAK, BIRCH], BASIC_DECK]),
-  156: $f([V_CARD, [SILVER_WASHED_FRITILLARY, BLACKBERRIES], [OAK, BEECH], BASIC_DECK]),
-  157: $f([V_CARD, [PURPLE_EMPEROR, FLY_AGARIC], [LINDEN, OAK], BASIC_DECK]),
-  158: $f([V_CARD, [CAMBERWELL_BEAUTY, CHANTERELLE], [HORSE_CHESTNUT, BIRCH], BASIC_DECK]),
-  159: $f([V_CARD, [LARGE_TORTOISESHELL, MOLE], [BEECH, SYCAMORE], BASIC_DECK]),
-  160: $f([V_CARD, [CHAFFINCH, PARASOL_MUSHROOM], [SYCAMORE, SILVER_FIR], BASIC_DECK]),
-  161: $f([V_CARD, [GREAT_SPOTTED_WOODPECKER, PENNY_BUN], [LINDEN, DOUGLAS_FIR], BASIC_DECK]),
+  1: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LINDEN], [SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  2: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LINDEN], [SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  3: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LINDEN], [SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  4: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LINDEN], [SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  5: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LINDEN], [SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  6: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LINDEN], [SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  7: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LINDEN], [SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  8: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LINDEN], [SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  9: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LINDEN], [SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  10: $f([CARD_TYPES.TREE, [SPECIES_NAMES.OAK], [SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  11: $f([CARD_TYPES.TREE, [SPECIES_NAMES.OAK], [SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  12: $f([CARD_TYPES.TREE, [SPECIES_NAMES.OAK], [SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  13: $f([CARD_TYPES.TREE, [SPECIES_NAMES.OAK], [SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  14: $f([CARD_TYPES.TREE, [SPECIES_NAMES.OAK], [SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  15: $f([CARD_TYPES.TREE, [SPECIES_NAMES.OAK], [SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  16: $f([CARD_TYPES.TREE, [SPECIES_NAMES.OAK], [SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  17: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SILVER_FIR], [SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  18: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SILVER_FIR], [SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  19: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SILVER_FIR], [SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  20: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SILVER_FIR], [SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  21: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SILVER_FIR], [SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  22: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SILVER_FIR], [SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  23: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BIRCH], [SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  24: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BIRCH], [SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  25: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BIRCH], [SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  26: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BIRCH], [SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  27: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BIRCH], [SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  28: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BIRCH], [SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  29: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BIRCH], [SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  30: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BIRCH], [SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  31: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BIRCH], [SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  32: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BIRCH], [SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  33: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BEECH], [SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  34: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BEECH], [SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  35: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BEECH], [SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  36: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BEECH], [SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  37: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BEECH], [SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  38: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BEECH], [SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  39: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BEECH], [SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  40: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BEECH], [SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  41: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BEECH], [SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  42: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BEECH], [SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  43: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SYCAMORE], [SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  44: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SYCAMORE], [SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  45: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SYCAMORE], [SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  46: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SYCAMORE], [SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  47: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SYCAMORE], [SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  48: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SYCAMORE], [SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  49: $f([CARD_TYPES.TREE, [SPECIES_NAMES.DOUGLAS_FIR], [SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  50: $f([CARD_TYPES.TREE, [SPECIES_NAMES.DOUGLAS_FIR], [SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  51: $f([CARD_TYPES.TREE, [SPECIES_NAMES.DOUGLAS_FIR], [SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  52: $f([CARD_TYPES.TREE, [SPECIES_NAMES.DOUGLAS_FIR], [SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  53: $f([CARD_TYPES.TREE, [SPECIES_NAMES.DOUGLAS_FIR], [SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  54: $f([CARD_TYPES.TREE, [SPECIES_NAMES.DOUGLAS_FIR], [SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  55: $f([CARD_TYPES.TREE, [SPECIES_NAMES.DOUGLAS_FIR], [SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  56: $f([CARD_TYPES.TREE, [SPECIES_NAMES.HORSE_CHESTNUT], [SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  57: $f([CARD_TYPES.TREE, [SPECIES_NAMES.HORSE_CHESTNUT], [SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  58: $f([CARD_TYPES.TREE, [SPECIES_NAMES.HORSE_CHESTNUT], [SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  59: $f([CARD_TYPES.TREE, [SPECIES_NAMES.HORSE_CHESTNUT], [SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  60: $f([CARD_TYPES.TREE, [SPECIES_NAMES.HORSE_CHESTNUT], [SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  61: $f([CARD_TYPES.TREE, [SPECIES_NAMES.HORSE_CHESTNUT], [SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  62: $f([CARD_TYPES.TREE, [SPECIES_NAMES.HORSE_CHESTNUT], [SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  63: $f([CARD_TYPES.TREE, [SPECIES_NAMES.HORSE_CHESTNUT], [SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  64: $f([CARD_TYPES.TREE, [SPECIES_NAMES.HORSE_CHESTNUT], [SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  65: $f([CARD_TYPES.TREE, [SPECIES_NAMES.HORSE_CHESTNUT], [SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  66: $f([CARD_TYPES.TREE, [SPECIES_NAMES.HORSE_CHESTNUT], [SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  67: $f([CARD_TYPES.W_CARD, [''], [''], DECK_TYPES.BASIC]),
+  68: $f([CARD_TYPES.W_CARD, [''], [''], DECK_TYPES.BASIC]),
+  69: $f([CARD_TYPES.W_CARD, [''], [''], DECK_TYPES.BASIC]),
+  70: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_HARE, SPECIES_NAMES.EUROPEAN_BADGER], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  71: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_HARE, SPECIES_NAMES.GREATER_HORSESHOE_BAT], [SPECIES_NAMES.OAK, SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  72: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_HARE, SPECIES_NAMES.RED_FOX], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  73: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.RACCOON, SPECIES_NAMES.EUROPEAN_HARE], [SPECIES_NAMES.DOUGLAS_FIR, SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  74: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.WILD_BOAR, SPECIES_NAMES.EUROPEAN_HARE], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  75: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.BROWN_LONG_EARED_BAT, SPECIES_NAMES.EUROPEAN_HARE], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  76: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.RACCOON, SPECIES_NAMES.ROE_DEER], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  77: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.BROWN_LONG_EARED_BAT, SPECIES_NAMES.EUROPEAN_BADGER], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  78: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.BARBASTELLE_BAT, SPECIES_NAMES.WILD_BOAR], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  79: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.BROWN_BEAR, SPECIES_NAMES.RACCOON], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  80: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.BEECH_MARTEN, SPECIES_NAMES.BROWN_BEAR], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  81: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.RED_DEER, SPECIES_NAMES.BROWN_BEAR], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  82: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.BARBASTELLE_BAT, SPECIES_NAMES.BEECH_MARTEN], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  83: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.LYNX, SPECIES_NAMES.EUROPEAN_HARE], [SPECIES_NAMES.DOUGLAS_FIR, SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  84: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.WILD_BOAR, SPECIES_NAMES.BEECH_MARTEN], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  85: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_BADGER, SPECIES_NAMES.GNAT], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  86: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.RED_FOX, SPECIES_NAMES.VIOLET_CARPENTER_BEE], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  87: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.WILD_BOAR, SPECIES_NAMES.ROE_DEER], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  88: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.FALLOW_DEER, SPECIES_NAMES.WILD_BOAR], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  89: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.FALLOW_DEER, SPECIES_NAMES.ROE_DEER], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  90: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.RED_DEER, SPECIES_NAMES.FALLOW_DEER], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  91: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.VIOLET_CARPENTER_BEE, SPECIES_NAMES.LYNX], [SPECIES_NAMES.DOUGLAS_FIR, SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  92: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_FAT_DORMOUSE, SPECIES_NAMES.BARBASTELLE_BAT], [SPECIES_NAMES.BEECH, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  93: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.GREATER_HORSESHOE_BAT, SPECIES_NAMES.EUROPEAN_FAT_DORMOUSE], [SPECIES_NAMES.BEECH, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  94: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.RED_FOX, SPECIES_NAMES.WOLF], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  95: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_FAT_DORMOUSE, SPECIES_NAMES.BROWN_LONG_EARED_BAT], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  96: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.BECHSTEIN, SPECIES_NAMES.EUROPEAN_FAT_DORMOUSE], [SPECIES_NAMES.BEECH, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  97: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.GNAT, SPECIES_NAMES.VIOLET_CARPENTER_BEE], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  98: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.WOLF, SPECIES_NAMES.GNAT], [SPECIES_NAMES.DOUGLAS_FIR, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  99: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.ROE_DEER, SPECIES_NAMES.SQUEAKER], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  100: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.BECHSTEIN, SPECIES_NAMES.WOLF], [SPECIES_NAMES.OAK, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  101: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.ROE_DEER, SPECIES_NAMES.LYNX], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  102: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.BEECH_MARTEN, SPECIES_NAMES.BECHSTEIN], [SPECIES_NAMES.BEECH, SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  103: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_HARE, SPECIES_NAMES.RED_DEER], [SPECIES_NAMES.BEECH, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  104: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.WOLF, SPECIES_NAMES.GREATER_HORSESHOE_BAT], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  105: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.SQUEAKER, SPECIES_NAMES.RED_DEER], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  106: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.RED_FOX, SPECIES_NAMES.SQUEAKER], [SPECIES_NAMES.BEECH, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  107: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.LYNX, SPECIES_NAMES.RACCOON], [SPECIES_NAMES.DOUGLAS_FIR, SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  108: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.SQUEAKER, SPECIES_NAMES.LYNX], [SPECIES_NAMES.OAK, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  109: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_HARE, SPECIES_NAMES.BEECH_MARTEN], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  110: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.LYNX, SPECIES_NAMES.RED_FOX], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  111: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_HARE, SPECIES_NAMES.RED_DEER], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  112: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.VIOLET_CARPENTER_BEE, SPECIES_NAMES.EUROPEAN_HARE], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  113: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_BADGER, SPECIES_NAMES.FALLOW_DEER], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  114: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.GOSHAWK, SPECIES_NAMES.MOSS], [SPECIES_NAMES.DOUGLAS_FIR, SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  115: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.GREAT_SPOTTED_WOODPECKER, SPECIES_NAMES.WOOD_ANT], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  116: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.CHAFFINCH, SPECIES_NAMES.WOOD_ANT], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  117: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.TAWNY_OWL, SPECIES_NAMES.STAG_BEETLE], [SPECIES_NAMES.BEECH, SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  118: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.SILVER_WASHED_FRITILLARY, SPECIES_NAMES.FIRE_SALAMANDER], [SPECIES_NAMES.OAK, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  119: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PURPLE_EMPEROR, SPECIES_NAMES.POND_TURTLE], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  120: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.CAMBERWELL_BEAUTY, SPECIES_NAMES.POND_TURTLE], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  121: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.LARGE_TORTOISESHELL, SPECIES_NAMES.FIRE_SALAMANDER], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  122: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.BULLFINCH, SPECIES_NAMES.TREE_FROG], [SPECIES_NAMES.DOUGLAS_FIR, SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  123: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.CHAFFINCH, SPECIES_NAMES.STAG_BEETLE], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  124: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.GOSHAWK, SPECIES_NAMES.WOOD_ANT], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  125: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.GREAT_SPOTTED_WOODPECKER, SPECIES_NAMES.COMMON_TOAD], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  126: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.EURASIAN_JAY, SPECIES_NAMES.TREE_FERNS], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  127: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.TAWNY_OWL, SPECIES_NAMES.WILD_STRAWBERRIES], [SPECIES_NAMES.BEECH, SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  128: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.SILVER_WASHED_FRITILLARY, SPECIES_NAMES.BLACKBERRIES], [SPECIES_NAMES.OAK, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  129: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PURPLE_EMPEROR, SPECIES_NAMES.MOSS], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  130: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.CAMBERWELL_BEAUTY, SPECIES_NAMES.FIREFLIES], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  131: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.LARGE_TORTOISESHELL, SPECIES_NAMES.BLACKBERRIES], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  132: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.BULLFINCH, SPECIES_NAMES.HEDGEHOG], [SPECIES_NAMES.DOUGLAS_FIR, SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  133: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PEACOCK_BUTTERFLY, SPECIES_NAMES.HEDGEHOG], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  134: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.RED_SQUIRREL, SPECIES_NAMES.COMMON_TOAD], [SPECIES_NAMES.DOUGLAS_FIR, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  135: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.RED_SQUIRREL, SPECIES_NAMES.FIREFLIES], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  136: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.CHAFFINCH, SPECIES_NAMES.COMMON_TOAD], [SPECIES_NAMES.BEECH, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  137: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.EURASIAN_JAY, SPECIES_NAMES.FIREFLIES], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  138: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.SILVER_WASHED_FRITILLARY, SPECIES_NAMES.MOSS], [SPECIES_NAMES.BEECH, SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  139: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PEACOCK_BUTTERFLY, SPECIES_NAMES.CHANTERELLE], [SPECIES_NAMES.OAK, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  140: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PEACOCK_BUTTERFLY, SPECIES_NAMES.FIREFLIES], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  141: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.LARGE_TORTOISESHELL, SPECIES_NAMES.MOLE], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  142: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.GOSHAWK, SPECIES_NAMES.HEDGEHOG], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  143: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.GREAT_SPOTTED_WOODPECKER, SPECIES_NAMES.WILD_STRAWBERRIES], [SPECIES_NAMES.DOUGLAS_FIR, SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  144: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.EURASIAN_JAY, SPECIES_NAMES.FLY_AGARIC], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  145: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.TAWNY_OWL, SPECIES_NAMES.PENNY_BUN], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  146: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.RED_SQUIRREL, SPECIES_NAMES.FIRE_SALAMANDER], [SPECIES_NAMES.BEECH, SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  147: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PURPLE_EMPEROR, SPECIES_NAMES.TREE_FROG], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  148: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PEACOCK_BUTTERFLY, SPECIES_NAMES.COMMON_TOAD], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  149: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.CAMBERWELL_BEAUTY, SPECIES_NAMES.TREE_FROG], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  150: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.BULLFINCH, SPECIES_NAMES.PARASOL_MUSHROOM], [SPECIES_NAMES.DOUGLAS_FIR, SPECIES_NAMES.HORSE_CHESTNUT], DECK_TYPES.BASIC]),
+  151: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.GOSHAWK, SPECIES_NAMES.COMMON_TOAD], [SPECIES_NAMES.OAK, SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  152: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.EURASIAN_JAY, SPECIES_NAMES.TREE_FERNS], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  153: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.TAWNY_OWL, SPECIES_NAMES.COMMON_TOAD], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
+  154: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.BULLFINCH, SPECIES_NAMES.TREE_FERNS], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.LINDEN], DECK_TYPES.BASIC]),
+  155: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.RED_SQUIRREL, SPECIES_NAMES.WILD_STRAWBERRIES], [SPECIES_NAMES.OAK, SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  156: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.SILVER_WASHED_FRITILLARY, SPECIES_NAMES.BLACKBERRIES], [SPECIES_NAMES.OAK, SPECIES_NAMES.BEECH], DECK_TYPES.BASIC]),
+  157: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PURPLE_EMPEROR, SPECIES_NAMES.FLY_AGARIC], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.OAK], DECK_TYPES.BASIC]),
+  158: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.CAMBERWELL_BEAUTY, SPECIES_NAMES.CHANTERELLE], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.BIRCH], DECK_TYPES.BASIC]),
+  159: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.LARGE_TORTOISESHELL, SPECIES_NAMES.MOLE], [SPECIES_NAMES.BEECH, SPECIES_NAMES.SYCAMORE], DECK_TYPES.BASIC]),
+  160: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.CHAFFINCH, SPECIES_NAMES.PARASOL_MUSHROOM], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.BASIC]),
+  161: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.GREAT_SPOTTED_WOODPECKER, SPECIES_NAMES.PENNY_BUN], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.BASIC]),
   // 阿尔卑斯扩展
-  162: $f([TREE, [LARIX_DECIDUA], [LARIX], ALPINE_DECK]),
-  163: $f([TREE, [LARIX_DECIDUA], [LARIX], ALPINE_DECK]),
-  164: $f([TREE, [LARIX_DECIDUA], [LARIX], ALPINE_DECK]),
-  165: $f([TREE, [LARIX_DECIDUA], [LARIX], ALPINE_DECK]),
-  166: $f([TREE, [LARIX_DECIDUA], [LARIX], ALPINE_DECK]),
-  167: $f([TREE, [LARIX_DECIDUA], [LARIX], ALPINE_DECK]),
-  168: $f([TREE, [LARIX_DECIDUA], [LARIX], ALPINE_DECK]),
-  169: $f([TREE, [PINUS_CEMBRA], [PINUS], ALPINE_DECK]),
-  170: $f([TREE, [PINUS_CEMBRA], [PINUS], ALPINE_DECK]),
-  171: $f([TREE, [PINUS_CEMBRA], [PINUS], ALPINE_DECK]),
-  172: $f([TREE, [PINUS_CEMBRA], [PINUS], ALPINE_DECK]),
-  173: $f([TREE, [PINUS_CEMBRA], [PINUS], ALPINE_DECK]),
-  174: $f([TREE, [PINUS_CEMBRA], [PINUS], ALPINE_DECK]),
-  175: $f([TREE, [PINUS_CEMBRA], [PINUS], ALPINE_DECK]),
-  176: $f([H_CARD, [MARMOTA_MARMOTA, RUPICAPRA_RUPICAPRA], [BEECH, PINUS], ALPINE_DECK]),
-  177: $f([H_CARD, [MARMOTA_MARMOTA, TETRAO_UROGALLUS], [LARIX, DOUGLAS_FIR], ALPINE_DECK]),
-  178: $f([H_CARD, [LEPUS_TIMIDUS, MARMOTA_MARMOTA], [SILVER_FIR, PINUS], ALPINE_DECK]),
-  179: $f([H_CARD, [CAPRA_IBEX, MARMOTA_MARMOTA], [LARIX, BIRCH], ALPINE_DECK]),
-  180: $f([H_CARD, [RUPICAPRA_RUPICAPRA, TETRAO_UROGALLUS], [LARIX, BEECH], ALPINE_DECK]),
-  181: $f([H_CARD, [LEPUS_TIMIDUS, RUPICAPRA_RUPICAPRA], [LARIX, DOUGLAS_FIR], ALPINE_DECK]),
-  182: $f([H_CARD, [HYPSUGO_SAVII, CAPRA_IBEX], [SILVER_FIR, PINUS], ALPINE_DECK]),
-  183: $f([H_CARD, [TETRAO_UROGALLUS, HYPSUGO_SAVII], [LARIX, PINUS], ALPINE_DECK]),
-  184: $f([H_CARD, [TETRAO_UROGALLUS, CAPRA_IBEX], [PINUS, DOUGLAS_FIR], ALPINE_DECK]),
-  185: $f([V_CARD, [PARNASSIUS_PHOEBUS, CRATERELLUS_CORNUCOPIODES], [PINUS, LARIX], ALPINE_DECK]),
-  186: $f([V_CARD, [PARNASSIUS_PHOEBUS, LEONTOPODIUM_NIVALE], [DOUGLAS_FIR, PINUS], ALPINE_DECK]),
-  187: $f([V_CARD, [PARNASSIUS_PHOEBUS, VACCINIUM_MYRTILLUS], [LARIX, BIRCH], ALPINE_DECK]),
-  188: $f([V_CARD, [PARNASSIUS_PHOEBUS, ICHTHYOSAURA_ALPESTRIS], [SILVER_FIR, PINUS], ALPINE_DECK]),
-  189: $f([V_CARD, [AQUILA_CHRYSAETOS, CRATERELLUS_CORNUCOPIODES], [BEECH, PINUS], ALPINE_DECK]),
-  190: $f([V_CARD, [GYPAETUS_BARBATUS, GENTIANA], [SILVER_FIR, LARIX], ALPINE_DECK]),
-  191: $f([V_CARD, [AQUILA_CHRYSAETOS, ICHTHYOSAURA_ALPESTRIS], [LARIX, DOUGLAS_FIR], ALPINE_DECK]),
-  192: $f([V_CARD, [CORVUS_CORAX, GENTIANA], [LARIX, BEECH], ALPINE_DECK]),
-  193: $f([V_CARD, [CORVUS_CORAX, VACCINIUM_MYRTILLUS], [DOUGLAS_FIR, PINUS], ALPINE_DECK]),
-  194: $f([V_CARD, [GYPAETUS_BARBATUS, ICHTHYOSAURA_ALPESTRIS], [LARIX, SILVER_FIR], ALPINE_DECK]),
-  195: $f([V_CARD, [GYPAETUS_BARBATUS, LEONTOPODIUM_NIVALE], [PINUS, LARIX], ALPINE_DECK]),
-  196: $f([V_CARD, [AQUILA_CHRYSAETOS, GENTIANA], [SILVER_FIR, PINUS], ALPINE_DECK]),
-  197: $f([H_CARD, [HYPSUGO_SAVII, LEPUS_TIMIDUS], [LARIX, PINUS], ALPINE_DECK]),
+  162: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LARIX_DECIDUA], [TAGS.LARIX], DECK_TYPES.ALPINE]),
+  163: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LARIX_DECIDUA], [TAGS.LARIX], DECK_TYPES.ALPINE]),
+  164: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LARIX_DECIDUA], [TAGS.LARIX], DECK_TYPES.ALPINE]),
+  165: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LARIX_DECIDUA], [TAGS.LARIX], DECK_TYPES.ALPINE]),
+  166: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LARIX_DECIDUA], [TAGS.LARIX], DECK_TYPES.ALPINE]),
+  167: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LARIX_DECIDUA], [TAGS.LARIX], DECK_TYPES.ALPINE]),
+  168: $f([CARD_TYPES.TREE, [SPECIES_NAMES.LARIX_DECIDUA], [TAGS.LARIX], DECK_TYPES.ALPINE]),
+  169: $f([CARD_TYPES.TREE, [SPECIES_NAMES.PINUS_CEMBRA], [TAGS.PINUS], DECK_TYPES.ALPINE]),
+  170: $f([CARD_TYPES.TREE, [SPECIES_NAMES.PINUS_CEMBRA], [TAGS.PINUS], DECK_TYPES.ALPINE]),
+  171: $f([CARD_TYPES.TREE, [SPECIES_NAMES.PINUS_CEMBRA], [TAGS.PINUS], DECK_TYPES.ALPINE]),
+  172: $f([CARD_TYPES.TREE, [SPECIES_NAMES.PINUS_CEMBRA], [TAGS.PINUS], DECK_TYPES.ALPINE]),
+  173: $f([CARD_TYPES.TREE, [SPECIES_NAMES.PINUS_CEMBRA], [TAGS.PINUS], DECK_TYPES.ALPINE]),
+  174: $f([CARD_TYPES.TREE, [SPECIES_NAMES.PINUS_CEMBRA], [TAGS.PINUS], DECK_TYPES.ALPINE]),
+  175: $f([CARD_TYPES.TREE, [SPECIES_NAMES.PINUS_CEMBRA], [TAGS.PINUS], DECK_TYPES.ALPINE]),
+  176: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.MARMOTA_MARMOTA, SPECIES_NAMES.RUPICAPRA_RUPICAPRA], [SPECIES_NAMES.BEECH, TAGS.PINUS], DECK_TYPES.ALPINE]),
+  177: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.MARMOTA_MARMOTA, SPECIES_NAMES.TETRAO_UROGALLUS], [TAGS.LARIX, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.ALPINE]),
+  178: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.LEPUS_TIMIDUS, SPECIES_NAMES.MARMOTA_MARMOTA], [SPECIES_NAMES.SILVER_FIR, TAGS.PINUS], DECK_TYPES.ALPINE]),
+  179: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.CAPRA_IBEX, SPECIES_NAMES.MARMOTA_MARMOTA], [TAGS.LARIX, SPECIES_NAMES.BIRCH], DECK_TYPES.ALPINE]),
+  180: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.RUPICAPRA_RUPICAPRA, SPECIES_NAMES.TETRAO_UROGALLUS], [TAGS.LARIX, SPECIES_NAMES.BEECH], DECK_TYPES.ALPINE]),
+  181: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.LEPUS_TIMIDUS, SPECIES_NAMES.RUPICAPRA_RUPICAPRA], [TAGS.LARIX, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.ALPINE]),
+  182: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.HYPSUGO_SAVII, SPECIES_NAMES.CAPRA_IBEX], [SPECIES_NAMES.SILVER_FIR, TAGS.PINUS], DECK_TYPES.ALPINE]),
+  183: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.TETRAO_UROGALLUS, SPECIES_NAMES.HYPSUGO_SAVII], [TAGS.LARIX, TAGS.PINUS], DECK_TYPES.ALPINE]),
+  184: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.TETRAO_UROGALLUS, SPECIES_NAMES.CAPRA_IBEX], [TAGS.PINUS, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.ALPINE]),
+  185: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PARNASSIUS_PHOEBUS, SPECIES_NAMES.CRATERELLUS_CORNUCOPIODES], [TAGS.PINUS, TAGS.LARIX], DECK_TYPES.ALPINE]),
+  186: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PARNASSIUS_PHOEBUS, SPECIES_NAMES.LEONTOPODIUM_NIVALE], [SPECIES_NAMES.DOUGLAS_FIR, TAGS.PINUS], DECK_TYPES.ALPINE]),
+  187: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PARNASSIUS_PHOEBUS, SPECIES_NAMES.VACCINIUM_MYRTILLUS], [TAGS.LARIX, SPECIES_NAMES.BIRCH], DECK_TYPES.ALPINE]),
+  188: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.PARNASSIUS_PHOEBUS, SPECIES_NAMES.ICHTHYOSAURA_ALPESTRIS], [SPECIES_NAMES.SILVER_FIR, TAGS.PINUS], DECK_TYPES.ALPINE]),
+  189: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.AQUILA_CHRYSAETOS, SPECIES_NAMES.CRATERELLUS_CORNUCOPIODES], [SPECIES_NAMES.BEECH, TAGS.PINUS], DECK_TYPES.ALPINE]),
+  190: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.GYPAETUS_BARBATUS, SPECIES_NAMES.GENTIANA], [SPECIES_NAMES.SILVER_FIR, TAGS.LARIX], DECK_TYPES.ALPINE]),
+  191: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.AQUILA_CHRYSAETOS, SPECIES_NAMES.ICHTHYOSAURA_ALPESTRIS], [TAGS.LARIX, SPECIES_NAMES.DOUGLAS_FIR], DECK_TYPES.ALPINE]),
+  192: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.CORVUS_CORAX, SPECIES_NAMES.GENTIANA], [TAGS.LARIX, SPECIES_NAMES.BEECH], DECK_TYPES.ALPINE]),
+  193: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.CORVUS_CORAX, SPECIES_NAMES.VACCINIUM_MYRTILLUS], [SPECIES_NAMES.DOUGLAS_FIR, TAGS.PINUS], DECK_TYPES.ALPINE]),
+  194: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.GYPAETUS_BARBATUS, SPECIES_NAMES.ICHTHYOSAURA_ALPESTRIS], [TAGS.LARIX, SPECIES_NAMES.SILVER_FIR], DECK_TYPES.ALPINE]),
+  195: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.GYPAETUS_BARBATUS, SPECIES_NAMES.LEONTOPODIUM_NIVALE], [TAGS.PINUS, TAGS.LARIX], DECK_TYPES.ALPINE]),
+  196: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.AQUILA_CHRYSAETOS, SPECIES_NAMES.GENTIANA], [SPECIES_NAMES.SILVER_FIR, TAGS.PINUS], DECK_TYPES.ALPINE]),
+  197: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.HYPSUGO_SAVII, SPECIES_NAMES.LEPUS_TIMIDUS], [TAGS.LARIX, TAGS.PINUS], DECK_TYPES.ALPINE]),
   // 林缘扩展
-  198: $f([TREE, [SAMBUCUS], [LINDEN], EDGE_DECK]),
-  199: $f([TREE, [SAMBUCUS], [SYCAMORE], EDGE_DECK]),
-  200: $f([TREE, [SAMBUCUS], [BIRCH], EDGE_DECK]),
-  201: $f([TREE, [SAMBUCUS], [OAK], EDGE_DECK]),
-  202: $f([TREE, [COMMON_HAZEL], [HORSE_CHESTNUT], EDGE_DECK]),
-  203: $f([TREE, [COMMON_HAZEL], [OAK], EDGE_DECK]),
-  204: $f([TREE, [COMMON_HAZEL], [BEECH], EDGE_DECK]),
-  205: $f([TREE, [COMMON_HAZEL], [BIRCH], EDGE_DECK]),
-  206: $f([TREE, [BLACKTHORN], [DOUGLAS_FIR], EDGE_DECK]),
-  207: $f([TREE, [BLACKTHORN], [BIRCH], EDGE_DECK]),
-  208: $f([TREE, [BLACKTHORN], [SILVER_FIR], EDGE_DECK]),
-  209: $f([TREE, [BLACKTHORN], [SYCAMORE], EDGE_DECK]),
-  210: $f([V_CARD, [MAP_BUTTERFLY, DIGITALIS], [LINDEN, DOUGLAS_FIR], EDGE_DECK]),
-  211: $f([V_CARD, [MAP_BUTTERFLY, URTICA], [SYCAMORE, BIRCH], EDGE_DECK]),
-  212: $f([V_CARD, [MAP_BUTTERFLY, GREAT_GREEN_BUSH_CRICKET], [OAK, SILVER_FIR], EDGE_DECK]),
-  213: $f([V_CARD, [MAP_BUTTERFLY, EUROPEAN_WATER_VOLE], [SILVER_FIR, SYCAMORE], EDGE_DECK]),
-  214: $f([V_CARD, [EURASIAN_MAGPIE, DIGITALIS], [BEECH, BIRCH], EDGE_DECK]),
-  215: $f([V_CARD, [EURASIAN_MAGPIE, URTICA], [SILVER_FIR, HORSE_CHESTNUT], EDGE_DECK]),
-  216: $f([V_CARD, [EURASIAN_MAGPIE, GREAT_GREEN_BUSH_CRICKET], [BIRCH, BEECH], EDGE_DECK]),
-  217: $f([V_CARD, [COMMON_NIGHTINGALE, DIGITALIS], [BEECH, SYCAMORE], EDGE_DECK]),
-  218: $f([V_CARD, [COMMON_NIGHTINGALE, URTICA], [OAK, SYCAMORE], EDGE_DECK]),
-  219: $f([V_CARD, [COMMON_NIGHTINGALE, EUROPEAN_WATER_VOLE], [HORSE_CHESTNUT, BEECH], EDGE_DECK]),
-  220: $f([V_CARD, [BARN_OWL, DIGITALIS], [BIRCH, OAK], EDGE_DECK]),
-  221: $f([V_CARD, [BARN_OWL, GREAT_GREEN_BUSH_CRICKET], [SYCAMORE, OAK], EDGE_DECK]),
-  222: $f([H_CARD, [WILD_BOAR_FEMALE_, BEEHIVE], [BIRCH, SYCAMORE], EDGE_DECK]),
-  223: $f([H_CARD, [EUROPEAN_BISON, WILD_BOAR_FEMALE_], [OAK, SYCAMORE], EDGE_DECK]),
-  224: $f([H_CARD, [WILD_BOAR_FEMALE_, EUROPEAN_WILDCAT], [SILVER_FIR, HORSE_CHESTNUT], EDGE_DECK]),
-  225: $f([H_CARD, [COMMON_PIPISTRELLE, SQUEAKER], [LINDEN, SILVER_FIR], EDGE_DECK]),
-  226: $f([H_CARD, [SQUEAKER, MOSQUITO], [HORSE_CHESTNUT, BEECH], EDGE_DECK]),
-  227: $f([H_CARD, [EUROPEAN_POLECAT, SQUEAKER], [SILVER_FIR, DOUGLAS_FIR], EDGE_DECK]),
-  228: $f([H_CARD, [BEEHIVE, COMMON_PIPISTRELLE], [BEECH, SYCAMORE], EDGE_DECK]),
-  229: $f([H_CARD, [EUROPEAN_WILDCAT, BEEHIVE], [OAK, BIRCH], EDGE_DECK]),
-  230: $f([H_CARD, [COMMON_PIPISTRELLE, EUROPEAN_BISON], [BIRCH, BEECH], EDGE_DECK]),
-  231: $f([H_CARD, [EUROPEAN_BISON, EUROPEAN_POLECAT], [BEECH, SYCAMORE], EDGE_DECK]),
-  232: $f([H_CARD, [MOSQUITO, EUROPEAN_POLECAT], [BIRCH, OAK], EDGE_DECK]),
-  233: $f([H_CARD, [EUROPEAN_WILDCAT, MOSQUITO], [SYCAMORE, OAK], EDGE_DECK]),
-};
-
-// 获取卡片视图
-const getCardVisual = (card) => {
-  if (!card) return { bgImg: "", bgSize: "0 0", cssClass: "" };
-  const deck = card.deck;
-  const type = card.type;
-  let img = "";
-  let cols = 1;
-  let rows = 1;
-
-
-  if (deck === ALPINE_DECK) {
-    img = imgUrl[MOUNTAIN]; // 阿尔卑斯扩展
-    cols = 7;
-    rows = 4;
-  } else if (deck === EDGE_DECK) { // 林缘扩展
-    img = imgUrl[W_CARD];
-    cols = 6;
-    rows = 6;
-  } else { // 基础班
-    if (type === TREE || type === W_CARD) {
-      img = imgUrl[TREE];
-      cols = 5;
-      rows = 5;
-    } else if (type === H_CARD) {
-      img = imgUrl[H_CARD];
-      cols = 7;
-      rows = 7;
-    } else if (type === V_CARD) {
-      img = imgUrl[V_CARD];
-      cols = 7;
-      rows = 7;
-    } else {
-      img = imgUrl[TREE];
-      cols = 5;
-      rows = 5;
-    }
-  }
-  const cssClass = card.id ? `card-${card.id}` : "";
-
-  return {
-    bgImg: img, // 图片链接
-    bgSize: `${cols * 100}% ${rows * 100}%`, // 图片大小
-    cssClass, // CSS定位
-  };
-};
-
-// 获取树苗视图
-const getSaplingVisual = () => {
-  const img = imgUrl[V_CARD];
-  const cols = 7;
-  const rows = 7;
-  return {
-    bgImg: img,
-    bgSize: `${cols * 100}% ${rows * 100}%`,
-    bgPosition: "100% 100%",
-  };
+  198: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SAMBUCUS], [SPECIES_NAMES.LINDEN], TAGS.EDGE]),
+  199: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SAMBUCUS], [SPECIES_NAMES.SYCAMORE], TAGS.EDGE]),
+  200: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SAMBUCUS], [SPECIES_NAMES.BIRCH], TAGS.EDGE]),
+  201: $f([CARD_TYPES.TREE, [SPECIES_NAMES.SAMBUCUS], [SPECIES_NAMES.OAK], TAGS.EDGE]),
+  202: $f([CARD_TYPES.TREE, [SPECIES_NAMES.COMMON_HAZEL], [SPECIES_NAMES.HORSE_CHESTNUT], TAGS.EDGE]),
+  203: $f([CARD_TYPES.TREE, [SPECIES_NAMES.COMMON_HAZEL], [SPECIES_NAMES.OAK], TAGS.EDGE]),
+  204: $f([CARD_TYPES.TREE, [SPECIES_NAMES.COMMON_HAZEL], [SPECIES_NAMES.BEECH], TAGS.EDGE]),
+  205: $f([CARD_TYPES.TREE, [SPECIES_NAMES.COMMON_HAZEL], [SPECIES_NAMES.BIRCH], TAGS.EDGE]),
+  206: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BLACKTHORN], [SPECIES_NAMES.DOUGLAS_FIR], TAGS.EDGE]),
+  207: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BLACKTHORN], [SPECIES_NAMES.BIRCH], TAGS.EDGE]),
+  208: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BLACKTHORN], [SPECIES_NAMES.SILVER_FIR], TAGS.EDGE]),
+  209: $f([CARD_TYPES.TREE, [SPECIES_NAMES.BLACKTHORN], [SPECIES_NAMES.SYCAMORE], TAGS.EDGE]),
+  210: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.MAP_BUTTERFLY, SPECIES_NAMES.DIGITALIS], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.DOUGLAS_FIR], TAGS.EDGE]),
+  211: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.MAP_BUTTERFLY, SPECIES_NAMES.URTICA], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.BIRCH], TAGS.EDGE]),
+  212: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.MAP_BUTTERFLY, SPECIES_NAMES.GREAT_GREEN_BUSH_CRICKET], [SPECIES_NAMES.OAK, SPECIES_NAMES.SILVER_FIR], TAGS.EDGE]),
+  213: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.MAP_BUTTERFLY, SPECIES_NAMES.EUROPEAN_WATER_VOLE], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.SYCAMORE], TAGS.EDGE]),
+  214: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.EURASIAN_MAGPIE, SPECIES_NAMES.DIGITALIS], [SPECIES_NAMES.BEECH, SPECIES_NAMES.BIRCH], TAGS.EDGE]),
+  215: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.EURASIAN_MAGPIE, SPECIES_NAMES.URTICA], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.HORSE_CHESTNUT], TAGS.EDGE]),
+  216: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.EURASIAN_MAGPIE, SPECIES_NAMES.GREAT_GREEN_BUSH_CRICKET], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.BEECH], TAGS.EDGE]),
+  217: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.COMMON_NIGHTINGALE, SPECIES_NAMES.DIGITALIS], [SPECIES_NAMES.BEECH, SPECIES_NAMES.SYCAMORE], TAGS.EDGE]),
+  218: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.COMMON_NIGHTINGALE, SPECIES_NAMES.URTICA], [SPECIES_NAMES.OAK, SPECIES_NAMES.SYCAMORE], TAGS.EDGE]),
+  219: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.COMMON_NIGHTINGALE, SPECIES_NAMES.EUROPEAN_WATER_VOLE], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.BEECH], TAGS.EDGE]),
+  220: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.BARN_OWL, SPECIES_NAMES.DIGITALIS], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.OAK], TAGS.EDGE]),
+  221: $f([CARD_TYPES.V_CARD, [SPECIES_NAMES.BARN_OWL, SPECIES_NAMES.GREAT_GREEN_BUSH_CRICKET], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.OAK], TAGS.EDGE]),
+  222: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.WILD_BOAR_FEMALE_, SPECIES_NAMES.BEEHIVE], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.SYCAMORE], TAGS.EDGE]),
+  223: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_BISON, SPECIES_NAMES.WILD_BOAR_FEMALE_], [SPECIES_NAMES.OAK, SPECIES_NAMES.SYCAMORE], TAGS.EDGE]),
+  224: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.WILD_BOAR_FEMALE_, SPECIES_NAMES.EUROPEAN_WILDCAT], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.HORSE_CHESTNUT], TAGS.EDGE]),
+  225: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.COMMON_PIPISTRELLE, SPECIES_NAMES.SQUEAKER], [SPECIES_NAMES.LINDEN, SPECIES_NAMES.SILVER_FIR], TAGS.EDGE]),
+  226: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.SQUEAKER, SPECIES_NAMES.MOSQUITO], [SPECIES_NAMES.HORSE_CHESTNUT, SPECIES_NAMES.BEECH], TAGS.EDGE]),
+  227: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_POLECAT, SPECIES_NAMES.SQUEAKER], [SPECIES_NAMES.SILVER_FIR, SPECIES_NAMES.DOUGLAS_FIR], TAGS.EDGE]),
+  228: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.BEEHIVE, SPECIES_NAMES.COMMON_PIPISTRELLE], [SPECIES_NAMES.BEECH, SPECIES_NAMES.SYCAMORE], TAGS.EDGE]),
+  229: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_WILDCAT, SPECIES_NAMES.BEEHIVE], [SPECIES_NAMES.OAK, SPECIES_NAMES.BIRCH], TAGS.EDGE]),
+  230: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.COMMON_PIPISTRELLE, SPECIES_NAMES.EUROPEAN_BISON], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.BEECH], TAGS.EDGE]),
+  231: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_BISON, SPECIES_NAMES.EUROPEAN_POLECAT], [SPECIES_NAMES.BEECH, SPECIES_NAMES.SYCAMORE], TAGS.EDGE]),
+  232: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.MOSQUITO, SPECIES_NAMES.EUROPEAN_POLECAT], [SPECIES_NAMES.BIRCH, SPECIES_NAMES.OAK], TAGS.EDGE]),
+  233: $f([CARD_TYPES.H_CARD, [SPECIES_NAMES.EUROPEAN_WILDCAT, SPECIES_NAMES.MOSQUITO], [SPECIES_NAMES.SYCAMORE, SPECIES_NAMES.OAK], TAGS.EDGE]),
 };
 
 // 导出常量以便其他模块使用
 module.exports = {
   CARDS_DATA,
-  TREE,
-  H_CARD,
-  V_CARD,
-  W_CARD,
   SPECIES_DATA,
-  getCardVisual,
-  getSaplingVisual,
 };

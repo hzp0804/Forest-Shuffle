@@ -1,16 +1,13 @@
-// miniprogram/pages/gallery/gallery.js
 const {
   CARDS_DATA,
   SPECIES_DATA,
-  getCardVisual,
-  TREE,
-  H_CARD,
-  V_CARD,
-  W_CARD,
 } = require("../../data/cardData.js");
+const { getCardInfoById } = require("../../utils/getCardInfoById");
+const { DECK_TYPES, CARD_TYPES } = require("../../data/constants");
+const { TREE, H_CARD, V_CARD, W_CARD } = CARD_TYPES;
 
-const ALPINE_DECK = "alpine";
-const EDGE_DECK = "edge";
+const ALPINE_DECK = DECK_TYPES.ALPINE;
+const EDGE_DECK = DECK_TYPES.EDGE;
 
 Page({
   data: {
@@ -44,38 +41,52 @@ Page({
       return speciesDataMap[code] || speciesDataMap[code.toLowerCase()] || {};
     };
 
-    Object.entries(CARDS_DATA).forEach(([id, card]) => {
-      // 使用统一的视觉逻辑，修复 undefined 引用问题
-      const { bgImg, bgSize, cssClass } = getCardVisual({ ...card, id });
+    Object.keys(CARDS_DATA).forEach((id) => {
+      // 使用统一的查询方法
+      const info = getCardInfoById(id);
+      if (!info || !info.id) return;
 
-      // Process species details
-      const speciesDetails = (card.species || []).map((code) => {
-        const meta = findSpeciesMeta(code);
-        return {
-          key: code,
-          displayName: meta.name || code,
-          points: meta.points || "",
-        };
+      // Note: info 已经包含了 enriched speciesDetails (Array of objects)
+      // 但是 gallery 之前的逻辑是 map species names to custom object {key, displayName, points}
+      // info.speciesDetails 里的对象是 SPECIES_DATA 的 item (name, nb, tags, cost...)
+
+      const speciesList = info.speciesDetails || [];
+      const speciesDisplay = speciesList.map((meta, index) => {
+        // meta 是 speciesData object.
+        // 如果 meta 为 null (未知物种)，处理一下
+        const code = (CARDS_DATA[id].species || [])[index]; // fallback to raw code if needed
+
+        if (meta && meta.name && meta.name !== "未知物种") {
+          return {
+            key: code,
+            displayName: meta.name,
+            points: meta.points || ""
+          };
+        } else {
+          return {
+            key: code,
+            displayName: code, // fallback
+            points: ""
+          };
+        }
       });
 
+      const { deck, type } = info;
+
       const displayCard = {
-        ...card,
-        id, // key comes as string from Object.entries
-        bgImg,
-        bgSize,
-        cssClass,
-        speciesDetails,
-        primaryName: speciesDetails.map((s) => s.displayName).join(" / "),
+        ...info, // 包含 bgImg, bgSize, cssClass, id 等
+        speciesDetails: speciesDisplay,
+        primaryName: speciesDisplay.map((s) => s.displayName).join(" / "),
       };
 
-      if (card.deck === ALPINE_DECK) {
+      if (info.deck === ALPINE_DECK) {
         sections[3].cards.push(displayCard);
-      } else if (card.deck === EDGE_DECK) {
+      } else if (info.deck === EDGE_DECK) {
         sections[4].cards.push(displayCard);
       } else {
-        if (card.type === TREE || card.type === W_CARD) {
+        if (info.type === TREE || info.type === W_CARD) {
           sections[0].cards.push(displayCard);
-        } else if (card.type === H_CARD) {
+        } else if (info.type === H_CARD) {
           sections[1].cards.push(displayCard);
         } else {
           sections[2].cards.push(displayCard);
@@ -104,5 +115,5 @@ Page({
     });
   },
 
-  noop: function () {},
+  noop: function () { },
 });

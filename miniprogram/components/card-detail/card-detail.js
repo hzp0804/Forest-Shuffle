@@ -1,8 +1,4 @@
-const {
-  CARDS_DATA,
-  SPECIES_DATA,
-  getCardVisual,
-} = require("../../data/cardData.js");
+const { getCardInfoById } = require("../../utils/getCardInfoById");
 
 Component({
   options: {
@@ -32,25 +28,17 @@ Component({
 
   methods: {
     loadCardData: function (cardId) {
-      if (cardId && CARDS_DATA[cardId]) {
-        const c = CARDS_DATA[cardId];
-        const visual = getCardVisual(c);
+      if (cardId) {
+        const info = getCardInfoById(cardId);
+        if (!info || !info.id) return;
 
-        // Prepare tabs data from species
+        // Prepare tabs data from speciesDetails
         const tabs = [];
-        const speciesList = c.species || [];
+        const speciesList = info.speciesDetails || [];
+        // Note: original c.species is list of names, info.speciesDetails is list of objects.
 
-        speciesList.forEach((specName) => {
-          let meta = SPECIES_DATA[specName];
-          if (!meta) {
-            const keyNoSpace = specName.replace(/ /g, "");
-            meta = SPECIES_DATA[keyNoSpace];
-          }
-          if (!meta) {
-            meta = Object.values(SPECIES_DATA).find((s) => s.name === specName);
-          }
-
-          if (meta) {
+        speciesList.forEach(meta => {
+          if (meta && meta.name && meta.name !== "未知物种") {
             tabs.push({
               name: meta.name,
               originalName: meta.name,
@@ -62,24 +50,16 @@ Component({
               points: meta.points || "",
             });
           } else {
-            tabs.push({
-              name: specName,
-              originalName: specName,
-              count: "?",
-              tags: [],
-              cost: "?",
-            });
+            // Fallback if species detail is missing but name exists? 
+            // getCardInfoById fills "未知物种" if missing.
           }
         });
 
+        // If speciesDetails was empty or filtered out, maybe fallback logic?
+        // But getCardInfoById logic guarantees speciesDetails array corresponding to species keys.
+
         this.setData({
-          card: {
-            ...c,
-            id: cardId,
-            bgImg: visual.bgImg,
-            bgSize: visual.bgSize,
-            cssClass: `card-${cardId}`,
-          },
+          card: info,
           tabs: tabs,
           activeTab: 0,
           visible: true,
@@ -98,6 +78,6 @@ Component({
     },
 
     // Catch-all to prevent closing when clicking content
-    noop: function () {},
+    noop: function () { },
   },
 });
