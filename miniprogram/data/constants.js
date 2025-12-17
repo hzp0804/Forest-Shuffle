@@ -31,6 +31,7 @@ const TAGS = {
   EDGE: "林缘",
   DEER: "鹿",
   CLOVEN_HOOFED_ANIMAL: "蹄足动物",
+  TREE: "树",
 };
 
 // 基础树木名称

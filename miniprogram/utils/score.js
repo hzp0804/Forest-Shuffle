@@ -5,14 +5,34 @@ const { TAGS, CARD_TYPES } = require('../data/constants');
  * 计算游戏得分
  */
 
-function calculateTotalScore(playerState, openId) {
+function calculateTotalScore(playerState, openId, allPlayerStates) {
   if (!playerState) return { total: 0, breakdown: {} };
 
   let total = 0;
+  const breakdown = {};
 
-  // 等待实现具体逻辑...
+  // 1. 遍历 Forest 计算得分
+  const pointsCards = getAllCardsFromContext(playerState);
 
-  return { total, breakdown: {} };
+  pointsCards.forEach(card => {
+    // 传入 allPlayerStates 以支持 MAJORITY
+    const s = calculateCardScore(card, playerState, allPlayerStates, openId);
+    if (s > 0) {
+      total += s;
+      // 记录明细 (可选)
+      if (!breakdown[card.name]) breakdown[card.name] = 0;
+      breakdown[card.name] += s;
+    }
+  });
+
+  // 2. 遍历 Cave 计算得分 (如果 Cave 里的卡有分的话，通常洞穴卡只有 effect)
+  // 胡兀鹫是根据洞穴数量得分，已经在 CAVE_COUNT 处理了。
+  // 注意: CAVE_COUNT 是 V-Card (通常放外面)。如果洞穴里有计分卡？
+  // 森林卡牌游戏里，洞穴里主要是用来作为费用的卡，或者是某些特殊效果卡进入。
+  // 通常洞穴里的卡不产生分数，除非被 specific rules (如胡兀鹫) 引用。
+  // 胡兀鹫本身是在 Forest 里的。
+
+  return { total, breakdown };
 }
 
 /**
@@ -35,7 +55,45 @@ function getAllCardsFromContext(context) {
   return cards;
 }
 
-function calculateCardScore(card, context) {
+/**
+ * 辅助: 获取卡牌的有效名称 (处理 SPECIES_ALIAS)
+ */
+function getCardEffectiveName(card) {
+  if (card.effectConfig && card.effectConfig.type === 'SPECIES_ALIAS') {
+    return card.effectConfig.target || card.name;
+  }
+  return card.name;
+}
+
+/**
+ * 辅助: 获取卡牌的计数价值 (处理 TREE_MULTIPLIER)
+ */
+function getCardCountValue(card, targetTag) {
+  let value = 1;
+  if (card.effectConfig && card.effectConfig.type === 'TREE_MULTIPLIER') {
+    // 如果 targetTag 是树，且此卡是树 (通常紫木蜂是在树上生效，或者它本身就是树?)
+    // 紫木蜂: "This tree counts as 2 trees". 它通常是一只昆虫，必须放在树上?
+    // 不，紫木蜂是 Insect. 效果是 "This tree counts as 2 trees".
+    // 这意味着它所在的 parent tree 算作 2 棵树。
+    // 这逻辑有点绕。如果紫木蜂在树A上，树A在算 PER_TAG(TREE) 时算 2。
+    // 那么我们在遍历树的时候，需要检查树上的附件是否有紫木蜂。
+
+    // 重新思考: TREE_MULTIPLIER 是赋予所在的树的属性。
+    // 但是紫木蜂如果只作为附件，我们在 calculateEffect 里没法直接改树的属性。
+    // 这里只是为了算分。
+
+    // 目前简化处理: 如果是统计 TAG，而此卡声明了 TREE_MULTIPLIER，
+    // 它是说“这棵树算2棵”。如果是紫木蜂本身，它是不是树? 不是。
+    // 所以当我们在遍历 Tree 时，要检查 Tree 上的 Slots。
+
+    // 这个 helper 目前可能只适用于简单情况 (如果卡本身有 multiplier)。
+    // 鉴于紫木蜂是 Attach 卡，这个逻辑要在 PER_TAG 循环里处理 parent。
+    // 暂时返回 1，留待 loop 内部处理。
+  }
+  return value;
+}
+
+function calculateCardScore(card, context, allPlayerStates, myOpenId) {
   if (!card.scoreConfig) return 0;
 
   const config = card.scoreConfig;
@@ -45,22 +103,371 @@ function calculateCardScore(card, context) {
   const allCards = getAllCardsFromContext(context);
 
   switch (config.type) {
+    // 统计拥有指定 Tag 的卡牌数量
     case SCORING_TYPES.PER_TAG:
-      // 统计拥有指定 Tag 的卡牌数量
       let count = 0;
       allCards.forEach(c => {
+        // 检查基础 Tag
         if (c.tags && c.tags.includes(config.tag)) {
-          count++;
+          let val = 1;
+          // 处理 TREE_MULTIPLIER (紫木蜂逻辑: 检查此卡是否有紫木蜂附件)
+          // 这是一个反向检查: 对于每张树卡，检查它身上是否有紫木蜂。
+          if (config.tag === TAGS.TREE && context.forest) {
+            // 如果 c 是树 (center)，检查它的 slots
+            // 需要能访问 slots。allCards 已经是扁平化的了，丢失了结构关系。
+            // 这是一个问题。allCards 只是 card 对象列表。
+            // 我们需要 context.forest 的结构来检查 attachment。
+
+            // 解决方案: 在遍历 forest group 时统计。
+            // 但这里我们用的是 allCards。
+            // 妥协: 假设 allCards 里的 card 对象保留了引用? 或者我们在 getAllCards 没保留 group 信息。
+
+            // 既然如此，我们改用遍历 context.forest 来进行 PER_TAG(TREE) 的统计会更准确。
+            // 但为了兼容通用逻辑，我们可以在 card 对象上挂载一个临时属性? 不太好。
+
+            // 让我们尝试在 allCards 遍历中，如果是 TREE，去 context.forest 找对应的 group。
+            const cId = c.uid || c.cardId || c.id;
+            if (cId) {
+              const group = context.forest.find(g => g.center && (g.center.uid === cId || g.center.cardId === cId || g.center.id === cId));
+              if (group && group.slots) {
+                // 检查 slots 里是否有紫木蜂 (或其他 TREE_MULTIPLIER)
+                const hasMultiplier = Object.values(group.slots).some(s =>
+                  s && s.effectConfig && s.effectConfig.type === 'TREE_MULTIPLIER'
+                );
+                if (hasMultiplier) val = 2;
+              }
+            }
+          }
+          count += val;
         }
       });
       score = count * (config.value || 0);
       break;
 
-    // 等待实现更多逻辑...
+    // 统计带有指定 Tag 的卡牌中，有多少种不同的物种 (基于有效名称去重)
+    case SCORING_TYPES.PER_DIFFERENT_TAG:
+    // 例如: 每张不同的蝴蝶牌得1分
+    case SCORING_TYPES.PER_DIFFERENT_TAG:
+      const uniqueSpecies = new Set();
+      allCards.forEach(c => {
+        if (c.tags && c.tags.includes(config.tag)) {
+          // 使用有效名称 (处理 SPECIES_ALIAS)
+          const name = getCardEffectiveName(c);
+          if (name) uniqueSpecies.add(name);
+        }
+      });
+      score = uniqueSpecies.size * (config.value || 0);
+      break;
+
+    // 若位于指定名称的卡牌上，获得分数（如: 苍头燕雀-山毛榉）
+    case SCORING_TYPES.POSITION_ON_CARD:
+      let parentTree = null;
+      if (context.forest) {
+        for (const group of context.forest) {
+          if (group.slots) {
+            const slots = Object.values(group.slots);
+            if (slots.some(s => s && s.uid === card.uid)) {
+              parentTree = group.center;
+              break;
+            }
+          }
+        }
+      }
+
+      if (parentTree && config.target && parentTree.name === config.target) {
+        score = (config.value || 0);
+      }
+      break;
+
+    // 固定分 (如: 泽龟 5分)
+    case SCORING_TYPES.FLAT:
+      score = config.value || 0;
+      break;
+
+    // 每张某物种 (如: 树蛙-蚊子5分)
+    case SCORING_TYPES.PER_SPECIES:
+      let speciesCount = 0;
+      allCards.forEach(c => {
+        // 使用有效名称匹配
+        if (getCardEffectiveName(c) === config.target) {
+          speciesCount++;
+        }
+      });
+      score = speciesCount * (config.value || 0);
+      break;
+
+    // 每种不同的物种
+    case SCORING_TYPES.PER_DIFFERENT_SPECIES:
+      const allUnique = new Set();
+      allCards.forEach(c => {
+        const name = getCardEffectiveName(c);
+        if (name) allUnique.add(name);
+      });
+      score = allUnique.size * (config.value || 0);
+      break;
+
+    // 根据数量阶梯计分 (如: 萤火虫/欧洲七叶树)
+    case SCORING_TYPES.SCALE_BY_COUNT:
+      // 首先需要统计符合条件的目标数量（通常是自身）
+      let targetCount = 0;
+      const targetName = config.target || card.name; // 默认为统计自身
+      allCards.forEach(c => {
+        if (c.name === targetName) {
+          targetCount++;
+        }
+      });
+
+      // config.scale 应该是一个数组或对象 {1: 0, 2: 5, ...}
+      // 假设是数组 [0, 2, 5, 10] 表示 1个得0分, 2个得2分...
+      // 或者对象 { "1": 0, "2": 2 }
+      // 根据 speciesData.js 里的配置格式来定。
+      // 欧洲七叶树 points: "根据你拥有的欧洲七叶树数量获得分数"
+      // 需要查看具体配置结构。
+      // 暂时假设 config.scale 是个函数或者映射表
+      if (config.scale) {
+        // 简单的映射表逻辑
+        // 如果是数组，使用 index-1? 还是直接匹配?
+        // BGA 风格通常是 table: [0, 1, 4, 9, 16] (平方?)
+        // 这里先做通用处理，假设 scale 是对象 key 为 count
+        if (config.scale[targetCount] !== undefined) {
+          score = config.scale[targetCount];
+        } else {
+          // 找最大的 key <= targetCount
+          const keys = Object.keys(config.scale).map(Number).sort((a, b) => a - b);
+          let bestKey = 0;
+          for (let k of keys) {
+            if (k <= targetCount) bestKey = k;
+            else break;
+          }
+          score = config.scale[bestKey] || 0;
+        }
+      }
+      break;
+
+    // 达到阈值获得固定分 (如: 苔藓-10树得10分)
+    case SCORING_TYPES.THRESHOLD:
+      let thresholdCount = 0;
+      allCards.forEach(c => {
+        // 检查条件，通常是 Tag 或 Species
+        if (config.tag && c.tags && c.tags.includes(config.tag)) {
+          thresholdCount++;
+        }
+        // 或者其他条件
+      });
+      if (thresholdCount >= (config.threshold || 0)) {
+        score = config.value || 0;
+      }
+      break;
+
+    // 集齐特定集合 (如: 野草莓-8种树)
+    case SCORING_TYPES.SET_COLLECTION:
+      const collectionSet = new Set();
+      allCards.forEach(c => {
+        if (config.tag && c.tags && c.tags.includes(config.tag)) {
+          if (c.name) collectionSet.add(c.name);
+        }
+      });
+      if (collectionSet.size >= (config.count || 8)) {
+        score = config.value || 0;
+      }
+      break;
+
+    // 与特定卡牌共享槽位 (如: 大蟾蜍)
+    case SCORING_TYPES.POSITION_SHARE_SLOT:
+      // 寻找自己所在的 group 和 slot
+      let foundSlot = null;
+      if (context.forest) {
+        for (const group of context.forest) {
+          if (group.slots) {
+            const slots = Object.values(group.slots);
+            const mainCard = slots.find(s => s && s.uid === card.uid);
+            if (mainCard) {
+              foundSlot = mainCard;
+              break;
+            }
+            if (!foundSlot) {
+              for (const s of slots) {
+                if (s && s.stackedCards) {
+                  if (s.stackedCards.some(sc => sc.uid === card.uid)) {
+                    foundSlot = s;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          if (foundSlot) break;
+        }
+      }
+
+      if (foundSlot) {
+        let stackCount = 1 + (foundSlot.stackedCards ? foundSlot.stackedCards.length : 0);
+        if (config.target && foundSlot.name === config.target) {
+          if (config.count && stackCount >= config.count) {
+            score = config.value || 0;
+          }
+        }
+      }
+      break;
+
+    // 连接到此牌的牌 (如: 银杉)
+    case SCORING_TYPES.CONDITION_ATTACHED:
+      const myGroup = context.forest ? context.forest.find(g => g.center && g.center.uid === card.uid) : null;
+      if (myGroup && myGroup.slots) {
+        let attachedCount = 0;
+        Object.values(myGroup.slots).forEach(s => {
+          if (s) {
+            attachedCount += (1 + (s.stackedCards ? s.stackedCards.length : 0));
+          }
+        });
+        score = attachedCount * (config.value || 0);
+      }
+      break;
+
+    // 全场每张树下的牌得2分 (红褐林蚁)
+    case SCORING_TYPES.CONDITION_BELOW:
+      let belowCount = 0;
+      if (context.forest) {
+        context.forest.forEach(g => {
+          if (g.slots && g.slots.bottom) {
+            belowCount += (1 + (g.slots.bottom.stackedCards ? g.slots.bottom.stackedCards.length : 0));
+          }
+        });
+      }
+      score = belowCount * (config.value || 0);
+      break;
+
+    // 全场每棵完全被占据的树木 (石貂)
+    case SCORING_TYPES.CONDITION_TREE_FULL:
+      let fullTreeCount = 0;
+      if (context.forest) {
+        context.forest.forEach(g => {
+          if (g.slots) {
+            const hasTop = !!g.slots.top;
+            const hasBottom = !!g.slots.bottom;
+            const hasLeft = !!g.slots.left;
+            const hasRight = !!g.slots.right;
+            if (hasTop && hasBottom && hasLeft && hasRight) {
+              fullTreeCount++;
+            }
+          }
+        });
+      }
+      score = fullTreeCount * (config.value || 0);
+      break;
+
+    // 洞穴内卡牌数量 (如: 胡兀鹫)
+    case SCORING_TYPES.CAVE_COUNT:
+      if (context.cave) {
+        score = context.cave.length * (config.value || 0);
+      }
+      break;
+
+    // 位于特定Tag上 (如: 欧洲林鼬->树或灌木)
+    case SCORING_TYPES.CONDITION_ON_TAG:
+    // 位于特定子类型上 (如: 夜莺->灌木)
+    case SCORING_TYPES.CONDITION_ON_SUBTYPE:
+      // 检查 parent tree (center card) 是否有目标 tag
+      let parentForTag = null;
+      if (context.forest) {
+        for (const group of context.forest) {
+          if (group.slots) {
+            const slots = Object.values(group.slots);
+            if (slots.some(s => s && (s.uid === card.uid || (s.stackedCards && s.stackedCards.some(sc => sc.uid === card.uid))))) {
+              parentForTag = group.center;
+              break;
+            }
+          }
+        }
+      }
+      if (parentForTag && config.tag && parentForTag.tags && parentForTag.tags.includes(config.tag)) {
+        score = config.value || 0;
+      }
+      break;
+
+    // 匹配树木上的Tag (如: 西方狍)
+    // 假设逻辑: 卡牌自身若匹配其所在的树，则得分
+    case SCORING_TYPES.PER_TAG_ON_MATCHING:
+      let myParent = null;
+      if (context.forest) {
+        for (const group of context.forest) {
+          if (group.slots) {
+            const slots = Object.values(group.slots);
+            if (slots.some(s => s && (s.uid === card.uid || (s.stackedCards && s.stackedCards.some(sc => sc.uid === card.uid))))) {
+              myParent = group.center;
+              break;
+            }
+          }
+        }
+      }
+
+      if (myParent && card.tree_symbol && card.tree_symbol.includes(myParent.name)) {
+        score = config.value || 0;
+      }
+      break;
+
+    // 数量比别人多 (如: 椴树 - 树木最多得3分)
+    case SCORING_TYPES.MAJORITY:
+      if (allPlayerStates && myOpenId) {
+        // 统计自己的目标数量
+        const targetTag = config.tag || TAGS.TREE;
+        const myCount = getCountByTag(context, targetTag);
+
+        let isMajor = true;
+        Object.entries(allPlayerStates).forEach(([otherId, otherState]) => {
+          if (otherId !== myOpenId) {
+            const otherCount = getCountByTag(otherState, targetTag);
+            if (otherCount > myCount) {
+              isMajor = false;
+            }
+          }
+        });
+
+        if (isMajor) {
+          score = config.value || 0;
+        } else {
+          score = config.valueOnFail || 0;
+        }
+      } else {
+        score = config.value || 0;
+      }
+      break;
   }
 
   return score;
 }
+
+// 辅助: 统计某 Tag 的数量 (包括 Tree Multiplier 逻辑)
+function getCountByTag(paramContext, tag) {
+  let count = 0;
+  if (paramContext.forest) {
+    paramContext.forest.forEach(g => {
+      // 检查 center
+      if (g.center && g.center.tags && g.center.tags.includes(tag)) {
+        let val = 1;
+        // 检查 Tree Multiplier (仅针对 Tree)
+        if (tag === TAGS.TREE && g.slots) {
+          const hasMultiplier = Object.values(g.slots).some(s =>
+            s && s.effectConfig && s.effectConfig.type === 'TREE_MULTIPLIER'
+          );
+          if (hasMultiplier) val = 2;
+        }
+        count += val;
+      }
+      // 检查 slots (是否也要统计 slot 里的 tag? 通常是的)
+      if (g.slots) {
+        Object.values(g.slots).forEach(s => {
+          if (s && s.tags && s.tags.includes(tag)) {
+            count++;
+          }
+        });
+      }
+    });
+  }
+  return count;
+}
+
+
 
 module.exports = {
   calculateTotalScore,

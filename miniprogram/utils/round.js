@@ -46,11 +46,19 @@ const getNextPlayer = (currentOpenId, players, gainedExtraTurn) => {
   }
 
   // 2. 多人游玩 -> 顺时针切换
-  const currentIndex = players.findIndex((p) => p.openId === currentOpenId);
-  if (currentIndex === -1) return players[0].openId; // 异常兜底
+  // 必须过滤掉空座位 (null)
+  const validPlayers = players.filter(p => p);
 
-  const nextIndex = (currentIndex + 1) % players.length;
-  return players[nextIndex].openId;
+  // 保底检查：如果过滤后没人（理论不可能，至少有当前玩家），直接返回
+  if (validPlayers.length === 0) return currentOpenId;
+  // 如果只有一人，返回自己
+  if (validPlayers.length === 1) return currentOpenId;
+
+  const currentIndex = validPlayers.findIndex((p) => p.openId === currentOpenId);
+  if (currentIndex === -1) return validPlayers[0].openId; // 异常兜底
+
+  const nextIndex = (currentIndex + 1) % validPlayers.length;
+  return validPlayers[nextIndex].openId;
 };
 
 /**

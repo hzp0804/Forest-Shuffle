@@ -210,14 +210,14 @@ const processGameData = (res, currentData) => {
 
   const viewingPlayerState = playerStates?.[viewingId];
   const displayForest = viewingPlayerState?.forest ? enrichForest(viewingPlayerState.forest) : [];
-  const viewingPlayer = (res.data.players || []).find((p) => p.openId === viewingId);
+  const viewingPlayer = (res.data.players || []).find((p) => p && p.openId === viewingId);
 
   const users = res.data.players || [];
   const enrichedPlayers = users
     .map((p) => {
       if (!p) return null;
       const pState = playerStates?.[p.openId];
-      const scoreData = calculateTotalScore(pState, p.openId);
+      const scoreData = calculateTotalScore(pState, p.openId, playerStates);
       return {
         ...p,
         score: scoreData.total || 0,
@@ -235,7 +235,7 @@ const processGameData = (res, currentData) => {
   const logs = gameState.logs || [];
   const displayLogs = logs
     .map((log) => {
-      const user = users.find((u) => u.openId === log.operator);
+      const user = users.find((u) => u && u.openId === log.operator);
       const nick = user?.nickName || "未知玩家";
       const date = new Date(log.timestamp);
       const timeStr = `${date.getHours().toString().padStart(2, "0")}:${date

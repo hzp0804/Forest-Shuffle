@@ -33,7 +33,27 @@ Page({
 
   onLoad(options) {
     const app = getApp();
-    const openId = app.globalData.userProfile?.openId; // use const, not let
+    let profile = app.globalData.userProfile;
+
+    // 如果全局变量没有，尝试从本地缓存读取 (应对直接打开页面的情况)
+    if (!profile) {
+      try {
+        profile = wx.getStorageSync("userProfile");
+        if (profile) {
+          app.globalData.userProfile = profile; // 恢复全局状态
+        }
+      } catch (e) { }
+    }
+
+    if (!profile || (!profile.openId && !profile.uid)) {
+      wx.showToast({ title: "请先登录", icon: "none" });
+      setTimeout(() => {
+        wx.reLaunch({ url: "/pages/index/index" });
+      }, 1500);
+      return;
+    }
+
+    const openId = profile.openId || profile.uid;
     this.setData({
       roomId: options.roomId,
       openId,
@@ -414,25 +434,86 @@ Page({
         targetTree.slots = { top: null, bottom: null, left: null, right: null };
 
       // 检查该位置是否已有卡（虽然前端 UI 应该已限制）
-      if (targetTree.slots[selectedSlot.side]) {
-        wx.hideLoading();
-        wx.showToast({ title: "该位置已有卡牌", icon: "none" });
-        return;
+      const existing = targetTree.slots[selectedSlot.side];
+
+      if (existing) {
+        // 1. 槽位已有卡：尝试堆叠 (CAPACITY_INCREASE)
+        const effect = existing.effectConfig;
+        let canStack = false;
+
+        // 直接字符串判断避免各种引用问题
+        if (effect) {
+          if (effect.type === 'CAPACITY_INCREASE') {
+            if (primaryCard.name === effect.target) {
+              const currentStack = existing.stackedCards || [];
+              if (1 + currentStack.length < effect.value) {
+                canStack = true;
+              }
+            }
+          } else if (effect.type === 'CAPACITY_UNLIMITED' || effect.type === 'CAPACITY_SHARE_SLOT') {
+            // 无限容量或特定共享 (如: 欧洲野兔 / 荨麻-蝴蝶)
+            let match = false;
+            if (effect.target && primaryCard.name === effect.target) {
+              match = true;
+            }
+            if (effect.tag && primaryCard.tags && primaryCard.tags.includes(effect.tag)) {
+              match = true;
+            }
+
+            if (match) {
+              canStack = true;
+            }
+          }
+        }
+
+        if (!canStack) {
+          wx.hideLoading();
+          wx.showToast({ title: "该位置已有卡牌", icon: "none" });
+          return;
+        }
+
+        // 执行堆叠
+        if (!existing.stackedCards) existing.stackedCards = [];
+        const cardWithAnim = { ...primaryCard, animationData: popAnim };
+        existing.stackedCards.push(cardWithAnim);
+        // 更新现有卡对象 (引用可能已经在 slots 里，但为了保险重新赋值)
+        targetTree.slots[selectedSlot.side] = existing;
+
+      } else {
+        // 2. 槽位为空：正常放置
+        const cardWithAnim = { ...primaryCard, animationData: popAnim };
+        targetTree.slots[selectedSlot.side] = cardWithAnim;
       }
 
-      // 放置卡牌，并添加动画
-      const cardWithAnim = { ...primaryCard, animationData: popAnim };
-      targetTree.slots[selectedSlot.side] = cardWithAnim;
-      forest[targetTreeIndex] = targetTree;
     }
 
-    // --- 计算颜色奖励 (Bonus) ---
-    // 引入 reward.js
-    const reward = RewardUtils.calculateColorReward(
+    // --- 计算奖励 (Bonus + Effect + Triggers) ---
+    // 1. Color Bonus
+    const bonusReward = RewardUtils.calculateColorReward(
       primaryCard,
       selectedSlot,
       paymentCards
     );
+
+    // 2. Instant Effect (如: 获得新回合)
+    // 传入 forest context 以支持 DRAW_PER_EXISTING 等依赖场面的效果
+    const effectReward = RewardUtils.calculateEffect(primaryCard, { forest });
+
+    // 3. Trigger Effects (如: 鸡油菌触发)
+    // forest 此时已包含新卡，Trigger 逻辑会遍历 forest 里的卡去响应 primaryCard
+    const triggerContext = { slot: selectedSlot };
+    const triggerReward = RewardUtils.calculateTriggerEffects(forest, primaryCard, triggerContext);
+
+    // 合并结果
+    const reward = {
+      drawCount: (bonusReward.drawCount || 0) + (effectReward.drawCount || 0) + (triggerReward.drawCount || 0),
+      extraTurn: bonusReward.extraTurn || effectReward.extraTurn || triggerReward.extraTurn,
+      actions: [
+        ...(bonusReward.actions || []),
+        ...(effectReward.actions || []),
+        ...(triggerReward.actions || [])
+      ]
+    };
 
     console.log("[Play Debug] Reward Result:", reward); // 打印计算出的奖励结果
     console.log("[Play Debug] Context -> card:", primaryCard, " slot:", selectedSlot, " payments:", paymentCards);

@@ -789,10 +789,14 @@ Page({
     // 3. 构建完整套牌
     for (let s = 0; s < fullSets; s++) {
       sourceKeys.forEach((key) => {
-        rawDeck.push({
-          id: key,
-          uid: `${key}_set${s}_${Math.random().toString(36).slice(2)}`,
-        });
+        const cardDef = sourceData[key];
+        // 排除 W_CARD (冬季卡)，它们会在后续步骤手动加入到底部
+        if (cardDef && cardDef.type !== require("../../data/constants").CARD_TYPES.W_CARD) {
+          rawDeck.push({
+            id: key,
+            uid: `${key}_set${s}_${Math.random().toString(36).slice(2)}`,
+          });
+        }
       });
     }
 
@@ -800,7 +804,10 @@ Page({
     if (remainder > 0) {
       let extraSet = [];
       sourceKeys.forEach((key) => {
-        extraSet.push({ id: key });
+        const cardDef = sourceData[key];
+        if (cardDef && cardDef.type !== require("../../data/constants").CARD_TYPES.W_CARD) {
+          extraSet.push({ id: key });
+        }
       });
 
       // Fisher-Yates shuffle
@@ -826,12 +833,17 @@ Page({
     }
 
     // 6. 插入冬季卡
-    // 逻辑：将冬季卡洗入牌库底部约 1/3 处
-    // 这样保证发初始手牌时绝不会发到冬季卡
-    const oneThird = Math.floor(rawDeck.length / 3);
-    // 也就是底部保留 1/3 的量用于混合冬季卡
+    // 逻辑：将冬季卡洗入牌库底部
+    // 使用房间设置的 winterStartOffset (默认30)
+    let bottomSize = roomSettings.winterStartOffset;
+    if (!bottomSize || bottomSize <= 0) {
+      bottomSize = Math.floor(rawDeck.length / 3); // Fallback
+    }
+    // 确保不过大
+    if (bottomSize > rawDeck.length) bottomSize = rawDeck.length;
+
     // splitIndex 是上部和下部的分界点
-    const splitIndex = rawDeck.length - oneThird;
+    const splitIndex = rawDeck.length - bottomSize;
 
     const topPart = rawDeck.slice(0, splitIndex);
     const bottomPart = rawDeck.slice(splitIndex);
