@@ -26,6 +26,8 @@ Page({
     instructionState: "normal", // 指引状态 (normal, error, warning, success)
     instructionText: "", // 指引文案
     lastActivePlayer: "", // 上一个激活的玩家，用于判断轮次切换
+    lastTurnCount: -1,
+    lastNotifiedTurnCount: -1,
     enableAnimation: true, // 动画开关
   },
 
@@ -65,6 +67,10 @@ Page({
       clearInterval(this.pollingTimer);
       this.pollingTimer = null;
     }
+    if (this.turnToastTimer) {
+      clearTimeout(this.turnToastTimer);
+      this.turnToastTimer = null;
+    }
   },
 
   async queryGameData(roomId) {
@@ -81,7 +87,8 @@ Page({
       // 使用 turnCount (回合计数) 来精确判断新回合
       // 只要 turnCount 增加了，说明上一个回合结束了（无论是换人了，还是触发了额外回合）
       const currentTurnCount = serverData.gameState?.turnCount || 0;
-      const lastTurnCount = this.data.lastTurnCount || -1;
+      const lastTurnCount =
+        typeof this.data.lastTurnCount === "number" ? this.data.lastTurnCount : -1;
 
       let isNewTurn = false;
 
@@ -94,13 +101,20 @@ Page({
         isNewTurn = true;
       }
 
-      if (isNewTurn) {
-        if (currentActive === this.data.openId) {
+      const lastNotifiedTurnCount =
+        typeof this.data.lastNotifiedTurnCount === "number"
+          ? this.data.lastNotifiedTurnCount
+          : -1;
+
+      if (isNewTurn && currentActive === this.data.openId) {
+        // 仅提示一次，避免轮询重复弹出
+        if (currentTurnCount !== lastNotifiedTurnCount) {
           // 只有轮到自己才提示
           // 延迟提示，避免覆盖掉“操作成功”或“获得奖励”的 toast
-          setTimeout(() => {
+          if (this.turnToastTimer) clearTimeout(this.turnToastTimer);
+          this.turnToastTimer = setTimeout(() => {
             const turnReason = serverData.gameState?.turnReason;
-            const tips = turnReason === 'extra' ? "额外回合！" : "轮到你了！";
+            const tips = turnReason === "extra" ? "额外回合！" : "轮到你了！";
             // 再次检查是否仍是自己回合 (防止极速操作)
             if (this.data.playerStates && this.data.playerStates[this.data.openId]) {
               wx.showToast({ title: tips, icon: "none", duration: 2000 });
@@ -108,11 +122,12 @@ Page({
           }, 1500);
 
           processedData.selectedPlayerOpenId = this.data.openId;
+          processedData.lastNotifiedTurnCount = currentTurnCount;
         }
       }
 
       // 更新记录
-      processedData.lastActivePlayer = currentActive;
+      processedData.lastActivePlayer = currentActive || '';
       processedData.lastTurnCount = currentTurnCount;
 
       // --- 2. 日志弹窗 (Game Log Popup) ---
@@ -309,13 +324,14 @@ Page({
     }
     const primaryCard = hand[primaryCardIndex];
     const type = primaryCard.type;
+    const isTree = typeof type === "string" && type.toLowerCase() === "tree";
 
     console.log("打出的牌：", primaryCard); // 打印打出的手牌数据
 
     // --- 校验出牌目标 ---
     // 1. 如果是树木 (Tree)，不需要选槽位，直接种
     // 2. 如果是非树木 (hCard, vCard)，必须选槽位
-    if (type !== "Tree") {
+    if (!isTree) {
       if (!selectedSlot) {
         wx.hideLoading();
         wx.showToast({ title: "请选择森林中的空位", icon: "none" });
@@ -351,7 +367,7 @@ Page({
     const popAnim = AnimationUtils.playToForest(this.data.enableAnimation);
     const flyInAnim = AnimationUtils.playToClearing(this.data.enableAnimation);
 
-    if (type === "Tree") {
+    if (isTree) {
       // 树木：新建一个 TreeGroup 放入森林
       // 结构参考 utils.js enrichForest
       const newTreeGroup = {
@@ -457,7 +473,7 @@ Page({
     });
 
     // 规则：如果打出的是树木 (Tree)，且牌库有牌，则从牌库翻一张进空地
-    if (primaryCard.type === "Tree" && newDeck.length > 0) {
+    if (isTree && newDeck.length > 0) {
       const topCard = newDeck.shift();
       if (topCard) {
         // 确保进空地的牌是干净的

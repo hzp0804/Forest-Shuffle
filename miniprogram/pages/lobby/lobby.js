@@ -19,10 +19,20 @@ const saveProfile = (profile) => {
 };
 
 const normalizeStoredProfile = (profile) => {
-  if (!profile || !profile.uid) return null;
-  if (profile.authorized) return profile;
-  const normalized = { ...profile, authorized: true };
-  saveProfile(normalized);
+  if (!profile) return null;
+  // Rename uid to openId if needed to match latest convention
+  const openId = profile.openId || profile.uid;
+  if (!openId) return null;
+
+  const normalized = {
+    ...profile,
+    openId, // Ensure openId field exists
+    authorized: true
+  };
+  // Also updating stored object structure
+  if (!profile.openId || !profile.authorized) {
+    saveProfile(normalized);
+  }
   return normalized;
 };
 
@@ -90,6 +100,10 @@ Page({
     this.fetchRoomList();
   },
 
+  onHide() {
+    this.stopRoomPolling();
+  },
+
   onPullDownRefresh() {
     this.fetchRoomList().then(() => {
       wx.stopPullDownRefresh();
@@ -97,6 +111,7 @@ Page({
   },
 
   onUnload() {
+    this.stopRoomPolling();
     if (this.roomWatcher) {
       this.roomWatcher.close();
     }
@@ -183,8 +198,7 @@ Page({
         // 初始座位数据：6个位置，第一个是房主
         const initialSeats = Array(6).fill(null);
         initialSeats[0] = {
-          uid: userProfile.uid || userProfile.openId, // 兼容逻辑
-          openId: userProfile.openId,
+          openId: userProfile.openId, // 明确使用 openId
           nickName: userProfile.nickName,
           avatarUrl: userProfile.avatarUrl,
           seatId: 1, // 这里的ID对应界面显示的1-6
@@ -465,7 +479,7 @@ Page({
     console.log("Start polling room:", roomId);
     this.pollingTimer = setInterval(() => {
       this.fetchRoomInfo(roomId);
-    }, 1000); // 每秒刷新
+    }, 2000); // 2s 一次，避免过快轮询
   },
 
   stopRoomPolling() {
@@ -647,7 +661,7 @@ Page({
         ...s,
         occupant: p
           ? {
-            uid: p.openId,
+            openId: p.openId,
             nickName: p.nickName,
             avatarUrl: p.avatarUrl,
           }
