@@ -2,7 +2,7 @@ const { CARDS_DATA } = require("../data/cardData");
 const { SPECIES_DATA } = require("../data/speciesData");
 const { DECK_TYPES, CARD_TYPES, TAGS, IMG_URLS } = require("../data/constants.js");
 
-// 性能优化：缓存反向索引
+// 性能优化：缓存反向索引 (Added comment to force reload)
 let nameToSpeciesCache = null;
 let trimmedKeyCache = null;
 

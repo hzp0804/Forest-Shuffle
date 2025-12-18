@@ -196,6 +196,7 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
 
     if (!card.effectConfig) return;
     const config = card.effectConfig;
+    // console.log('Checking trigger for', card.name, config.type);
 
     switch (config.type) {
       case TRIGGER_TYPES.TRIGGER_ON_PLAY_TAG_DRAW:
@@ -204,6 +205,7 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
           if (config.reward) {
             if (config.reward.type === 'DRAW') {
               result.drawCount += (config.reward.value || 0);
+              console.log('TRIGGER_TAG_DRAW triggered!', card.name, result.drawCount);
             }
           }
         }
@@ -211,6 +213,7 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
 
       case TRIGGER_TYPES.TRIGGER_ON_PLAY_POSITION:
         // 检查位置
+        // console.log('Checking position trigger', triggerContext, config.position);
         if (triggerContext && triggerContext.slot && triggerContext.slot.side === config.position) {
           let match = true;
           if (config.tag) {
@@ -221,7 +224,10 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
           if (match && config.reward) {
             if (config.reward.type === 'DRAW') {
               result.drawCount += (config.reward.value || 0);
+              console.log('TRIGGER_POSITION triggered!', card.name, result.drawCount);
             }
+          } else {
+            console.log('Trigger match failed', match, config.tag, playedCard.tags);
           }
         }
         break;

@@ -292,7 +292,6 @@ const SPECIES_DATA = {
     effectConfig: {
       type: TRIGGER_TYPES.TRIGGER_ON_PLAY_POSITION,
       position: 'top',
-      tag: CARD_TYPES.TREE,
       reward: { type: 'DRAW', value: 1 }
     },
     bonus: "",

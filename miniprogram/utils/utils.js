@@ -7,7 +7,7 @@ const {
 } = require("./cost");
 const {
   calculateTotalScore
-} = require("./score");
+} = require("./score/index");
 const {
   CARD_TYPES
 } = require("../data/constants");
@@ -289,7 +289,7 @@ const processGameData = (res, currentData) => {
       const scoreData = calculateTotalScore(pState, p.openId, playerStates, p.nickName);
       score = scoreData.total || 0;
     } else {
-      const cached = require('./score').getCachedScore(p.openId);
+      const cached = require('./score/index').getCachedScore(p.openId);
       score = cached?.total || 0;
     }
     return {

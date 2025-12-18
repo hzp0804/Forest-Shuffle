@@ -77,7 +77,7 @@
                   </block>
                </view>
             </view>
-            <scroll-view class="clearing-scroll" scroll-x enable-flex scroll-into-view="{{clearingScrollId}}" scroll-with-animation>
+            <scroll-view class="clearing-scroll" scroll-x enable-flex scroll-into-view="{{clearingScrollId}}" scroll-left="{{clearingScrollLeft}}" scroll-with-animation>
                <view class="clearing-row">
                   <block wx:for="{{clearing}}" wx:key="uid">
                      <view id="clearing-{{index}}" class="hand-card clearing-card {{index === selectedClearingIdx ? 'selected' : ''}}" bindtap="onClearingCardTap" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
@@ -173,7 +173,7 @@
                   <text class="event-title">
                      <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING'}}">翻牌</block>
                      <block wx:elif="{{currentEvent.type === 'REWARD_DRAW'}}">
-                        {{currentEvent.playerNick}} 获得奖励抽牌 ({{currentEvent.count}}张)
+                        {{currentEvent.playerNick}} 奖励 ({{currentEvent.count}}张)
                      </block>
                      <block wx:else>{{currentEvent.playerNick}} 正在摸牌...</block>
                   </text>
