@@ -607,9 +607,16 @@ Page({
 
           // 场景B: 新玩家加入
           // 前提：房间必须是 waiting
+          // 前提：房间必须是 waiting，除非是观战
           if (room.status !== "waiting") {
+            if (room.status === "playing") {
+              // 允许观战
+              this.enterRoomLocal(room);
+              wx.hideLoading();
+              return;
+            }
             wx.hideLoading();
-            wx.showToast({ title: "游戏已开始或房间已关闭", icon: "none" });
+            wx.showToast({ title: "房间已关闭", icon: "none" });
             return;
           }
 

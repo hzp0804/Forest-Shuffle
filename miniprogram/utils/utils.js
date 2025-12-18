@@ -156,7 +156,7 @@ const computeInstruction = (data) => {
 
   if (!playerStates?.[openId]) return {
     instructionState: "normal",
-    instructionText: "加载中..."
+    instructionText: "旁观模式"
   };
 
   const myHand = playerStates[openId].hand || [];
@@ -346,6 +346,7 @@ const processGameData = (res, currentData) => {
     currentTurn: gameState.turnCount || 1,
     lastCardCount: totalCardCount,
     gameState: gameState,
+    isSpectator: !playerStates?.[myOpenId],
   };
 };
 

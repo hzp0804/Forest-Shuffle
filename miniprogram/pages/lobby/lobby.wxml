@@ -5,156 +5,149 @@
         <image class="avatar" src="{{userProfile.avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
         <view class="user-text">
           <text class="nickname">{{userProfile.nickName || '未登录'}}</text>
-          <text class="uid">{{userProfile.openId ? ('ID: ' + userProfile.openId) : '登录后即可创建/加入房间'}}</text>
+          <text class="uid">
+            {{userProfile.openId ? ('ID: ' + userProfile.openId) : '登录后即可创建/加入房间'}}
+          </text>
         </view>
       </view>
     </view>
   </block>
-
-  <page-container
-    show="{{isInRoom}}"
-    position="bottom"
-    round="{{true}}"
-    duration="300"
-    bind:leave="onRoomContainerLeave"
-    overlay="{{false}}"
-    custom-style="height: 100vh; width: 100vw; background: #f8f3eb;"
-  >
+  <page-container show="{{isInRoom}}" position="bottom" round="{{true}}" duration="300" bind:leave="onRoomContainerLeave" overlay="{{false}}" custom-style="height: 100vh; width: 100vw; background: #f8f3eb;">
     <scroll-view scroll-y class="lobby-page" style="height: 100vh; padding-top: 40rpx; box-sizing: border-box;">
       <view class="user-card">
         <view class="user-meta">
           <image class="avatar" src="{{userProfile.avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
           <view class="user-text">
             <text class="nickname">{{userProfile.nickName || '未登录'}}</text>
-            <text class="uid">{{userProfile.openId ? ('ID: ' + userProfile.openId) : '登录后即可创建/加入房间'}}</text>
+            <text class="uid">
+              {{userProfile.openId ? ('ID: ' + userProfile.openId) : '登录后即可创建/加入房间'}}
+            </text>
           </view>
         </view>
       </view>
-
       <view class="room-info" wx:if="{{isInRoom}}" style="margin-top: 32rpx;">
         <view class="room-header-row">
-            <view class="room-title-block">
-                <text class="label">房间号</text>
-                <text class="code">{{roomCode}}</text>
-            </view>
-            <button size="mini" bindtap="onCopyRoomCode" class="mini-btn">复制</button>
+          <view class="room-title-block">
+            <text class="label">房间号</text>
+            <text class="code">{{roomCode}}</text>
+          </view>
+          <button size="mini" bindtap="onCopyRoomCode" class="mini-btn">复制</button>
         </view>
-
         <view class="room-settings" wx:if="{{roomSettings}}">
-           <view class="setting-item">
-             <text class="setting-icon">🎴 </text>
-             <text class="setting-text">牌库 {{roomSettings.totalCardCount || ((roomSettings.setCount || 1) * baseDeckSize)}} 张</text>
-           </view>
-           <view class="setting-item">
-             <text class="setting-icon">❄️ </text>
-             <text class="setting-text">冬季卡倒数 {{roomSettings.winterStartOffset || 30}} 张</text>
-           </view>
+          <view class="setting-item">
+            <text class="setting-icon">🎴</text>
+            <text class="setting-text">
+              牌库 {{roomSettings.totalCardCount || ((roomSettings.setCount || 1) * baseDeckSize)}} 张
+            </text>
+          </view>
+          <view class="setting-item">
+            <text class="setting-icon">❄️</text>
+            <text class="setting-text">冬季卡倒数 {{roomSettings.winterStartOffset || 30}} 张</text>
+          </view>
         </view>
-
         <view class="divider" style="margin: 24rpx 0; border-bottom: 2rpx dashed #e0e6df;"></view>
-
         <view class="seat-section">
-            <text class="section-label" style="display:block; margin-bottom: 16rpx; font-weight:600; color:#334536; font-size:28rpx;">座位表</text>
-            <view class="seat-grid">
-                <block wx:for="{{seats}}" wx:key="id">
-                <view class="seat {{item.occupant ? 'occupied' : ''}}" data-id="{{item.id}}" bindtap="onSelectSeat">
-                    <text class="seat-label" style="margin-bottom:8rpx;">{{item.label}}</text>
-                    <view class="seat-visual">
-                    <image wx:if="{{item.occupant}}" class="seat-avatar" src="{{item.occupant.avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
-                    <view wx:else class="seat-avatar placeholder"></view>
-                    <text class="seat-name">{{item.occupant ? item.occupant.nickName : '空闲'}}</text>
-                    </view>
+          <text class="section-label" style="display:block; margin-bottom: 16rpx; font-weight:600; color:#334536; font-size:28rpx;">
+            座位表
+          </text>
+          <view class="seat-grid">
+            <block wx:for="{{seats}}" wx:key="id">
+              <view class="seat {{item.occupant ? 'occupied' : ''}}" data-id="{{item.id}}" bindtap="onSelectSeat">
+                <text class="seat-label" style="margin-bottom:8rpx;">{{item.label}}</text>
+                <view class="seat-visual">
+                  <image wx:if="{{item.occupant}}" class="seat-avatar" src="{{item.occupant.avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
+                  <view wx:else class="seat-avatar placeholder"></view>
+                  <text class="seat-name">{{item.occupant ? item.occupant.nickName : '空闲'}}</text>
                 </view>
-                </block>
-            </view>
+              </view>
+            </block>
+          </view>
         </view>
-
         <view class="room-footer" style="margin-top: 40rpx; gap: 20rpx; display: flex; flex-direction: column;">
-            <block wx:if="{{roomStatus === 'playing'}}">
-                <button class="action-btn primary" bindtap="onContinueGame">继续游戏</button>
-            </block>
-            <block wx:elif="{{isHost}}">
-                <button class="action-btn primary" bindtap="onStartGame">开始游戏</button>
-            </block>
-            <button class="action-btn ghost" bindtap="onExitRoom">退出房间</button>
+          <block wx:if="{{roomStatus === 'playing'}}">
+            <button class="action-btn primary" bindtap="onContinueGame">继续游戏</button>
+          </block>
+          <block wx:elif="{{isHost}}">
+            <button class="action-btn primary" bindtap="onStartGame">开始游戏</button>
+          </block>
+          <button class="action-btn ghost" bindtap="onExitRoom">退出房间</button>
         </view>
       </view>
     </scroll-view>
   </page-container>
-
   <!-- 创建/加入表单：仅在未进入房间时显示 -->
   <block wx:if="{{!isInRoom}}">
     <view class="lobby-forms">
-    <view class="section">
-      <view class="section-header">
-        <text class="section-title">创建房间</text>
-        <text class="section-sub">设置套数与冬季卡规则</text>
-      </view>
-
-      <view class="form-item">
-        <view class="label-row">
-          <text class="label">牌库数量</text>
-          <text class="tip">不含冬季卡</text>
+      <view class="section">
+        <view class="section-header">
+          <text class="section-title">创建房间</text>
+          <text class="section-sub">设置套数与冬季卡规则</text>
         </view>
-        <input class="input" type="number" placeholder="请输入卡牌总数 (如 500)" value="{{createForm.cardCount}}" bindinput="onCardCountInput" />
+        <view class="form-item">
+          <view class="label-row">
+            <text class="label">牌库数量</text>
+            <text class="tip">不含冬季卡</text>
+          </view>
+          <input class="input" type="number" placeholder="请输入卡牌总数 (如 500)" value="{{createForm.cardCount}}" bindinput="onCardCountInput" />
+        </view>
+        <view class="form-item">
+          <text class="label">冬季卡放置</text>
+          <input class="input" type="number" placeholder="牌堆底部前多少张内开始随机抽取" value="{{createForm.winterStartOffset}}" bindinput="onWinterStartInput" />
+        </view>
+        <button class="action-btn primary" bindtap="onCreateRoom">创建房间</button>
+        <text class="hint">房间号将自动生成</text>
       </view>
-
-      <view class="form-item">
-        <text class="label">冬季卡放置</text>
-        <input class="input" type="number" placeholder="牌堆底部前多少张内开始随机抽取" value="{{createForm.winterStartOffset}}" bindinput="onWinterStartInput" />
-      </view>
-
-      <button class="action-btn primary" bindtap="onCreateRoom">
-        创建房间
-      </button>
-      <text class="hint">房间号将自动生成</text>
-    </view>
-
-    <view class="section">
-      <view class="section-header">
-        <text class="section-title">房间列表</text>
-        <view class="section-sub refresh-btn" bindtap="fetchRoomList">刷新</view>
-      </view>
-
-      <view class="room-list" wx:if="{{roomList && roomList.length > 0}}">
-        <block wx:for="{{roomList}}" wx:key="_id">
-           <view class="room-item" bindtap="onJoinRoom" data-code="{{item.roomCode}}">
-             <view class="room-content-left">
+      <view class="section">
+        <view class="section-header">
+          <text class="section-title">房间列表</text>
+          <view class="section-sub refresh-btn" bindtap="fetchRoomList">刷新</view>
+        </view>
+        <wxs module="utils">
+      var isInRoom = function(players, myId) {
+        if (!players) return false;
+        for (var i = 0; i < players.length; i++) {
+          if (players[i] && (players[i].openId === myId || players[i].uid === myId)) return true;
+        }
+        return false;
+      };
+      module.exports.isInRoom = isInRoom;
+      </wxs>
+        <view class="room-list" wx:if="{{roomList && roomList.length > 0}}">
+          <block wx:for="{{roomList}}" wx:key="_id">
+            <view class="room-item" bindtap="onJoinRoom" data-code="{{item.roomCode}}">
+              <view class="room-content-left">
                 <view class="avatar-container">
-                   <image class="room-host-avatar" src="{{item.players[0].avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
-                   <view class="room-status-badge {{item.status}}">{{item.status === 'playing' ? '进行中' : '等待中'}}</view>
+                  <image class="room-host-avatar" src="{{item.players[0].avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
+                  <view class="room-status-badge {{item.status}}">
+                    {{item.status === 'playing' ? '进行中' : '等待中'}}
+                  </view>
                 </view>
                 <view class="room-info-text">
-                   <text class="room-code">NO.{{item.roomCode}}</text>
-                   <text class="room-host">房主: {{item.players[0].nickName}}</text>
+                  <text class="room-code">NO.{{item.roomCode}}</text>
+                  <text class="room-host">房主: {{item.players[0].nickName}}</text>
                 </view>
-             </view>
-             
-             <view class="room-content-right">
+              </view>
+              <view class="room-content-right">
                 <view class="player-count-badge">
-                   <text class="current-count">{{item.playerCount}}</text>
-                   <text class="max-count">/6</text>
+                  <text class="current-count">{{item.playerCount}}</text>
+                  <text class="max-count">/6</text>
                 </view>
-                
                 <view class="action-buttons">
-                  <view 
-                    wx:if="{{userProfile.openId === item.hostOpenId || userProfile.nickName === '会长胖'}}" 
-                    class="icon-btn delete-btn" 
-                    catchtap="onDeleteRoom" 
-                    data-id="{{item._id}}">
+                  <view wx:if="{{userProfile.openId === item.hostOpenId || userProfile.nickName === '会长胖'}}" class="icon-btn delete-btn" catchtap="onDeleteRoom" data-id="{{item._id}}">
                     <text>✕</text>
                   </view>
-                  
-                  <view class="join-btn" catchtap="onJoinRoom" data-code="{{item.roomCode}}">加入</view>
+                  <view class="join-btn" catchtap="onJoinRoom" data-code="{{item.roomCode}}">
+                    {{item.status === 'playing' ? (utils.isInRoom(item.players, userProfile.openId) ? '继续' : '观战') : '加入'}}
+                  </view>
                 </view>
-             </view>
-           </view>
-        </block>
-      </view>
-      <view wx:else class="empty-state">
-         <text>暂时没有房间，创建一个吧！</text>
+              </view>
+            </view>
+          </block>
+        </view>
+        <view wx:else class="empty-state">
+          <text>暂时没有房间，创建一个吧！</text>
+        </view>
       </view>
     </view>
-  </view>
   </block>
 </view>

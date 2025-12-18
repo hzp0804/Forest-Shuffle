@@ -1573,7 +1573,7 @@ const SPECIES_DATA = {
   },
 
   [SPECIES_NAMES.URTICA]: {
-    name: "荨麻",
+    name: "刺荨麻",
     nb: 3,
     tags: [TAGS.EDGE, TAGS.PLANT],
     cost: 0,
