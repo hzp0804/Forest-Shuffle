@@ -674,7 +674,9 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "免费打出任意数量的蝙蝠牌",
     effectConfig: {
-      type: REWARD_TYPES.FREE_PLAY_BAT
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.BAT],
+      isInfinite: true
     },
     bonus: "",
     points: "每张带有蝙蝠符号的牌得1分",
@@ -1102,8 +1104,8 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "免费打出一张带有蝴蝶符号的牌",
     effectConfig: {
-      type: REWARD_TYPES.FREE_PLAY_SPECIFIC,
-      tag: TAGS.BUTTERFLY
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.BUTTERFLY]
     },
     bonus: "",
     points: "每张带有蝴蝶符号的牌得3分",
@@ -1122,8 +1124,8 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "免费打出一张带有两栖动物符号的牌",
     effectConfig: {
-      type: REWARD_TYPES.FREE_PLAY_SPECIFIC,
-      tag: TAGS.AMPHIBIAN
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.AMPHIBIAN]
     },
     bonus: "",
     points: "每张不同的鸟类牌得2分",
@@ -1144,8 +1146,7 @@ const SPECIES_DATA = {
     bonus: "免费打出一张高山牌和一张昆虫牌",
     bonusConfig: {
       type: REWARD_TYPES.PLAY_FREE,
-      tags: [TAGS.MOUNTAIN, TAGS.INSECT],
-      separateActions: true
+      tags: [TAGS.MOUNTAIN, TAGS.INSECT]
     },
     points: "每张带有昆虫符号的牌得2分",
     scoreConfig: {

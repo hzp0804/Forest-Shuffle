@@ -54,16 +54,25 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
 
     // 免费打牌
     case REWARD_TYPES.PLAY_FREE:
-      if (config.separateActions && Array.isArray(config.tags)) {
+      // 优先使用卡牌上的描述文案
+      const cardText = isBonus ? (card.bonus || '') : (card.effect || '');
+
+      // 如果是无限次模式（如任意数量蝙蝠），直接推入原始config，不拆分
+      if (config.isInfinite) {
+        result.text = cardText || "特殊行动";
+        result.actions.push(config);
+      } else if (Array.isArray(config.tags) && config.tags.length > 0) {
+        // 有序列的情况，拆分为多个独立行动
         config.tags.forEach(tag => {
           result.actions.push({
             type: REWARD_TYPES.PLAY_FREE,
             tags: [tag]
           });
         });
-        result.text = "连续特殊行动";
+        result.text = cardText || "连续特殊行动";
       } else {
-        result.text = "特殊行动";
+        // 默认情况
+        result.text = cardText || "特殊行动";
         result.actions.push(config);
       }
       break;

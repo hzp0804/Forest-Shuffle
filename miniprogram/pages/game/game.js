@@ -349,7 +349,13 @@ Page({
 
       // 2. 处理 Pending Actions (移除当前执行的，添加新产生的)
       const currentPending = [...(gameState.pendingActions || [])];
-      currentPending.shift(); // 移除当前已完成的行动
+
+      const executingAction = currentPending[0];
+      // 如果是“免费打出蝙蝠”这种可以无限打直到用户跳过的模式，则不移除当前Action
+      // 只有当用户显式点击“跳过”时（onEndTurn逻辑），才移除
+      if (executingAction && !executingAction.isInfinite) {
+        currentPending.shift(); // 移除当前已完成的行动
+      }
 
       // 将新产生的行动加到末尾（如果有）
       const nextPending = [...currentPending, ...reward.actions];
@@ -616,7 +622,7 @@ Page({
     if (this.data.gameState && this.data.gameState.actionMode) {
       wx.showModal({
         title: '跳过行动',
-        content: '确定要跳过本次特殊行动吗？',
+        content: '确定要跳过吗？',
         success: async (res) => {
           if (res.confirm) {
             const updates = {};
