@@ -81,13 +81,28 @@ const SCORING_TYPES = {
   // 新增计分
   CONDITION_ON_SUBTYPE: 'CONDITION_ON_SUBTYPE', // 位于特定子类型上 (如: 夜莺->灌木)
   CONDITION_ON_TAG: 'CONDITION_ON_TAG', // 位于特定Tag上 (如: 欧洲林鼬->树或灌木)
-  PER_TAG_ON_MATCHING: 'PER_TAG_ON_MATCHING', // 匹配树木上的Tag (如: 西方狍)
+  GET_POINTS_BY_COLOR: 'GET_POINTS_BY_COLOR', // 同色卡*value (如: 西方狍)
 
   // 洞穴计分
   CAVE_COUNT: 'CAVE_COUNT', // 洞穴内卡牌数量 (如: 胡兀鹫)
 
   // 比较/多数派
   MAJORITY: 'MAJORITY', // 数量比别人多 (如: 椴树)
+
+  // 新增计分类型
+  PER_NAME: 'PER_NAME', // 每张某名称的卡牌 (如: 欧洲野兔、树蛙->蚊子)
+  PER_TAG_OR: 'PER_TAG_OR', // 每张带有多个Tag之一的卡牌 (如: 马鹿->树木或植物)
+  PER_NAME_OR: 'PER_NAME_OR', // 每张带有多个名称之一的卡牌 (如: 欧洲野牛->橡木或山毛榉)
+  CONDITION_ON_COUNT: 'CONDITION_ON_COUNT', // 达到数量条件获得分数 (如: 苔藓->至少10棵树)
+  CONDITION_HAS_NAME: 'CONDITION_HAS_NAME', // 拥有某名称卡牌获得分数 (如: 猞猁->至少1只西方狍)
+  CONDITION_WITH_BAT: 'CONDITION_WITH_BAT', // 同一树上有蝙蝠获得分数 (如: 欧洲睡鼠)
+  DIFFERENT_BATS: 'DIFFERENT_BATS', // 不同种类蝙蝠数量 (如: 至少3种不同蝙蝠得5分)
+  COLLECT_ALL_TREES: 'COLLECT_ALL_TREES', // 集齐8种不同的树木 (如: 野草莓、橡树)
+  PER_CARD_UNDER_TREE: 'PER_CARD_UNDER_TREE', // 每张树下的卡 (如: 红褐林蚁)
+  PER_FULL_TREE: 'PER_FULL_TREE', // 每棵完全占据的树 (如: 石貂)
+  PER_CARD_ON_TREE: 'PER_CARD_ON_TREE', // 连接到这棵树的每张卡 (如: 银杉)
+  POSITION_ON_SHRUB: 'POSITION_ON_SHRUB', // 位于灌木上 (如: 夜莺)
+  POSITION_ON_TREE_OR_SHRUB: 'POSITION_ON_TREE_OR_SHRUB', // 位于树或灌木上 (如: 欧洲林鼬)
 };
 
 module.exports = {

@@ -163,10 +163,11 @@
   padding: 20rpx;
   display: flex;
   flex-direction: column;
-  /* 改为纵向，或者直接占满 */
+  /* 禁止整体滚动 */
   align-items: stretch;
   gap: 20rpx;
-  overflow-y: auto;
+  flex: 1;
+  overflow: hidden;
 }
 
 /* 空地区域 */
@@ -191,20 +192,21 @@
   display: flex;
   flex-direction: row;
   align-items: flex-end;
-  padding: 65rpx 4rpx 12rpx 20rpx;
+  padding: 10rpx 4rpx 12rpx 0;
+  /* 移除左侧 padding，让间距统一 */
   gap: 16rpx;
   box-sizing: border-box;
   width: max-content;
 }
 
-.clearing-card {
-  animation: slideInUp 0.4s ease-out;
-  /* Entry Animation for Clearing */
-}
-
 .clearing-row::after {
   content: "";
   flex: 0 0 40rpx;
+}
+
+.clearing-card {
+  animation: slideInUp 0.4s ease-out;
+  /* Entry Animation for Clearing */
 }
 
 .clearing-card {
@@ -245,7 +247,8 @@
 
 /* 玩家森林区域 */
 .forest-area {
-  min-height: 420rpx;
+  flex: 1;
+  /* 占据剩余空间 */
   background: rgba(0, 0, 0, 0.15);
   border-radius: 12rpx;
   border: 2rpx dashed #5d6d7e;
@@ -265,7 +268,8 @@
 
 .forest-scroll {
   width: 100%;
-  height: 420rpx;
+  height: 100%;
+  /* 充满父容器 */
   white-space: nowrap;
   display: flex;
   flex-direction: row;

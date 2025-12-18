@@ -2,6 +2,7 @@ import Utils from "../../utils/utils";
 const RewardUtils = require("../../utils/reward.js");
 const RoundUtils = require("../../utils/round.js");
 const AnimationUtils = require("../../utils/animation.js");
+const DbHelper = require("../../utils/dbHelper.js");
 const app = getApp();
 const db = wx.cloud.database();
 
@@ -337,7 +338,10 @@ Page({
       wx.hideLoading();
       return;
     }
-    const primaryCard = hand[primaryCardIndex];
+
+    // 关键修复：使用 enrichCard 填充完整数据（包括 effectConfig, bonusConfig 等）
+    // 因为从数据库读取的卡牌数据已被 DbHelper 清理，缺少配置字段
+    const primaryCard = Utils.enrichCard(hand[primaryCardIndex]);
     const type = primaryCard.type;
     const isTree = typeof type === "string" && type.toLowerCase() === "tree";
 
@@ -463,6 +467,8 @@ Page({
         targetTree.slots[selectedSlot.side] = cardWithAnim;
       }
 
+      // 关键修复：将修改后的 targetTree 放回 forest 数组
+      forest[targetTreeIndex] = targetTree;
     }
 
     // --- 计算奖励 (Bonus + Effect + Triggers) ---
@@ -495,6 +501,8 @@ Page({
 
     console.log("[Play Debug] Reward Result:", reward); // 打印计算出的奖励结果
     console.log("[Play Debug] Context -> card:", primaryCard, " slot:", selectedSlot, " payments:", paymentCards);
+    console.log("[Play Debug] Effect Reward:", effectReward); // 新增：查看 effect 奖励
+    console.log("[Play Debug] Card effectConfig:", primaryCard.effectConfig); // 新增：查看卡牌配置
 
     // 提前准备牌库副本，用于可能的摸牌
     let newDeck = this.data.deck ? [...this.data.deck] : [];
@@ -571,10 +579,10 @@ Page({
     );
 
     const updates = {
-      [`gameState.playerStates.${openId}.hand`]: newHand,
-      [`gameState.playerStates.${openId}.forest`]: forest,
-      [`gameState.clearing`]: newClearing,
-      [`gameState.deck`]: newDeck, // 必须更新牌库，因为可能少了一张
+      [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
+      [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
+      [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
+      [`gameState.deck`]: DbHelper.cleanDeck(newDeck), // 必须更新牌库，因为可能少了一张
       [`gameState.activePlayer`]: nextPlayer,
       [`gameState.turnAction`]: nextTurnAction, // 使用动态计算的状态
       [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
@@ -630,8 +638,8 @@ Page({
     let nextTurnAction = { drawnCount: newDrawnCount };
 
     const updates = {
-      [`gameState.deck`]: newDeck,
-      [`gameState.playerStates.${openId}.hand`]: newHand,
+      [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
+      [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
       [`gameState.turnAction`]: nextTurnAction,
     };
 
@@ -660,7 +668,7 @@ Page({
       this.data;
     const db = wx.cloud.database();
 
-    // 检查回合锁定
+    // 检查回合锁定：如果已经摸牌，不能拿牌
     if (turnAction && turnAction.drawnCount > 0) {
       wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
       return;
@@ -671,13 +679,24 @@ Page({
       return;
     }
 
-
-
     const newClearing = [...clearing];
     const myState = playerStates[openId];
     const newHand = [...(myState.hand || [])];
 
     if (selectedClearingIdx >= newClearing.length) {
+      return;
+    }
+
+    // 检查手牌上限
+    if (newHand.length >= 10) {
+      wx.showToast({ title: "手牌已达上限（10张）", icon: "none" });
+      return;
+    }
+
+    // 检查本回合已拿牌数量
+    const currentTakenCount = (turnAction && turnAction.takenCount) || 0;
+    if (currentTakenCount >= 2) {
+      wx.showToast({ title: "本回合已拿2张牌", icon: "none" });
       return;
     }
 
@@ -687,16 +706,24 @@ Page({
 
     newHand.push(takenCard);
 
+    const newTakenCount = currentTakenCount + 1;
+    const isEndTurn = newTakenCount >= 2; // 拿满2张后结束回合
+
     const updates = {
-      [`gameState.clearing`]: newClearing,
-      [`gameState.playerStates.${openId}.hand`]: newHand,
-      [`gameState.activePlayer`]: RoundUtils.getNextPlayer(openId, this.data.players, false),
-      [`gameState.turnAction`]: { drawnCount: 0 },
-      [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
-      [`gameState.turnReason`]: "normal",
+      [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
+      [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
+      [`gameState.turnAction`]: { drawnCount: 0, takenCount: newTakenCount },
     };
 
-    this.submitGameUpdate(updates, null, "从空地拿了一张牌");
+    // 如果拿满2张，结束回合
+    if (isEndTurn) {
+      updates[`gameState.activePlayer`] = RoundUtils.getNextPlayer(openId, this.data.players, false);
+      updates[`gameState.turnCount`] = db.command.inc(1);
+      updates[`gameState.turnAction`] = { drawnCount: 0, takenCount: 0 }; // 重置
+      updates[`gameState.turnReason`] = "normal";
+    }
+
+    this.submitGameUpdate(updates, null, isEndTurn ? "拿了2张牌，回合结束" : `从空地拿了第${newTakenCount}张牌`);
   },
 
   // 10. 打出树苗
@@ -718,8 +745,8 @@ Page({
     }
 
     const updates = {
-      [`gameState.deck`]: newDeck,
-      [`gameState.playerStates.${openId}.forest`]: forest,
+      [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
+      [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
       [`gameState.activePlayer`]: RoundUtils.getNextPlayer(openId, this.data.players, false),
       [`gameState.turnAction`]: { drawnCount: 0 },
       [`gameState.turnCount`]: db.command.inc(1), // 回合数+1

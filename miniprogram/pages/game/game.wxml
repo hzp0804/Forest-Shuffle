@@ -46,10 +46,11 @@
                </button>
             </view>
          </view>
-         <scroll-view class="clearing-scroll" scroll-x enable-flex>
-            <view class="clearing-row" style="padding-top: 20rpx;">
-               <!-- P1: Deck (牌库 - 使用树苗图案) -->
-               <view class="hand-card" bindtap="onDrawCard" style="background:#8e44ad; color:white; border:none; margin-right: 16rpx; position: relative; overflow: hidden;">
+         <!-- 空地区域：牌库固定 + 空地卡片可滚动 -->
+         <view style="display:flex; gap:16rpx; padding-top:20rpx; align-items:flex-start;">
+            <!-- P1: 固定的牌库容器 (用于对齐) -->
+            <view style="display:flex; align-items:flex-end; padding: 10rpx 0 12rpx 0; flex-shrink:0;">
+               <view class="hand-card" bindtap="onDrawCard" style="background:#8e44ad; color:white; border:none; position: relative; overflow: hidden; margin:0;">
                   <block wx:if="{{deckVisual && deckVisual.bgImg}}">
                      <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}}; pointer-events: none;"></view>
                      <view class="card-body" style="background:transparent; color:white; z-index:1; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
@@ -59,6 +60,9 @@
                         <view style="font-size:24rpx; margin-top:10rpx; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
                            {{deck.length || 0}}
                         </view>
+                        <view style="font-size:20rpx; margin-top:8rpx; opacity:0.9; font-weight:bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
+                           回合 {{currentTurn || 1}}
+                        </view>
                      </view>
                   </block>
                   <block wx:else>
@@ -66,36 +70,44 @@
                         <view style="font-size:64rpx;">🌱</view>
                         <view style="font-size:32rpx; font-weight:bold;">牌库</view>
                         <view style="font-size:24rpx;">{{deck.length || 0}}</view>
+                        <view style="font-size:20rpx; margin-top:8rpx; opacity:0.9; font-weight:bold;">
+                           回合 {{currentTurn || 1}}
+                        </view>
                      </view>
                   </block>
                </view>
-               <!-- P2: Clearing Cards -->
-               <block wx:for="{{clearing}}" wx:key="uid">
-                  <view class="hand-card clearing-card {{index === selectedClearingIdx ? 'selected' : ''}}" bindtap="onClearingCardTap" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
-                     <block wx:if="{{item.bgImg}}">
-                        <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
-                     </block>
-                     <block wx:else>
-                        <view class="card-header" style="background-color: {{item.color || '#4caf50'}}">
-                           <text class="card-name">{{item.name}}</text>
-                           <view class="card-cost-badge" wx:if="{{item.cost !== undefined}}">
-                              {{item.cost}}
-                           </view>
-                        </view>
-                        <view class="card-body">
-                           <text class="card-type">{{item.type}}</text>
-                        </view>
-                     </block>
-                  </view>
-               </block>
-               <!-- P3: Limited Placeholders (Max 10 total clearing) -->
-               <block wx:for="{{[1,2,3,4,5,6,7,8,9,10]}}" wx:key="*this">
-                  <view class="hand-card placeholder" wx:if="{{index >= (clearing.length || 0)}}">
-                     <view class="card-body" style="background: transparent;">+</view>
-                  </view>
-               </block>
             </view>
-         </scroll-view>
+            <!-- P2: 可滚动的空地卡片区域 -->
+            <scroll-view class="clearing-scroll" scroll-x enable-flex style="flex:1;">
+               <view class="clearing-row">
+                  <!-- Clearing Cards -->
+                  <block wx:for="{{clearing}}" wx:key="uid">
+                     <view class="hand-card clearing-card {{index === selectedClearingIdx ? 'selected' : ''}}" bindtap="onClearingCardTap" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
+                        <block wx:if="{{item.bgImg}}">
+                           <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
+                        </block>
+                        <block wx:else>
+                           <view class="card-header" style="background-color: {{item.color || '#4caf50'}}">
+                              <text class="card-name">{{item.name}}</text>
+                              <view class="card-cost-badge" wx:if="{{item.cost !== undefined}}">
+                                 {{item.cost}}
+                              </view>
+                           </view>
+                           <view class="card-body">
+                              <text class="card-type">{{item.type}}</text>
+                           </view>
+                        </block>
+                     </view>
+                  </block>
+                  <!-- Limited Placeholders (Max 10 total clearing) -->
+                  <block wx:for="{{[1,2,3,4,5,6,7,8,9,10]}}" wx:key="*this">
+                     <view class="hand-card placeholder" wx:if="{{index >= (clearing.length || 0)}}">
+                        <view class="card-body" style="background: transparent;">+</view>
+                     </view>
+                  </block>
+               </view>
+            </scroll-view>
+         </view>
          <!-- Logs Modal Removed -->
          <!-- 操作按钮区 (Moved Here) -->
          <!-- 操作按钮区 (Placed immediately after Clearing) -->

@@ -8,7 +8,12 @@ const enrichCard = (card) => {
   if (!card) return null;
   const id = card.id || card.cardId;
   const info = getCardInfoById(id);
-  return { ...info, ...card, id };
+
+  // 关键修复：从 card 中排除 speciesDetails，使用 info 中完整的 speciesDetails
+  // 因为数据库中的 speciesDetails 不包含 scoreConfig 等字段
+  const { speciesDetails: _, ...cardWithoutSpeciesDetails } = card;
+
+  return { ...info, ...cardWithoutSpeciesDetails, id };
 };
 
 const enrichCardWithSpecies = (card, side) => {
@@ -35,6 +40,8 @@ const enrichCardWithSpecies = (card, side) => {
     // Fallback or if it's already a single value (shouldn't happen with current data structure but for safety)
     specificTreeSymbol = [enriched.tree_symbol];
   }
+
+
 
   // Merge species data if available
   // We prioritize card's own id/uid but overwrite name/tags/cost etc from species
@@ -260,15 +267,59 @@ const processGameData = (res, currentData) => {
   const displayForest = viewingPlayerState?.forest || [];
   const viewingPlayer = (res.data.players || []).find((p) => p && p.openId === viewingId);
 
+  // 优化：统计所有玩家森林的卡片总数，只在变化时才重新计算分数
+  const countForestCards = (forest) => {
+    if (!Array.isArray(forest)) return 0;
+    let count = 0;
+    forest.forEach(group => {
+      if (group.center) count++;
+      if (group.slots) {
+        ['top', 'bottom', 'left', 'right'].forEach(side => {
+          if (group.slots[side]) {
+            count++;
+            // 包括堆叠卡
+            if (group.slots[side].stackedCards) {
+              count += group.slots[side].stackedCards.length;
+            }
+          }
+        });
+      }
+    });
+    return count;
+  };
+
+  // 计算所有玩家的卡片总数（用于检测变化）
+  let totalCardCount = 0;
+  Object.values(playerStates || {}).forEach(pState => {
+    if (pState && pState.forest) {
+      totalCardCount += countForestCards(pState.forest);
+    }
+  });
+
+  // 检查卡片数量是否变化
+  const lastCardCount = currentData.lastCardCount || 0;
+  const cardsChanged = totalCardCount !== lastCardCount;
+
   const users = res.data.players || [];
   const enrichedPlayers = users
     .map((p) => {
       if (!p) return null;
       const pState = playerStates?.[p.openId];
-      const scoreData = calculateTotalScore(pState, p.openId, playerStates, p.nickName);
+
+      // 只在卡片数量变化时才重新计算分数
+      let score = 0;
+      if (cardsChanged) {
+        const scoreData = calculateTotalScore(pState, p.openId, playerStates, p.nickName);
+        score = scoreData.total || 0;
+      } else {
+        // 卡片数量未变，使用缓存的分数
+        const cached = require('./score').getCachedScore(p.openId);
+        score = cached?.total || 0;
+      }
+
       return {
         ...p,
-        score: scoreData.total || 0,
+        score: score,
         handCount: pState?.hand?.length || 0,
       };
     })
@@ -309,11 +360,14 @@ const processGameData = (res, currentData) => {
     logs,
     displayLogs,
     turnAction: gameState.turnAction || { drawnCount: 0 },
+    currentTurn: gameState.turnCount || 1, // 当前回合数
+    lastCardCount: totalCardCount, // 保存卡片总数，用于下次比较
   };
 };
 
 export default {
   getCardInfoById,
+  enrichCard,
   enrichHand,
   enrichForest,
   toggleHandSelection,

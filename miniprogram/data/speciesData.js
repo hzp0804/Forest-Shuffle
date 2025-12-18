@@ -130,7 +130,18 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "免费打出一张带有爪印符号的牌",
+    bonusConfig: {
+      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
+      tag: TAGS.PAW
+    },
     points: "根据你拥有的火蛾螈数量获得分数",
+    scoreConfig: {
+      type: SCORING_TYPES.SCALE_BY_COUNT,
+      target: SPECIES_NAMES.FIRE_SALAMANDER,
+      scale: {
+        1: 1, 2: 5, 3: 10, 4: 15, 5: 21, 6: 28, 7: 36, 8: 45, 9: 55, 10: 66
+      }
+    },
   },
 
   [SPECIES_NAMES.FIREFLIES]: {
@@ -142,6 +153,13 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "根据你拥有的萤火虫数量获得分数",
+    scoreConfig: {
+      type: SCORING_TYPES.SCALE_BY_COUNT,
+      target: SPECIES_NAMES.FIREFLIES,
+      scale: {
+        1: 1, 2: 3, 3: 6, 4: 10
+      }
+    },
   },
 
   [SPECIES_NAMES.FLY_AGARIC]: {
@@ -151,6 +169,11 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.V_CARD,
     effect: "每当你打出一张带有爪印符号的牌时，获得1张牌",
+    effectConfig: {
+      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
+      tag: TAGS.PAW,
+      reward: { type: 'DRAW', value: 1 }
+    },
     bonus: "",
     points: "",
   },
@@ -184,6 +207,12 @@ const SPECIES_DATA = {
     },
     bonus: "",
     points: "若没有其他森林的树木数量比你多，获得10分",
+    scoreConfig: {
+      type: SCORING_TYPES.MAJORITY,
+      target: CARD_TYPES.TREE,
+      value: 10,
+      valueOnFail: 0
+    },
   },
 
   [SPECIES_NAMES.HEDGEHOG]: {
@@ -199,6 +228,11 @@ const SPECIES_DATA = {
       count: 1
     },
     points: "每张带有蝴蝶符号的牌得2分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG,
+      tag: TAGS.BUTTERFLY,
+      value: 2
+    },
   },
 
   [SPECIES_NAMES.LARGE_TORTOISESHELL]: {
@@ -237,6 +271,12 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "如果你至少拥有10棵树，获得10分",
+    scoreConfig: {
+      type: SCORING_TYPES.CONDITION_ON_COUNT,
+      tag: CARD_TYPES.TREE,
+      minCount: 10,
+      value: 10
+    },
   },
 
   [SPECIES_NAMES.PARASOL_MUSHROOM]: {
@@ -246,6 +286,11 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.V_CARD,
     effect: "每当你打出一张位于树木下方的牌时，获得1张牌",
+    effectConfig: {
+      type: EFFECT_TYPES.TRIGGER_ON_PLAY_POSITION,
+      position: 'bottom',
+      reward: { type: 'DRAW', value: 1 }
+    },
     bonus: "",
     points: "",
   },
@@ -273,6 +318,12 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.V_CARD,
     effect: "每当你往树木顶端打一张牌将会奖励一张牌（仅树木，灌木不算）",
+    effectConfig: {
+      type: EFFECT_TYPES.TRIGGER_ON_PLAY_POSITION,
+      position: 'top',
+      tag: CARD_TYPES.TREE,
+      reward: { type: 'DRAW', value: 1 }
+    },
     bonus: "",
     points: "",
   },
@@ -321,6 +372,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "若位于橡树上，获得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.POSITION_ON_CARD,
+      target: SPECIES_NAMES.OAK,
+      value: 5
+    },
   },
 
   [SPECIES_NAMES.SILVER_WASHED_FRITILLARY]: {
@@ -332,6 +388,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "每张不同的蝴蝶牌得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      tag: TAGS.BUTTERFLY,
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.STAG_BEETLE]: {
@@ -402,6 +463,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "每有一只蚊子获得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_NAME,
+      target: SPECIES_NAMES.GNAT,
+      value: 5
+    },
   },
 
   [SPECIES_NAMES.WILD_STRAWBERRIES]: {
@@ -413,6 +479,10 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "如果你集齐所有8种不同的树木，获得10分",
+    scoreConfig: {
+      type: SCORING_TYPES.COLLECT_ALL_TREES,
+      value: 10
+    },
   },
 
   [SPECIES_NAMES.WOOD_ANT]: {
@@ -424,6 +494,10 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "每张树下的牌得2分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_CARD_UNDER_TREE,
+      value: 2
+    },
   },
 
   [SPECIES_NAMES.BARBASTELLE_BAT]: {
@@ -435,6 +509,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "如果你有至少3种不同的蝙蝠，获得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.DIFFERENT_BATS,
+      minCount: 3,
+      value: 5
+    },
   },
 
   BECHSTEINSBAT: {
@@ -446,6 +525,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "如果你有至少3种不同的蝙蝠，获得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.DIFFERENT_BATS,
+      minCount: 3,
+      value: 5
+    },
   },
 
   [SPECIES_NAMES.BEECH_MARTEN]: {
@@ -461,6 +545,10 @@ const SPECIES_DATA = {
     },
     bonus: "",
     points: "每棵完全被占据的树木得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_FULL_TREE,
+      value: 5
+    },
   },
 
   [SPECIES_NAMES.BROWN_BEAR]: {
@@ -470,7 +558,14 @@ const SPECIES_DATA = {
     cost: 3,
     type: CARD_TYPES.H_CARD,
     effect: "将空地上的所有卡牌放入你的洞穴",
+    effectConfig: {
+      type: EFFECT_TYPES.ACTION_BEAR
+    },
     bonus: "获得1张牌并获得新的回合",
+    bonusConfig: {
+      type: BONUS_TYPES.DRAW_AND_TURN,
+      count: 1
+    },
     points: "",
   },
 
@@ -483,6 +578,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "如果你有至少3种不同的蝙蝠，获得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.DIFFERENT_BATS,
+      minCount: 3,
+      value: 5
+    },
   },
 
   [SPECIES_NAMES.EUROPEAN_BADGER]: {
@@ -493,6 +593,10 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "",
     bonus: "免费打出一张带有爪印符号的牌",
+    bonusConfig: {
+      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
+      tag: TAGS.PAW
+    },
     points: "获得2分",
     scoreConfig: {
       type: SCORING_TYPES.FLAT,
@@ -509,6 +613,10 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "如果该树上也有一只蝙蝠，获得15分",
+    scoreConfig: {
+      type: SCORING_TYPES.CONDITION_WITH_BAT,
+      value: 15
+    },
   },
 
   [SPECIES_NAMES.EUROPEAN_HARE]: {
@@ -518,8 +626,17 @@ const SPECIES_DATA = {
     cost: 0,
     type: CARD_TYPES.H_CARD,
     effect: "该槽位可以容纳任意数量的欧洲野兔",
+    effectConfig: {
+      type: EFFECT_TYPES.CAPACITY_UNLIMITED,
+      target: SPECIES_NAMES.EUROPEAN_HARE
+    },
     bonus: "",
     points: "每有一只欧洲野兔获得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_NAME,
+      target: SPECIES_NAMES.EUROPEAN_HARE,
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.FALLOW_DEER]: {
@@ -535,6 +652,11 @@ const SPECIES_DATA = {
       count: 2
     },
     points: "每张带有偶蹄动物符号的牌得3分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG,
+      tag: TAGS.CLOVEN_HOOFED_ANIMAL,
+      value: 3
+    },
   },
 
   [SPECIES_NAMES.GNAT]: {
@@ -544,6 +666,9 @@ const SPECIES_DATA = {
     cost: 0,
     type: CARD_TYPES.H_CARD,
     effect: "免费打出任意数量的蝙蝠牌",
+    effectConfig: {
+      type: EFFECT_TYPES.FREE_PLAY_BAT
+    },
     bonus: "",
     points: "每张带有蝙蝠符号的牌得1分",
     scoreConfig: {
@@ -562,6 +687,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "如果你有至少3种不同的蝙蝠，获得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.DIFFERENT_BATS,
+      minCount: 3,
+      value: 5
+    },
   },
 
   [SPECIES_NAMES.LYNX]: {
@@ -573,6 +703,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "如果你至少有1只西方狍，获得10分",
+    scoreConfig: {
+      type: SCORING_TYPES.CONDITION_HAS_NAME,
+      target: SPECIES_NAMES.ROE_DEER,
+      value: 10
+    },
   },
 
   [SPECIES_NAMES.RACCOON]: {
@@ -582,6 +717,9 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.H_CARD,
     effect: "将手牌中任意数量的卡牌放入你的洞穴；从牌库中抽出相同数量的牌",
+    effectConfig: {
+      type: EFFECT_TYPES.ACTION_RACCOON
+    },
     bonus: "",
     points: "",
   },
@@ -594,7 +732,16 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "",
     bonus: "免费打出一张带有鹿符号的牌",
+    bonusConfig: {
+      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
+      tag: TAGS.DEER
+    },
     points: "每张带有树木或植物符号的牌得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG_OR,
+      tags: [CARD_TYPES.TREE, TAGS.PLANT],
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.RED_FOX]: {
@@ -604,8 +751,19 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.H_CARD,
     effect: "每有一只欧洲野兔获得1张牌",
+    effectConfig: {
+      type: EFFECT_TYPES.DRAW_PER_EXISTING,
+      target: SPECIES_NAMES.EUROPEAN_HARE,
+      perCount: 1,
+      value: 1
+    },
     bonus: "",
     points: "每有一只欧洲野兔获得2分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_NAME,
+      target: SPECIES_NAMES.EUROPEAN_HARE,
+      value: 2
+    },
   },
 
   [SPECIES_NAMES.ROE_DEER]: {
@@ -622,7 +780,7 @@ const SPECIES_DATA = {
     },
     points: "每张带有匹配树木符号的牌得3分",
     scoreConfig: {
-      type: SCORING_TYPES.PER_TAG_ON_MATCHING,
+      type: SCORING_TYPES.GET_POINTS_BY_COLOR,
       value: 3
     },
   },
@@ -649,6 +807,9 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.H_CARD,
     effect: "这只蜜蜂占据的树木被算作同类型的一棵额外树木",
+    effectConfig: {
+      type: EFFECT_TYPES.TREE_MULTIPLIER
+    },
     bonus: "",
     points: "",
   },
@@ -662,6 +823,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "如果你至少有1只小野猪，获得10分",
+    scoreConfig: {
+      type: SCORING_TYPES.CONDITION_HAS_NAME,
+      target: SPECIES_NAMES.SQUEAKER,
+      value: 10
+    },
   },
 
   [SPECIES_NAMES.WOLF]: {
@@ -671,11 +837,22 @@ const SPECIES_DATA = {
     cost: 3,
     type: CARD_TYPES.H_CARD,
     effect: "每有一只鹿获得1张牌",
+    effectConfig: {
+      type: EFFECT_TYPES.DRAW_PER_EXISTING,
+      tag: TAGS.DEER,
+      perCount: 1,
+      value: 1
+    },
     bonus: "获得新的回合",
     bonusConfig: {
       type: BONUS_TYPES.EXTRA_TURN
     },
     points: "每张带有鹿符号的牌得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG,
+      tag: TAGS.DEER,
+      value: 5
+    },
   },
 
   [SPECIES_NAMES.LINDEN]: {
@@ -707,6 +884,10 @@ const SPECIES_DATA = {
       type: BONUS_TYPES.EXTRA_TURN
     },
     points: "如果你集齐所有8种不同的树木，获得10分",
+    scoreConfig: {
+      type: SCORING_TYPES.COLLECT_ALL_TREES,
+      value: 10
+    },
   },
 
   [SPECIES_NAMES.SILVER_FIR]: {
@@ -717,7 +898,15 @@ const SPECIES_DATA = {
     type: CARD_TYPES.TREE,
     effect: "",
     bonus: "免费打出一张带有爪印符号的牌",
+    bonusConfig: {
+      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
+      tag: TAGS.PAW
+    },
     points: "连接到这棵银冷杉的每张牌得2分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_CARD_ON_TREE,
+      value: 2
+    },
   },
 
   [SPECIES_NAMES.BIRCH]: {
@@ -752,6 +941,12 @@ const SPECIES_DATA = {
     },
     bonus: "",
     points: "如果你至少有4棵山毛榉，获得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.CONDITION_ON_COUNT,
+      target: SPECIES_NAMES.BEECH,
+      minCount: 4,
+      value: 5
+    },
   },
 
   [SPECIES_NAMES.SYCAMORE]: {
@@ -863,6 +1058,11 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.V_CARD,
     effect: "每当你打出一张带有高山符号的牌时，获得1张牌",
+    effectConfig: {
+      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
+      tag: TAGS.MOUNTAIN,
+      reward: { type: 'DRAW', value: 1 }
+    },
     bonus: "",
     points: "",
   },
@@ -876,6 +1076,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "每张不同的蝴蝶牌得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      tag: TAGS.BUTTERFLY,
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.GENTIANA]: {
@@ -885,8 +1090,17 @@ const SPECIES_DATA = {
     cost: 0,
     type: CARD_TYPES.V_CARD,
     effect: "免费打出一张带有蝴蝶符号的牌",
+    effectConfig: {
+      type: EFFECT_TYPES.FREE_PLAY_SPECIFIC,
+      tag: TAGS.BUTTERFLY
+    },
     bonus: "",
     points: "每张带有蝴蝶符号的牌得3分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG,
+      tag: TAGS.BUTTERFLY,
+      value: 3
+    },
   },
 
   [SPECIES_NAMES.VACCINIUM_MYRTILLUS]: {
@@ -896,8 +1110,17 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.V_CARD,
     effect: "免费打出一张带有两栖动物符号的牌",
+    effectConfig: {
+      type: EFFECT_TYPES.FREE_PLAY_SPECIFIC,
+      tag: TAGS.AMPHIBIAN
+    },
     bonus: "",
     points: "每张不同的鸟类牌得2分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      tag: TAGS.BIRD,
+      value: 2
+    },
   },
 
   [SPECIES_NAMES.ICHTHYOSAURA_ALPESTRIS]: {
@@ -908,6 +1131,10 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "免费打出一张带有高山符号的牌和一张带有昆虫符号的牌",
+    bonusConfig: {
+      type: BONUS_TYPES.PLAY_FREE_MULTIPLE,
+      tags: [TAGS.MOUNTAIN, TAGS.INSECT]
+    },
     points: "每张带有昆虫符号的牌得2分",
     scoreConfig: {
       type: SCORING_TYPES.PER_TAG,
@@ -925,6 +1152,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "每张带有爪印或两栖动物符号的牌得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG_OR,
+      tags: [TAGS.PAW, TAGS.AMPHIBIAN],
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.CORVUS_CORAX]: {
@@ -978,6 +1210,10 @@ const SPECIES_DATA = {
     effect: "将空地上的2张牌放入你的洞穴",
     bonus: "",
     points: "你洞穴里的每张牌得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.CAVE_COUNT,
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.CAPRA_IBEX]: {
@@ -1005,8 +1241,17 @@ const SPECIES_DATA = {
     cost: 0,
     type: CARD_TYPES.H_CARD,
     effect: "被视为一只欧洲野兔",
+    effectConfig: {
+      type: EFFECT_TYPES.TREATED_AS,
+      target: SPECIES_NAMES.EUROPEAN_HARE
+    },
     bonus: "",
     points: "每有一只欧洲野兔获得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_NAME,
+      target: SPECIES_NAMES.EUROPEAN_HARE,
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.MARMOTA_MARMOTA]: {
@@ -1016,8 +1261,17 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.H_CARD,
     effect: "该槽位可以容纳任意数量的高山旱獭",
+    effectConfig: {
+      type: EFFECT_TYPES.CAPACITY_UNLIMITED,
+      target: SPECIES_NAMES.MARMOTA_MARMOTA
+    },
     bonus: "",
     points: "每有一只高山旱獭获得2分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_NAME,
+      target: SPECIES_NAMES.MARMOTA_MARMOTA,
+      value: 2
+    },
   },
 
   [SPECIES_NAMES.RUPICAPRA_RUPICAPRA]: {
@@ -1029,6 +1283,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "每张不同的植物牌得3分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      tag: TAGS.PLANT,
+      value: 3
+    },
   },
 
   [SPECIES_NAMES.TETRAO_UROGALLUS]: {
@@ -1038,8 +1297,17 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.H_CARD,
     effect: "免费打出一张带有植物符号的牌",
+    effectConfig: {
+      type: EFFECT_TYPES.FREE_PLAY_SPECIFIC,
+      tag: TAGS.PLANT
+    },
     bonus: "",
     points: "每张带有植物符号的牌得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG,
+      tag: TAGS.PLANT,
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.SAMBUCUS]: {
@@ -1049,7 +1317,16 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.TREE,
     effect: "每当你打出一张带有植物符号的牌时，获得1张牌",
+    effectConfig: {
+      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
+      tag: TAGS.PLANT,
+      reward: { type: 'DRAW', value: 1 }
+    },
     bonus: "免费打出一张带有植物符号的牌",
+    bonusConfig: {
+      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
+      tag: TAGS.PLANT
+    },
     points: "",
   },
 
@@ -1060,7 +1337,16 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.TREE,
     effect: "每当你打出一张带有蝙蝠符号的牌时，获得1张牌",
+    effectConfig: {
+      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
+      tag: TAGS.BAT,
+      reward: { type: 'DRAW', value: 1 }
+    },
     bonus: "免费打出一张带有蝙蝠符号的牌",
+    bonusConfig: {
+      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
+      tag: TAGS.BAT
+    },
     points: "",
   },
 
@@ -1071,7 +1357,16 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.TREE,
     effect: "每当你打出一张带有蝴蝶符号的牌时，获得1张牌",
+    effectConfig: {
+      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
+      tag: TAGS.BUTTERFLY,
+      reward: { type: 'DRAW', value: 1 }
+    },
     bonus: "免费打出一张带有蝴蝶符号的牌",
+    bonusConfig: {
+      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
+      tag: TAGS.BUTTERFLY
+    },
     points: "",
   },
 
@@ -1082,8 +1377,20 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.H_CARD,
     effect: "将空地上所有的牌从游戏中移除",
+    effectConfig: {
+      type: EFFECT_TYPES.ACTION_REMOVE_CLEARING
+    },
     bonus: "免费打出一只小野猪",
+    bonusConfig: {
+      type: BONUS_TYPES.PLAY_FREE_SPECIFIC_NAME,
+      target: SPECIES_NAMES.SQUEAKER
+    },
     points: "每有一只小野猪获得10分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_NAME,
+      target: SPECIES_NAMES.SQUEAKER,
+      value: 10
+    },
   },
 
   [SPECIES_NAMES.BEEHIVE]: {
@@ -1093,8 +1400,17 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.H_CARD,
     effect: "将所有带有植物、灌木或树木符号的卡片放进你的洞穴",
+    effectConfig: {
+      type: EFFECT_TYPES.ACTION_CLEARING_TO_CAVE,
+      tags: [TAGS.PLANT, TAGS.SHRUB, CARD_TYPES.TREE]
+    },
     bonus: "",
     points: "每张带有植物符号的卡片得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG,
+      tag: TAGS.PLANT,
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.EUROPEAN_BISON]: {
@@ -1109,6 +1425,11 @@ const SPECIES_DATA = {
     },
     bonus: "",
     points: "每张带有橡木或山毛榉标志的卡片可获得2分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_NAME_OR,
+      targets: [SPECIES_NAMES.OAK, SPECIES_NAMES.BEECH],
+      value: 2
+    },
   },
 
   [SPECIES_NAMES.EUROPEAN_WILDCAT]: {
@@ -1118,8 +1439,16 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.H_CARD,
     effect: "从空地中拿一张牌",
+    effectConfig: {
+      type: EFFECT_TYPES.ACTION_PICK_FROM_CLEARING
+    },
     bonus: "",
     points: "每张带有林地边缘符号的牌得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG,
+      tag: TAGS.EDGE,
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.COMMON_PIPISTRELLE]: {
@@ -1131,6 +1460,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "如果你有至少3种不同的蝙蝠，获得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.DIFFERENT_BATS,
+      minCount: 3,
+      value: 5
+    },
   },
 
   SQUEAKEREDGE: {
@@ -1155,7 +1489,14 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.H_CARD,
     effect: "免费打出任意数量的蝙蝠牌",
+    effectConfig: {
+      type: EFFECT_TYPES.FREE_PLAY_BAT
+    },
     bonus: "把所有有蝙蝠符号的牌从空地上拿到手里",
+    bonusConfig: {
+      type: BONUS_TYPES.PICK_FROM_CLEARING_TO_HAND,
+      tag: TAGS.BAT
+    },
     points: "每张带有蝙蝠符号的牌得1分",
     scoreConfig: {
       type: SCORING_TYPES.PER_TAG,
@@ -1176,6 +1517,10 @@ const SPECIES_DATA = {
       type: BONUS_TYPES.EXTRA_TURN
     },
     points: "若位于树或灌木上，获得10分",
+    scoreConfig: {
+      type: SCORING_TYPES.POSITION_ON_TREE_OR_SHRUB,
+      value: 10
+    },
   },
 
   [SPECIES_NAMES.MAP_BUTTERFLY]: {
@@ -1187,6 +1532,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "每张不同的蝴蝶牌得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      tag: TAGS.BUTTERFLY,
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.DIGITALIS]: {
@@ -1198,6 +1548,11 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "",
     points: "每张不同的植物牌得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      tag: TAGS.PLANT,
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.URTICA]: {
@@ -1207,8 +1562,17 @@ const SPECIES_DATA = {
     cost: 0,
     type: CARD_TYPES.V_CARD,
     effect: "任何数量的蝴蝶都可以在这棵树或灌木上共享一个槽",
+    effectConfig: {
+      type: EFFECT_TYPES.CAPACITY_SHARE_SLOT,
+      tag: TAGS.BUTTERFLY
+    },
     bonus: "",
     points: "每张带有蝴蝶符号的牌得2分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG,
+      tag: TAGS.BUTTERFLY,
+      value: 2
+    },
   },
 
   [SPECIES_NAMES.GREAT_GREEN_BUSH_CRICKET]: {
@@ -1218,8 +1582,17 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.V_CARD,
     effect: "免费打出一张带有鸟符号的牌",
+    effectConfig: {
+      type: EFFECT_TYPES.FREE_PLAY_SPECIFIC,
+      tag: TAGS.BIRD
+    },
     bonus: "",
     points: "每张有昆虫符号的牌得1分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG,
+      tag: TAGS.INSECT,
+      value: 1
+    },
   },
 
   [SPECIES_NAMES.EUROPEAN_WATER_VOLE]: {
@@ -1229,7 +1602,13 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.V_CARD,
     effect: "立即打出任意数量的树苗",
+    effectConfig: {
+      type: EFFECT_TYPES.ACTION_PLAY_SAPLINGS
+    },
     bonus: "获得新的回合",
+    bonusConfig: {
+      type: BONUS_TYPES.EXTRA_TURN
+    },
     points: "",
   },
 
@@ -1240,8 +1619,19 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.V_CARD,
     effect: "从空地中拿一张牌",
+    effectConfig: {
+      type: EFFECT_TYPES.ACTION_PICK_FROM_CLEARING
+    },
     bonus: "从空地上放两张牌到你的洞穴里",
+    bonusConfig: {
+      type: BONUS_TYPES.CLEARING_TO_CAVE,
+      count: 2
+    },
     points: "获得3分",
+    scoreConfig: {
+      type: SCORING_TYPES.FLAT,
+      value: 3
+    },
   },
 
   [SPECIES_NAMES.COMMON_NIGHTINGALE]: {
@@ -1252,7 +1642,14 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "获得新的回合",
+    bonusConfig: {
+      type: BONUS_TYPES.EXTRA_TURN
+    },
     points: "若位于灌木丛上，获得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.POSITION_ON_SHRUB,
+      value: 5
+    },
   },
 
   [SPECIES_NAMES.BARN_OWL]: {
@@ -1262,8 +1659,17 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.V_CARD,
     effect: "如果你的森林里至少有一只蝙蝠，获得新的回合",
+    effectConfig: {
+      type: EFFECT_TYPES.CONDITION_EXTRATURN,
+      tag: TAGS.BAT
+    },
     bonus: "",
     points: "每张带有蝙蝠符号的牌获得3分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_TAG,
+      tag: TAGS.BAT,
+      value: 3
+    },
   },
 }
 module.exports = { SPECIES_DATA };

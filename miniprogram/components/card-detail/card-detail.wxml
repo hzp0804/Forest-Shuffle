@@ -11,6 +11,10 @@
       </view>
       <!-- Single Species Title -->
       <view class="card-title" wx:if="{{tabs.length === 1}}">{{tabs[0].name}}</view>
+      <!-- Card ID (显示在标题下方) -->
+      <view class="card-id" wx:if="{{card.id}}" style="text-align:center; font-size:24rpx; color:#999; margin-top:8rpx;">
+        ID: {{card.id}}
+      </view>
       <!-- Multi-Species Tabs -->
       <view class="tabs-header" wx:if="{{tabs.length > 1}}">
         <view class="tab-item {{index === activeTab ? 'active' : ''}}" wx:for="{{tabs}}" wx:key="name" data-index="{{index}}" catchtap="onTabClick">

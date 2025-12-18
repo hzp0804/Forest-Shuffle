@@ -25,10 +25,14 @@ const findSpeciesInfo = (name) => {
   if (!name) return null;
   buildCaches();
 
-  return SPECIES_DATA[name] ||
+  const result = SPECIES_DATA[name] ||
     trimmedKeyCache.get(name.replace(/\s+/g, '')) ||
     nameToSpeciesCache.get(name) ||
     null;
+
+
+
+  return result;
 };
 
 const getCardVisual = (card) => {

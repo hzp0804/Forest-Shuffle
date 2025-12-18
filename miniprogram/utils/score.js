@@ -113,8 +113,12 @@ function calculateTotalScore(playerState, openId, allPlayerStates, nickName) {
     });
   }
 
-  console.log(`[得分清单 ${nickName || openId}]:`, structuredLog);
-  console.log(`[共计得分 ${nickName || openId}]:`, total);
+  // 优化：只在分数变化时才打印日志（通过检查缓存）
+  // 如果是从缓存返回的，说明分数没变，不需要打印
+  if (!cached || cached.hash !== currentHash) {
+    console.log(`[得分清单 ${nickName || openId}]:`, structuredLog);
+    console.log(`[共计得分 ${nickName || openId}]:`, total);
+  }
 
   // 2. 遍历 Cave 计算得分 (如果 Cave 里的卡有分的话，通常洞穴卡只有 effect)
   // 胡兀鹫是根据洞穴数量得分，已经在 CAVE_COUNT 处理了。
@@ -197,6 +201,25 @@ function calculateCardScore(card, context, allPlayerStates, myOpenId, stats) {
   // 确保 stats 存在 (降级处理)
   const currentStats = stats || precalculateStats(context);
   const { tagCounts, colorCounts, nameCounts } = currentStats;
+
+  // 提取所有卡牌（用于 SCALE_BY_COUNT 等需要遍历所有卡的计分类型）
+  const allCards = [];
+  if (context && context.forest) {
+    context.forest.forEach(group => {
+      if (group.center) allCards.push(group.center);
+      if (group.slots) {
+        Object.values(group.slots).forEach(slotCard => {
+          if (slotCard) {
+            allCards.push(slotCard);
+            // 包括堆叠卡
+            if (slotCard.stackedCards && Array.isArray(slotCard.stackedCards)) {
+              slotCard.stackedCards.forEach(sc => allCards.push(sc));
+            }
+          }
+        });
+      }
+    });
+  }
 
   switch (config.type) {
     // 统计拥有指定 Tag 的卡牌数量
@@ -443,28 +466,16 @@ function calculateCardScore(card, context, allPlayerStates, myOpenId, stats) {
       }
       break;
 
-    // 匹配树木上的Tag (如: 西方狍)
-    // 假设逻辑: 卡牌自身若匹配其所在的树，则得分
-    // 匹配树木上的Tag (如: 西方狍 - 统计全森林中所有匹配树木符号的卡牌)
-    // 匹配树木上的Tag (如: 西方狍 - 统计全森林中所有与本卡牌此面颜色/树木符号相同的卡牌，包括树木本身)
-    // 匹配树木上的Tag (如: 西方狍 - 统计全森林中所有与本卡牌此面颜色/树木符号相同的卡牌，包括树木本身)
-    case SCORING_TYPES.PER_TAG_ON_MATCHING:
+    // 根据同色卡牌数量得分 (如: 西方狍)
+    // 1、获取当前卡牌的颜色（tree_symbol）
+    // 2、统计全森林中同色卡牌数量
+    // 3、乘以 config.value
+    case SCORING_TYPES.GET_POINTS_BY_COLOR:
       let matchCount = 0;
-      const mySymbols = card.tree_symbol || [];
-      if (mySymbols.length > 0) {
-        // 直接查表累加
-        mySymbols.forEach(s => {
-          matchCount += (colorCounts[s] || 0);
-        });
-
-        // [Debug] 排查西方狍
-        if (card.name && card.name.includes('西方狍')) {
-          console.warn(`[Roe Deer Debug] Player:${nickName || openId}, ID:${card.id || card.uid}, Symbols:${JSON.stringify(mySymbols)}, ColorCounts:`, colorCounts, `Match:${matchCount}`);
-        }
+      const mySymbol = card.tree_symbol?.[0];
+      if (mySymbol) {
+        matchCount = colorCounts[mySymbol] || 0;
       }
-      // 注意：如果是同一张卡有多个匹配符号（非常少见），这里会叠加。
-      // 对于西方狍，mySymbols通常只有1个，所以就是 counts[color]。
-
       score = matchCount * (config.value || 0);
       break;
 
@@ -506,6 +517,195 @@ function calculateCardScore(card, context, allPlayerStates, myOpenId, stats) {
           score = config.valueOnFail || 0;
         }
       } else {
+        score = config.value || 0;
+      }
+      break;
+
+    // 每张某名称的卡牌 (如: 欧洲野兔、树蛙->蚊子)
+    case SCORING_TYPES.PER_NAME:
+      const nameCount = nameCounts[config.target] || 0;
+      score = nameCount * (config.value || 0);
+      break;
+
+    // 每张带有多个Tag之一的卡牌 (如: 马鹿->树木或植物, 金雕->爪印或两栖)
+    case SCORING_TYPES.PER_TAG_OR:
+      let orTagCount = 0;
+      if (config.tags && Array.isArray(config.tags)) {
+        config.tags.forEach(tag => {
+          orTagCount += (tagCounts[tag] || 0);
+        });
+      }
+      score = orTagCount * (config.value || 0);
+      break;
+
+    // 每张带有多个名称之一的卡牌 (如: 欧洲野牛->橡木或山毛榉)
+    case SCORING_TYPES.PER_NAME_OR:
+      let orNameCount = 0;
+      if (config.targets && Array.isArray(config.targets)) {
+        config.targets.forEach(targetName => {
+          orNameCount += (nameCounts[targetName] || 0);
+        });
+      }
+      score = orNameCount * (config.value || 0);
+      break;
+
+    // 达到数量条件获得分数 (如: 苔藓->至少10棵树, 山毛榉->至少4棵山毛榉)
+    case SCORING_TYPES.CONDITION_ON_COUNT:
+      let conditionCount = 0;
+      if (config.target) {
+        conditionCount = nameCounts[config.target] || 0;
+      } else if (config.tag) {
+        conditionCount = tagCounts[config.tag] || 0;
+      }
+      if (conditionCount >= (config.minCount || 0)) {
+        score = config.value || 0;
+      }
+      break;
+
+    // 拥有某名称卡牌获得分数 (如: 猞猁->至少1只西方狍, 野猪->至少1只小野猪)
+    case SCORING_TYPES.CONDITION_HAS_NAME:
+      const hasNameCount = nameCounts[config.target] || 0;
+      if (hasNameCount >= 1) {
+        score = config.value || 0;
+      }
+      break;
+
+    // 同一树上有蝙蝠获得分数 (如: 欧洲睡鼠)
+    case SCORING_TYPES.CONDITION_WITH_BAT:
+      let foundBatOnSameTree = false;
+      if (context.forest) {
+        for (const group of context.forest) {
+          // 检查这张卡是否在这个group的slot中
+          let cardInThisGroup = false;
+          if (group.slots) {
+            Object.values(group.slots).forEach(s => {
+              if (s && (s.uid === card.uid || (s.stackedCards && s.stackedCards.some(sc => sc.uid === card.uid)))) {
+                cardInThisGroup = true;
+              }
+            });
+          }
+
+          if (cardInThisGroup) {
+            // 检查同一个group的其他slot是否有蝙蝠
+            if (group.slots) {
+              Object.values(group.slots).forEach(s => {
+                if (s && s.tags && s.tags.includes('蝙蝠')) {
+                  foundBatOnSameTree = true;
+                }
+              });
+            }
+            break;
+          }
+        }
+      }
+      if (foundBatOnSameTree) {
+        score = config.value || 0;
+      }
+      break;
+
+    // 不同种类蝙蝠数量 (如: 所有蝙蝠卡->至少3种不同蝙蝠得5分)
+    case SCORING_TYPES.DIFFERENT_BATS:
+      const uniqueBats = new Set();
+      allCards.forEach(c => {
+        if (c.tags && c.tags.includes('蝙蝠')) {
+          uniqueBats.add(c.name);
+        }
+      });
+      if (uniqueBats.size >= (config.minCount || 3)) {
+        score = config.value || 0;
+      }
+      break;
+
+    // 集齐8种不同的树木 (如: 野草莓、橡树)
+    case SCORING_TYPES.COLLECT_ALL_TREES:
+      const uniqueTrees = new Set();
+      allCards.forEach(c => {
+        if (c.tags && c.tags.includes('树')) {
+          uniqueTrees.add(c.name);
+        }
+      });
+      if (uniqueTrees.size >= 8) {
+        score = config.value || 0;
+      }
+      break;
+
+    // 每张树下的卡 (如: 红褐林蚁)
+    case SCORING_TYPES.PER_CARD_UNDER_TREE:
+      let underTreeCount = 0;
+      if (context.forest) {
+        context.forest.forEach(g => {
+          if (g.slots && g.slots.bottom) {
+            underTreeCount += (1 + (g.slots.bottom.stackedCards ? g.slots.bottom.stackedCards.length : 0));
+          }
+        });
+      }
+      score = underTreeCount * (config.value || 0);
+      break;
+
+    // 每棵完全占据的树 (如: 石貂)
+    case SCORING_TYPES.PER_FULL_TREE:
+      let fullCount = 0;
+      if (context.forest) {
+        context.forest.forEach(g => {
+          if (g.slots) {
+            if (g.slots.top && g.slots.bottom && g.slots.left && g.slots.right) {
+              fullCount++;
+            }
+          }
+        });
+      }
+      score = fullCount * (config.value || 0);
+      break;
+
+    // 连接到这棵树的每张卡 (如: 银杉)
+    case SCORING_TYPES.PER_CARD_ON_TREE:
+      const cardGroup = context.forest ? context.forest.find(g => g.center && g.center.uid === card.uid) : null;
+      if (cardGroup && cardGroup.slots) {
+        let attachedCount = 0;
+        Object.values(cardGroup.slots).forEach(s => {
+          if (s) {
+            attachedCount += (1 + (s.stackedCards ? s.stackedCards.length : 0));
+          }
+        });
+        score = attachedCount * (config.value || 0);
+      }
+      break;
+
+    // 位于灌木上 (如: 夜莺)
+    case SCORING_TYPES.POSITION_ON_SHRUB:
+      let parentShrub = null;
+      if (context.forest) {
+        for (const group of context.forest) {
+          if (group.slots) {
+            const slots = Object.values(group.slots);
+            if (slots.some(s => s && s.uid === card.uid)) {
+              parentShrub = group.center;
+              break;
+            }
+          }
+        }
+      }
+      if (parentShrub && parentShrub.tags && parentShrub.tags.includes('灌木')) {
+        score = config.value || 0;
+      }
+      break;
+
+    // 位于树或灌木上 (如: 欧洲林鼬)
+    case SCORING_TYPES.POSITION_ON_TREE_OR_SHRUB:
+      let parentTreeOrShrub = null;
+      if (context.forest) {
+        for (const group of context.forest) {
+          if (group.slots) {
+            const slots = Object.values(group.slots);
+            if (slots.some(s => s && s.uid === card.uid)) {
+              parentTreeOrShrub = group.center;
+              break;
+            }
+          }
+        }
+      }
+      if (parentTreeOrShrub && parentTreeOrShrub.tags &&
+        (parentTreeOrShrub.tags.includes('树') || parentTreeOrShrub.tags.includes('灌木'))) {
         score = config.value || 0;
       }
       break;
@@ -616,6 +816,11 @@ function precalculateStats(context) {
     // 3. Count Names
     if (card.name) {
       nameCounts[card.name] = (nameCounts[card.name] || 0) + 1;
+
+      // 处理 TREATED_AS 效果 (如: 雪兔被视为欧洲野兔)
+      if (card.effectConfig && card.effectConfig.type === 'TREATED_AS' && card.effectConfig.target) {
+        nameCounts[card.effectConfig.target] = (nameCounts[card.effectConfig.target] || 0) + 1;
+      }
     }
   };
 
@@ -634,8 +839,19 @@ function precalculateStats(context) {
   return { tagCounts, colorCounts, nameCounts };
 }
 
+/**
+ * 获取缓存的分数（用于优化性能）
+ * @param {string} openId - 玩家 openId
+ * @returns {Object|null} 缓存的分数数据，如果没有缓存则返回 null
+ */
+function getCachedScore(openId) {
+  const cached = scoreCache.get(openId);
+  return cached ? cached.result : null;
+}
+
 module.exports = {
   calculateTotalScore,
-  calculateCardScore
+  calculateCardScore,
+  getCachedScore
 };
 

@@ -73,7 +73,7 @@ $f([
 
 - 计分时不关心卡牌原本是长什么样的（双面），只关心它**当前生效**的属性。
 
-### 关键案例：颜色/符号匹配 (SCORING_TYPES.PER_TAG_ON_MATCHING)
+### 关键案例：颜色/符号匹配 (SCORING_TYPES.GET_POINTS_BY_COLOR)
 
 - **典型代表**：西方狍 (Western Roe Deer)。
 - **规则**：每有一张带有匹配树木符号（颜色）的牌得 3 分。

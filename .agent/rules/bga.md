@@ -12,3 +12,6 @@ trigger: always_on
 
 - **卡片定位**  
   使用现成的 wxss 类名，在 app.wxss 里面，不允许使用 js 定位，
+
+- **阅读 PROJECT_LOGIC**  
+  阅读 PROJECT_LOGIC

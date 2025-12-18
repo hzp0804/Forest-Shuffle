@@ -51,8 +51,7 @@ const buildRoomCode = () => {
 Page({
   data: {
     userProfile: null,
-    defaultAvatar:
-      "https://res.wx.qq.com/a/wx_fed/wechat_applets/default-user-avatar.png",
+    defaultAvatar: "", // 使用空字符串，让系统使用默认头像
     isSeated: false,
     isInRoom: false,
     isHost: false,
