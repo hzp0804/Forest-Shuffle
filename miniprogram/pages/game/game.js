@@ -28,6 +28,7 @@ Page({
     currentEvent: null, // 当前正在展示的事件
     isCardFlipped: false, // 专门为 3D 翻转准备的本地状态
     pendingTurnToast: false, // 是否有待触发的回合提示
+    pendingActionToast: null, // 是否有待触发的操作提示 (如: 还可以再拿一张)
   },
 
   onLoad(options) {
@@ -80,7 +81,6 @@ Page({
         if (this.data.lastNotifiedTurnCount !== currentTurnCount) {
           processedData.pendingTurnToast = true;
           processedData.lastNotifiedTurnCount = currentTurnCount;
-          processedData.selectedPlayerOpenId = this.data.openId;
         }
       }
 
@@ -123,6 +123,10 @@ Page({
       if (this.data.pendingTurnToast) {
         wx.showToast({ title: "轮到你了！", icon: "none" });
         this.setData({ pendingTurnToast: false });
+      }
+      if (this.data.pendingActionToast) {
+        wx.showToast({ title: this.data.pendingActionToast, icon: "none" });
+        this.setData({ pendingActionToast: null });
       }
       return;
     }
@@ -188,7 +192,11 @@ Page({
   },
 
   onConfirmPlay() {
-    const { primarySelection, playerStates, openId, clearing, selectedSlot, instructionState } = this.data;
+    const { primarySelection, playerStates, openId, clearing, selectedSlot, instructionState, turnAction } = this.data;
+    if (turnAction?.drawnCount > 0 || turnAction?.takenCount > 0) {
+      wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
+      return;
+    }
     if (!primarySelection || instructionState === 'error') {
       wx.showToast({ title: !primarySelection ? "请先选择主牌" : "费用未满足", icon: "none" });
       return;
@@ -251,7 +259,13 @@ Page({
     if (isTree && newDeck.length > 0) {
       const top = newDeck.shift();
       newClearing.push({ ...top, selected: false });
-      deckRevealEvent = { type: 'DECK_TO_CLEARING', mainCard: Utils.enrichCard(top), timestamp: Date.now() + 100 };
+      deckRevealEvent = {
+        type: 'DECK_TO_CLEARING',
+        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+        mainCard: Utils.enrichCard(top),
+        timestamp: Date.now() + 100
+      };
     }
     if (newClearing.length >= 10) newClearing.length = 0;
 
@@ -307,6 +321,7 @@ Page({
       [`gameState.lastEvent`]: {
         type: 'TAKE_CARD', playerOpenId: openId,
         playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
         mainCard: Utils.enrichCard(card), timestamp: Date.now()
       }
     };
@@ -315,7 +330,7 @@ Page({
       updates[`gameState.turnAction`] = { drawnCount: 0, takenCount: 0 };
       updates[`gameState.turnCount`] = db.command.inc(1);
     } else {
-      wx.showToast({ title: "还可以再拿一张牌", icon: "none" });
+      this.setData({ pendingActionToast: "还可以再拿一张牌" });
     }
     this.submitGameUpdate(updates, null, `从空地拿了 ${card.name}`);
   },
@@ -339,6 +354,7 @@ Page({
       [`gameState.lastEvent`]: {
         type: 'DRAW_CARD', playerOpenId: openId,
         playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
         mainCard: Utils.enrichCard(card), timestamp: Date.now()
       }
     };
@@ -347,7 +363,7 @@ Page({
       updates[`gameState.turnAction`] = { drawnCount: 0, takenCount: 0 };
       updates[`gameState.turnCount`] = db.command.inc(1);
     } else {
-      wx.showToast({ title: "还可以再摸一张牌", icon: "none" });
+      this.setData({ pendingActionToast: "还可以再摸一张牌" });
     }
     this.submitGameUpdate(updates, null, `从牌堆摸了一张牌`);
   },
@@ -390,7 +406,19 @@ Page({
     try {
       await db.collection("rooms").doc(this.data.roomId).update({ data: updates });
       wx.hideLoading();
-      this.setData({ selectedClearingIdx: -1, primarySelection: null, selectedSlot: null });
+
+      // 彻底清空手牌的选择状态
+      const { openId, playerStates } = this.data;
+      if (playerStates[openId] && playerStates[openId].hand) {
+        playerStates[openId].hand.forEach(c => c.selected = false);
+      }
+
+      this.setData({
+        selectedClearingIdx: -1,
+        primarySelection: null,
+        selectedSlot: null,
+        [`playerStates.${openId}.hand`]: playerStates[openId].hand || []
+      });
     } catch (e) { wx.hideLoading(); console.error(e); }
   },
 
@@ -414,7 +442,7 @@ Page({
   },
 
   onPlaySapling() {
-    if (this.data.turnAction?.drawnCount > 0) {
+    if (this.data.turnAction?.drawnCount > 0 || this.data.turnAction?.takenCount > 0) {
       wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
       return;
     }
@@ -453,7 +481,13 @@ Page({
     if (newDeck.length > 0) {
       const top = newDeck.shift();
       newClearing.push({ ...top, selected: false });
-      deckRevealEvent = { type: 'DECK_TO_CLEARING', mainCard: Utils.enrichCard(top), timestamp: Date.now() + 100 };
+      deckRevealEvent = {
+        type: 'DECK_TO_CLEARING',
+        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+        mainCard: Utils.enrichCard(top),
+        timestamp: Date.now() + 100
+      };
     }
     if (newClearing.length >= 10) newClearing.length = 0;
 

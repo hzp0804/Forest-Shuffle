@@ -158,10 +158,15 @@ const computeInstruction = (data) => {
   };
 
   const drawnCount = turnAction?.drawnCount || 0;
-  if (drawnCount === 1) return {
-    instructionState: "warning",
-    instructionText: "请再摸一张牌"
-  };
+  const takenCount = turnAction?.takenCount || 0;
+  const curTotal = drawnCount + takenCount;
+
+  if (curTotal === 1) {
+    return {
+      instructionState: "warning",
+      instructionText: drawnCount > 0 ? "请再摸一张牌" : "还可以再拿一张牌"
+    };
+  }
 
   const myHand = playerStates[openId].hand || [];
   const selectedCount = myHand.filter((c) => c.selected).length;

@@ -6,9 +6,11 @@
       <!-- 顶部玩家列表 -->
       <scroll-view class="players-bar" scroll-x enable-flex>
          <block wx:for="{{players}}" wx:key="index">
-            <view class="player-slot {{item.isEmpty ? 'is-empty' : ''}} {{item.openId === selectedPlayerOpenId ? 'selected' : ''}}" bindtap="onPlayerTap" data-openid="{{item.openId}}">
+            <view class="player-slot {{item.isEmpty ? 'is-empty' : ''}} {{item.openId === selectedPlayerOpenId ? 'selected' : ''}} {{item.openId === (gameState.activePlayer || lastActivePlayer) ? 'is-active' : ''}}" bindtap="onPlayerTap" data-openid="{{item.openId}}">
                <block wx:if="{{!item.isEmpty}}">
-                  <image class="p-avatar" src="{{item.avatarUrl || '/images/default_avatar.png'}}" mode="aspectFill" />
+                  <view class="p-avatar-wrap">
+                     <image class="p-avatar" src="{{item.avatarUrl || '/images/default_avatar.png'}}" mode="aspectFill" />
+                  </view>
                   <view class="p-info">
                      <view class="p-name">{{item.nickName}}</view>
                      <view class="p-stats">
@@ -154,8 +156,11 @@
             </block>
             <!-- 场景2: 牌库翻开/摸牌 (3D Flip) -->
             <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.type === 'DRAW_CARD'}}">
-               <view class="event-title">
-                  {{currentEvent.type === 'DECK_TO_CLEARING' ? '由树木效果翻开卡牌' : currentEvent.playerNick + ' 正在摸牌...'}}
+               <view class="event-header">
+                  <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
+                  <text class="event-title">
+                     {{currentEvent.type === 'DECK_TO_CLEARING' ? '效果触发 (翻开卡牌)' : currentEvent.playerNick + ' 正在摸牌...'}}
+                  </text>
                </view>
                <view class="flip-container">
                   <view class="flip-inner {{isCardFlipped ? 'is-flipped' : ''}}">
@@ -177,7 +182,10 @@
             </block>
             <!-- 场景3: 玩家拿取卡片 -->
             <block wx:if="{{currentEvent.type === 'TAKE_CARD'}}">
-               <view class="event-title">{{currentEvent.playerNick}} 拿走了</view>
+               <view class="event-header">
+                  <image class="p-avatar-small" src="{{currentEvent.playerAvatar || '/images/default_avatar.png'}}" />
+                  <text class="event-title">{{currentEvent.playerNick}} 拿走了</text>
+               </view>
                <view class="main-card-display">
                   <view class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
                </view>

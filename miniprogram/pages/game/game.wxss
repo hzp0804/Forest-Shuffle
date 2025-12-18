@@ -20,6 +20,57 @@
   /* Red */
 }
 
+/* 游戏按钮样式 */
+.action-bar-inline {
+  display: flex !important;
+  gap: 12rpx;
+  align-items: center;
+}
+
+.game-btn {
+  margin: 0 !important;
+  padding: 0 16rpx !important;
+  font-size: 24rpx !important;
+  line-height: 52rpx !important;
+  height: 52rpx !important;
+  border-radius: 8rpx !important;
+  background: #2ecc71 !important;
+  color: white !important;
+  border: none !important;
+  font-weight: normal !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.game-btn.draw-btn {
+  background: #9b59b6 !important;
+}
+
+.game-btn.sapling-btn {
+  background: #e67e22 !important;
+}
+
+.game-btn.valid-play-btn {
+  box-shadow: 0 0 15rpx #2ecc71;
+  transform: scale(1.05);
+}
+
+.game-btn[disabled] {
+  background: #95a5a6 !important;
+  opacity: 0.6 !important;
+  color: #bdc3c7 !important;
+}
+
+.end-turn-text {
+  font-size: 24rpx;
+  color: #e74c3c;
+  font-weight: bold;
+  padding: 4rpx 12rpx;
+  border: 1rpx solid #e74c3c;
+  border-radius: 4rpx;
+}
+
 /* 全局容器 */
 .game-container {
   display: flex;
@@ -43,68 +94,79 @@
 
 /* 顶部玩家列表 */
 .players-bar {
-  min-height: 110rpx;
-  /* 适配新的内边距 */
-  margin-top: 0;
-  background: rgba(0, 0, 0, 0.4);
+  height: 110rpx;
+  /* 严格保持高度 */
+  background: rgba(44, 62, 80, 0.95);
   display: flex;
   flex-direction: row;
-  flex-wrap: nowrap;
-  /* 禁止换行 */
   align-items: center;
-  padding: 6rpx 20rpx;
-  /* 缩小上下边距 */
-  gap: 12rpx;
-  white-space: nowrap;
+  padding: 0 12rpx;
   box-sizing: border-box;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
+  overflow-x: hidden;
+  /* 强制一屏4个，多余的裁剪（通常只有4人） */
 }
 
 .player-slot {
-  width: calc(25% - 10rpx);
+  width: 165rpx;
+  /* 略微缩小宽度以让出间距 */
   flex-shrink: 0;
-  height: 110rpx;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8rpx;
+  height: 90rpx;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12rpx;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  /* 改为横向布局更省空间 */
   align-items: center;
-  justify-content: center;
-  padding: 4rpx;
+  padding: 0 6rpx;
   overflow: hidden;
   box-sizing: border-box;
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  position: relative;
+  margin-right: 5rpx;
+}
+
+.player-slot:last-child {
+  margin-right: 0;
 }
 
 .player-slot.is-me {
-  border: 4rpx solid #ffd700;
-  /* Gold for Me */
-  transform: scale(1.05);
-  /* Slight emphasize */
+  background: rgba(241, 196, 15, 0.15);
+  border: 2rpx solid #ffd700;
+  box-shadow: 0 0 10rpx rgba(241, 196, 15, 0.3);
   z-index: 2;
 }
 
 .player-slot.is-viewing {
-  border: 4rpx solid #3498db;
-  /* Blue for Viewing */
-  box-shadow: 0 0 16rpx rgba(52, 152, 219, 0.6);
-  transform: scale(1.05);
-}
-
-.player-slot.is-me.is-viewing {
-  border-color: #ffd700;
-  /* Priority to Me color if viewing self, or mix? */
-  /* Maybe Gold is fine. If viewing self, it's just normal Me state */
-  box-shadow: 0 0 20rpx rgba(255, 215, 0, 0.6);
+  background: rgba(52, 152, 219, 0.15);
+  border: 2rpx solid #3498db;
+  box-shadow: 0 0 10rpx rgba(52, 152, 219, 0.3);
 }
 
 .player-slot.selected {
-  border: 4rpx solid #3498db;
-  box-shadow: 0 0 16rpx rgba(52, 152, 219, 0.6);
-  transform: scale(1.05);
+  border: 2rpx solid #3498db;
 }
 
-.player-slot.is-empty {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1rpx dashed #7f8c8d;
+.player-slot.is-active {
+  border: 2rpx solid #2ecc71;
+  box-shadow: 0 0 16rpx #2ecc71;
+  animation: pulseActivePlayer 1.5s infinite;
+  z-index: 3;
+}
+
+@keyframes pulseActivePlayer {
+  0% {
+    box-shadow: 0 0 8rpx #2ecc71;
+  }
+
+  50% {
+    box-shadow: 0 0 20rpx #2ecc71;
+  }
+
+  100% {
+    box-shadow: 0 0 8rpx #2ecc71;
+  }
 }
 
 .empty-seat {
@@ -113,48 +175,49 @@
 }
 
 .p-avatar {
-  display: block;
-  width: 48rpx;
-  height: 48rpx;
-  min-width: 48rpx;
-  min-height: 48rpx;
+  width: 50rpx;
+  height: 50rpx;
   border-radius: 50%;
-  margin-bottom: 2rpx;
-  border: 1rpx solid #bdc3c7;
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+  margin-right: 6rpx;
   flex-shrink: 0;
 }
 
 .p-info {
-  width: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-width: 0;
+  /* 允许 flex 项缩小 */
 }
 
 .p-name {
-  font-size: 20rpx;
-  /* 字体加大 */
-  color: #ecf0f1;
+  font-size: 16rpx;
+  color: #bdc3c7;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
   margin-bottom: 2rpx;
+  display: block;
 }
 
 .p-stats {
   display: flex;
   flex-direction: row;
-  gap: 8rpx;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   width: 100%;
 }
 
 .stat-item {
-  font-size: 22rpx;
-  /* 字体加大以显示4位数 */
+  font-size: 18rpx;
   font-weight: bold;
   color: #ecf0f1;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
 /* 中间：牌桌区域 (Board) */
