@@ -330,7 +330,7 @@ Page({
 
     // 如果是处于特殊模式下打的这一张牌
     if (isSpecialPlayMode) {
-      // 将这张牌打出的事件存入更新
+      // 1. 基础更新：手牌、森林、空地、事件
       const updates = {
         [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
         [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
@@ -345,18 +345,31 @@ Page({
         // 特殊模式下的奖励累积
         [`gameState.accumulatedRewards.drawCount`]: db.command.inc(reward.drawCount),
       };
-
-      // 如果触发了额外回合，累积它
       if (reward.extraTurn) updates[`gameState.accumulatedRewards.extraTurn`] = true;
 
-      // 如果这张牌本身又带了新的特殊行动（虽然规则上极少见，但为了健壮性考虑）
-      if (reward.actions.length > 0) {
-        // 简单处理：将新的行动加入队列
-        updates[`gameState.pendingActions`] = [...(gameState.pendingActions || []), ...reward.actions];
-      }
+      // 2. 处理 Pending Actions (移除当前执行的，添加新产生的)
+      const currentPending = [...(gameState.pendingActions || [])];
+      currentPending.shift(); // 移除当前已完成的行动
 
-      wx.hideLoading();
-      this.submitGameUpdate(updates, "出牌成功", `(特殊模式) 打出了 ${primaryCard.name}`);
+      // 将新产生的行动加到末尾（如果有）
+      const nextPending = [...currentPending, ...reward.actions];
+
+      if (nextPending.length > 0) {
+        // 还有后续行动，更新状态继续
+        const nextAction = nextPending[0];
+        const nextMode = SpecialActionUtils.detectActionMode(nextAction);
+        updates[`gameState.pendingActions`] = nextPending;
+        updates[`gameState.actionMode`] = nextMode;
+        updates[`gameState.actionText`] = null; // 重置文案，让 helper 重新生成
+
+        wx.hideLoading();
+        this.submitGameUpdate(updates, "出牌成功", `(特殊模式) 打出了 ${primaryCard.name}`);
+      } else {
+        // 没有后续行动了，执行最终结算
+        // 注意：finalizeAction 会处理 actionMode=null, pending=[], 以及 accumulatedRewards 的结算
+        wx.hideLoading();
+        await this.finalizeAction(updates, `(特殊模式) 打出了 ${primaryCard.name}`);
+      }
       return;
     }
 
@@ -599,6 +612,37 @@ Page({
   },
 
   onEndTurn() {
+    // 1. 特殊行动模式下的跳过逻辑
+    if (this.data.gameState && this.data.gameState.actionMode) {
+      wx.showModal({
+        title: '跳过行动',
+        content: '确定要跳过本次特殊行动吗？',
+        success: async (res) => {
+          if (res.confirm) {
+            const updates = {};
+            const pending = [...(this.data.gameState.pendingActions || [])];
+            // 移除当前行动（头部）
+            pending.shift();
+
+            if (pending.length > 0) {
+              // 还有后续行动，更新状态
+              const nextAction = pending[0];
+              const nextMode = SpecialActionUtils.detectActionMode(nextAction);
+              updates['gameState.pendingActions'] = pending;
+              updates['gameState.actionMode'] = nextMode;
+              // 提示更新
+              updates['gameState.actionText'] = null; // 让前端 instructionHelper 去生成新的提示
+              this.submitGameUpdate(updates, "跳过行动", "跳过了当前特殊行动步骤");
+            } else {
+              // 没有后续，结束特殊行动模式
+              await this.finalizeAction({}, "跳过了行动");
+            }
+          }
+        }
+      });
+      return;
+    }
+
     wx.showModal({
       title: '结束回合',
       content: '确定要结束本回合吗？',

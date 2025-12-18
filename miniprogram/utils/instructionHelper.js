@@ -42,7 +42,16 @@ const checkInstruction = (params) => {
 
   // 1. 如果处于特殊行动模式，优先显示特殊行动提示
   if (gameState && gameState.actionMode) {
-    let text = gameState.actionText || "特殊行动中...";
+    let text = gameState.actionText;
+    const currentAction = (gameState.pendingActions || [])[0];
+
+    // 如果没有预设文案，且是免费打出模式，尝试生成具体提示
+    if (!text && currentAction && currentAction.type === 'PLAY_FREE' && currentAction.tags && currentAction.tags.length > 0) {
+      text = `免费打出一张带有 ${currentAction.tags.join('/')} 符号的牌`;
+    }
+
+    text = text || "特殊行动中...";
+
     return {
       instructionState: "warning",
       instructionText: `✨ 奖励: ${text}`
@@ -136,7 +145,7 @@ const checkInstruction = (params) => {
       if (config && config.tags && Array.isArray(config.tags)) {
         const hasMatchingTag = config.tags.some(tag => primaryCard.tags && primaryCard.tags.includes(tag));
         if (!hasMatchingTag) {
-          return { instructionState: "error", instructionText: `✨ 奖励限制: 只能打出带有指定符号的牌` };
+          return { instructionState: "error", instructionText: `✨ 奖励限制: 只能打出带有 ${config.tags.join('/')} 符号的牌` };
         }
       }
     }
@@ -171,9 +180,10 @@ const checkInstruction = (params) => {
   if (hasBonus) {
     const isBonusMatched = isColorMatched(primaryCard, paymentCards);
     const bonusText = primaryCard.bonus || "奖励";
+    const isActive = isSatisfied && isBonusMatched;
     lines.bonus = {
-      text: `[奖励: ${bonusText}]`,
-      class: (isSatisfied && isBonusMatched) ? "text-success" : "text-warn"
+      text: isActive ? `✅ [奖励: ${bonusText}]` : `[奖励: ${bonusText}]`,
+      class: isActive ? "text-bold" : "text-warn"
     };
   } else {
     // 占位
@@ -183,9 +193,10 @@ const checkInstruction = (params) => {
   // 3. Effect 行
   if (hasEffect) {
     const effectText = primaryCard.effect || "效果";
+    const isActive = isSatisfied;
     lines.effect = {
-      text: `[效果: ${effectText}]`,
-      class: isSatisfied ? "text-highlight" : "text-warn"
+      text: isActive ? `✅ [效果: ${effectText}]` : `[效果: ${effectText}]`,
+      class: isActive ? "text-bold" : "text-warn"
     };
   } else {
     // 占位

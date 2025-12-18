@@ -33,7 +33,9 @@
                <view class="area-label" style="margin-bottom:0; padding-right: 0;">
                   空地 ({{clearing.length || 0}}/10)
                </view>
-               <view class="end-turn-text" bindtap="onEndTurn" wx:if="{{isMyTurn}}">结束</view>
+               <view class="end-turn-text" bindtap="onEndTurn" wx:if="{{isMyTurn}}">
+                  {{gameState.actionMode ? '跳过' : '结束'}}
+               </view>
             </view>
             <view class="action-bar-inline" wx:if="{{isMyTurn}}" style="display:flex; gap:12rpx;">
                <!-- 动态切换 拿取 与 确认 -->

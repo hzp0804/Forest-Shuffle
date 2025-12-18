@@ -54,8 +54,18 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
 
     // 免费打牌
     case REWARD_TYPES.PLAY_FREE:
-      result.text = "特殊行动";
-      result.actions.push(config);
+      if (config.separateActions && Array.isArray(config.tags)) {
+        config.tags.forEach(tag => {
+          result.actions.push({
+            type: REWARD_TYPES.PLAY_FREE,
+            tags: [tag]
+          });
+        });
+        result.text = "连续特殊行动";
+      } else {
+        result.text = "特殊行动";
+        result.actions.push(config);
+      }
       break;
 
     // 特殊行动

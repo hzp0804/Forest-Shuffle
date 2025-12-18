@@ -320,7 +320,7 @@ const SPECIES_DATA = {
     tags: [TAGS.MUSHROOM],
     cost: 2,
     type: CARD_TYPES.V_CARD,
-    effect: "每当你往树木顶端打一张牌将会奖励一张牌（仅树木，灌木不算）",
+    effect: "每当你往树木顶端打一张牌将会奖励一张牌",
     effectConfig: {
       type: TRIGGER_TYPES.TRIGGER_ON_PLAY_POSITION,
       position: 'top',
@@ -1141,10 +1141,11 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.V_CARD,
     effect: "",
-    bonus: "免费打出一张带有高山符号的牌和一张带有昆虫符号的牌",
+    bonus: "免费打出一张高山牌和一张昆虫牌",
     bonusConfig: {
       type: REWARD_TYPES.PLAY_FREE,
-      tags: [TAGS.MOUNTAIN, TAGS.INSECT]
+      tags: [TAGS.MOUNTAIN, TAGS.INSECT],
+      separateActions: true
     },
     points: "每张带有昆虫符号的牌得2分",
     scoreConfig: {
