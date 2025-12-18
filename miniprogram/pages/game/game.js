@@ -788,32 +788,109 @@ Page({
 
   // 10. 打出树苗
   onPlaySapling() {
-    const { deck, playerStates, openId } = this.data;
+    const {
+      deck,
+      playerStates,
+      openId,
+      primarySelection,
+      clearing
+    } = this.data;
     const db = wx.cloud.database();
 
-    if (!deck || deck.length === 0) return;
+    if (!primarySelection) {
+      wx.showToast({
+        title: "请先从手牌选择一张牌作为树苗",
+        icon: "none"
+      });
+      return;
+    }
 
-    wx.showLoading({ title: "种植树苗..." });
+    if (!deck || deck.length === 0) {
+      wx.showToast({
+        title: "牌库已空",
+        icon: "none"
+      });
+      return;
+    }
 
-    const newDeck = [...deck];
+    wx.showLoading({
+      title: "种植树苗..."
+    });
+
     const myState = playerStates[openId];
+    const hand = [...(myState.hand || [])];
     const forest = [...(myState.forest || [])];
+    const newClearing = [...(clearing || [])];
+    const newDeck = [...deck];
 
-    const topCard = newDeck.shift();
-    if (topCard) {
-      forest.push(topCard);
+    // 1. 从手牌移除被选中的卡牌
+    const cardIdx = hand.findIndex(c => c.uid === primarySelection);
+    if (cardIdx === -1) {
+      wx.hideLoading();
+      return;
+    }
+    const [originalCard] = hand.splice(cardIdx, 1);
+
+    // 2. 构造树苗对象 (树苗本身不属于任何具体物种，仅作为树木)
+    // 树苗通常使用 vCards 最后一张作为背景
+    const saplingVisual = Utils.getSaplingVisual ? Utils.getSaplingVisual() : {
+      bgImg: "https://x.boardgamearena.net/data/themereleases/current/games/forestshuffle/250929-1034/img/vCards.jpg",
+      bgSize: "700% 700%",
+      bgPosition: "100% 100%"
+    };
+
+    const saplingCard = {
+      uid: originalCard.uid,
+      id: "sapling",
+      // 其他属性交由 utils.enrichCard 动态补全，这里只需标记 id
+      // 但为了本地立即展示（未经过 server roundtrip），也可以填入基础信息
+      name: "树苗",
+      tags: ["树"],
+      type: "tree",
+      ...saplingVisual
+    };
+
+    const newTreeGroup = {
+      _id: Math.random().toString(36).substr(2, 9),
+      center: saplingCard,
+      slots: {
+        top: null,
+        bottom: null,
+        left: null,
+        right: null
+      }
+    };
+    forest.push(newTreeGroup);
+
+    // 3. 核心规则：如果是树木（树苗也是树），从牌库翻一张进空地
+    const flippedCard = newDeck.shift();
+    if (flippedCard) {
+      newClearing.push({
+        ...flippedCard,
+        selected: false
+      });
+    }
+
+    // 4. 空地满 10 张清空
+    if (newClearing.length >= 10) {
+      newClearing.length = 0;
     }
 
     const updates = {
       [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
+      [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
+      [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(hand),
       [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
       [`gameState.activePlayer`]: RoundUtils.getNextPlayer(openId, this.data.players, false),
-      [`gameState.turnAction`]: { drawnCount: 0 },
-      [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
+      [`gameState.turnAction`]: {
+        drawnCount: 0,
+        takenCount: 0
+      },
+      [`gameState.turnCount`]: db.command.inc(1),
       [`gameState.turnReason`]: "normal",
     };
 
-    this.submitGameUpdate(updates, null, "由空地打出树苗");
+    this.submitGameUpdate(updates, "打出树苗成功", "打出了一张树苗，并翻开一张牌库卡片到空地");
   },
 
 

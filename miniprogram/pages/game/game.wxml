@@ -123,7 +123,7 @@
                      <!-- Center: Tree -->
                      <view class="tree-center" bindlongpress="onShowDetail" data-cardid="{{item.center.id}}">
                         <block wx:if="{{item.center.bgImg}}">
-                           <view class="card-sprite-native {{item.center.cssClass}}" style="background-image: url('{{item.center.bgImg}}'); background-size: {{item.center.bgSize}}"></view>
+                           <view class="card-sprite-native {{item.center.cssClass}}" style="background-image: url('{{item.center.bgImg}}'); background-size: {{item.center.bgSize}}; {{item.center.bgPosition ? 'background-position:' + item.center.bgPosition : ''}}"></view>
                         </block>
                         <view wx:else class="small-card forest-fallback">
                            {{item.center.name || 'Tree'}}

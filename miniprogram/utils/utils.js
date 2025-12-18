@@ -3,11 +3,28 @@ const { getCardCost } = require("./cost");
 const { calculateTotalScore } = require("./score");
 const { CARD_TYPES } = require("../data/constants");
 const RewardUtils = require("./reward");
+const { SAPLING_DATA } = require("../data/speciesData");
 
 const enrichCard = (card) => {
   if (!card) return null;
   const id = card.id || card.cardId;
   const info = getCardInfoById(id);
+
+  // 特殊处理树苗：树苗是动态生成的，必须保留原有的视觉属性
+  // 优化：视觉属性不再存储在数据库，而是每次读取时动态生成
+  if (id === 'sapling') {
+    const saplingVisual = getSaplingVisual ? getSaplingVisual() : {};
+    // 使用独立的 SAPLING_DATA
+    const saplingStatic = SAPLING_DATA;
+
+    return {
+      ...card,
+      id,
+      ...saplingStatic,
+      ...saplingVisual,
+      tags: card.tags || saplingStatic.tags,
+    };
+  }
 
   // 关键修复：从 card 中排除 speciesDetails，使用 info 中完整的 speciesDetails
   // 因为数据库中的 speciesDetails 不包含 scoreConfig 等字段

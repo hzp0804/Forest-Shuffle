@@ -1671,5 +1671,17 @@ const SPECIES_DATA = {
       value: 3
     },
   },
-}
-module.exports = { SPECIES_DATA };
+};
+
+const SAPLING_DATA = {
+  name: "树苗", // Sapling
+  nb: 0, // Infinite
+  tags: [TAGS.TREE],
+  cost: 0,
+  type: CARD_TYPES.TREE, // Treated as Tree
+  effect: "",
+  bonus: "",
+  points: "",
+};
+
+module.exports = { SPECIES_DATA, SAPLING_DATA };

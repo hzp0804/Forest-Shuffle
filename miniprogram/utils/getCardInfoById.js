@@ -70,6 +70,7 @@ const getCardVisual = (card) => {
   };
 };
 
+// 获取树苗卡片图案
 const getSaplingVisual = () => {
   const img = IMG_URLS[CARD_TYPES.V_CARD];
   return {
@@ -79,6 +80,7 @@ const getSaplingVisual = () => {
   };
 };
 
+// 根据卡片id获取卡片具体数据
 const getCardInfoById = (id) => {
   const cardBasic = CARDS_DATA[id];
   if (!cardBasic) return {};
