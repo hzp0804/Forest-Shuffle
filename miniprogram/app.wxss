@@ -757,3 +757,11 @@ page {
   left: 0;
   border-radius: inherit;
 }
+
+/* 文本工具类 */
+.text-bold { font-weight: bold; }
+.text-gray { color: #888; }
+.text-gray-light { color: #ccc; }
+.text-success { color: #2e7d32; font-weight: bold; }
+.text-highlight { color: #e3b448; font-weight: bold; }
+.text-warn { color: #d32f2f; }

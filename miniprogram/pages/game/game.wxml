@@ -169,7 +169,7 @@
                <view class="event-header">
                   <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
                   <text class="event-title">
-                     <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING'}}">打出树木（翻牌到空地）</block>
+                     <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING'}}">翻牌</block>
                      <block wx:elif="{{currentEvent.type === 'REWARD_DRAW'}}">
                         {{currentEvent.playerNick}} 获得奖励抽牌 ({{currentEvent.count}}张)
                      </block>
@@ -244,10 +244,30 @@
       </view>
       <!-- 底部手牌 -->
       <view class="hand-area">
-         <view class="hand-header">
-            <view class="area-title">手牌 ({{playerStates[openId].hand.length}})</view>
-            <view wx:if="{{gameState.activePlayer === openId}}" class="instruction-tip {{instructionState}}">
-               {{instructionText}}
+         <view class="hand-header" style="align-items: flex-start;">
+            <view class="area-title" style="flex-shrink: 0; margin-top: 6rpx;">
+               手牌 ({{playerStates[openId].hand.length}})
+            </view>
+            <view wx:if="{{gameState.activePlayer === openId}}" class="instruction-tip {{instructionState}}" style="display:flex; flex-direction:column; align-items:flex-start; margin-left: 16rpx; padding: 4rpx 12rpx; margin-top: -36rpx;">
+               <block wx:if="{{instructionLines}}">
+                  <view class="{{instructionLines.cost.class}}">
+                     {{instructionLines.cost.text}}
+                  </view>
+                  <view class="{{instructionLines.bonus.class}}" style="min-height: 32rpx;">
+                     {{instructionLines.bonus.text}}
+                  </view>
+                  <view class="{{instructionLines.effect.class}}" style="min-height: 32rpx;">
+                     {{instructionLines.effect.text}}
+                  </view>
+               </block>
+               <block wx:elif="{{instructionSegments && instructionSegments.length > 0}}">
+                  <view>
+                     <text wx:for="{{instructionSegments}}" wx:key="index" class="{{item.class}}" style="margin-right: 4rpx;">
+                        {{item.text}}
+                     </text>
+                  </view>
+               </block>
+               <block wx:else>{{instructionText}}</block>
             </view>
          </view>
          <scroll-view scroll-x class="hand-scroll" enable-flex>

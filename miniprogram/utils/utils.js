@@ -17,6 +17,7 @@ const {
 const { calculateReward } = require("./reward.js");
 
 const { getCardColors, isColorMatched } = require('./colorMatcher');
+const { checkInstruction } = require('./instructionHelper');
 
 const enrichCard = (card) => {
   if (!card) return null;
@@ -152,163 +153,38 @@ const computeInstruction = (data) => {
     turnAction,
     gameState
   } = data;
+
   if (!playerStates?.[openId]) return {
     instructionState: "normal",
     instructionText: "加载中..."
   };
 
-  // 1. 如果处于特殊行动模式，优先显示特殊行动提示
-  if (gameState && gameState.actionMode) {
-    const mode = gameState.actionMode;
-    // 优先使用传入的原始描述文案（通常是物种数据里的 reward 描述）
-    let text = gameState.actionText || "特殊行动中...";
-
-    return {
-      instructionState: "warning",
-      instructionText: `✨ 奖励: ${text}`
-    };
-  }
-
-  const drawnCount = turnAction?.drawnCount || 0;
-  const takenCount = turnAction?.takenCount || 0;
-  const curTotal = drawnCount + takenCount;
-
-  if (curTotal === 1) {
-    return {
-      instructionState: "warning",
-      instructionText: drawnCount > 0 ? "请再摸一张牌" : "还可以再拿一张牌"
-    };
-  }
-
   const myHand = playerStates[openId].hand || [];
   const selectedCount = myHand.filter((c) => c.selected).length;
 
-  if (!primarySelection) return {
-    instructionState: selectedCount === 0 ? "normal" : "warning",
-    instructionText: selectedCount === 0 ? "摸牌 / 出牌" : "请确认主牌选择",
-  };
-
-  const primaryCardRaw = myHand.find((c) => c.uid === primarySelection);
-  if (!primaryCardRaw) return {
-    instructionState: "error",
-    instructionText: "主牌数据异常"
-  };
-
-  // 根据当前选择的插槽或卡片类型，确定实际打出的物种数据
-  let activeSide = 'center';
-  if (primaryCardRaw.type === CARD_TYPES.H_CARD || primaryCardRaw.type === CARD_TYPES.V_CARD) {
-    activeSide = selectedSlot?.side;
-  }
-  const primaryCard = enrichCardWithSpecies(primaryCardRaw, activeSide);
-
-  const payment = selectedCount - 1;
-  const type = primaryCard.type;
-  let costs = [];
-
-  if (type === CARD_TYPES.TREE) {
-    costs = [getCardCost(primaryCard, "center")];
-    if (primaryCard.species?.length > 1) costs.push(getCardCost(primaryCard, "center_2"));
-  } else if (type === CARD_TYPES.H_CARD) {
-    if (selectedSlot?.side === "left") costs = [getCardCost(primaryCard, "left")];
-    else if (selectedSlot?.side === "right") costs = [getCardCost(primaryCard, "right")];
-    else costs = [getCardCost(primaryCard, "left"), getCardCost(primaryCard, "right")];
-  } else if (type === CARD_TYPES.V_CARD) {
-    if (selectedSlot?.side === "top") costs = [getCardCost(primaryCard, "top")];
-    else if (selectedSlot?.side === "bottom") costs = [getCardCost(primaryCard, "bottom")];
-    else costs = [getCardCost(primaryCard, "top"), getCardCost(primaryCard, "bottom")];
-  }
-
-  costs = [...new Set(costs)];
-
-  // 如果选中的是树，则完全无视任何已选中的森林插槽
-  if (type === CARD_TYPES.TREE) {
-    // 树木不需要插槽验证
-  } else if (!selectedSlot) {
-    return {
-      instructionState: "warning",
-      instructionText: "请选择森林空位"
-    };
-  } else {
-    // 只有非树卡片才验证插槽合法性
-    if (type === CARD_TYPES.H_CARD && !["left", "right"].includes(selectedSlot.side)) {
-      return {
-        instructionState: "error",
-        instructionText: "卡牌需放置在左右槽位"
-      };
-    }
-    if (type === CARD_TYPES.V_CARD && !["top", "bottom"].includes(selectedSlot.side)) {
-      return {
-        instructionState: "error",
-        instructionText: "卡牌需放置在上下槽位"
-      };
-    }
-    const myForest = playerStates[openId].forest || [];
-    const targetTree = myForest.find((t) => (t._id || t.uid) === selectedSlot.treeId);
-    if (targetTree) {
-      const slotContent = targetTree.slots?.[selectedSlot.side] || targetTree[selectedSlot.side];
-      if (slotContent) return {
-        instructionState: "error",
-        instructionText: "该位置已有卡牌"
-      };
-    }
-  }
-
-  const isFreeMode = ['FREE_PLAY_BAT', 'PLAY_SAPLINGS', 'PLAY_FREE'].includes(gameState?.actionMode);
-
-  // 免费模式下的特殊验证
-  if (isFreeMode) {
-    const mode = gameState.actionMode;
-    // 1. 验证卡牌类型限制
-    if (mode === 'FREE_PLAY_BAT' && (!primaryCard.tags || !primaryCard.tags.includes(TAGS.BAT))) {
-      return { instructionState: "error", instructionText: "✨ 奖励限制: 只能打出带有蝙蝠符号的牌" };
-    }
-    if (mode === 'PLAY_FREE') {
-      const config = (gameState.pendingActions || [])[0];
-      if (config && config.tags && Array.isArray(config.tags)) {
-        const hasMatchingTag = config.tags.some(tag => primaryCard.tags && primaryCard.tags.includes(tag));
-        if (!hasMatchingTag) {
-          return { instructionState: "error", instructionText: `✨ 奖励限制: 只能打出带有指定符号的牌` };
-        }
+  let primaryCard = null;
+  if (primarySelection) {
+    const primaryCardRaw = myHand.find((c) => c.uid === primarySelection);
+    if (primaryCardRaw) {
+      let activeSide = 'center';
+      if (primaryCardRaw.type === CARD_TYPES.H_CARD || primaryCardRaw.type === CARD_TYPES.V_CARD) {
+        activeSide = selectedSlot?.side;
       }
+      primaryCard = enrichCardWithSpecies(primaryCardRaw, activeSide);
     }
-
-    // 2. 验证费用 (免费模式下支付卡必须为0)
-    if (payment > 0) {
-      return { instructionState: "error", instructionText: "✨ 奖励模式下无需支付额外费用，请取消选中其他手牌" };
-    }
-
-    return { instructionState: "success", instructionText: "✨ 免费打出该卡 (费用: 0)" };
   }
 
-  const isSatisfied = costs.some((cost) => payment === cost);
-  if (isSatisfied) {
-    let text = `费用已满足 (支付: ${payment})`;
-
-    const paymentCards = myHand.filter((c) => c.selected && c.uid !== primarySelection);
-    const bonus = calculateReward(primaryCard, selectedSlot, paymentCards, {}, true);
-    const effect = calculateReward(primaryCard, null, paymentCards, {
-      forest: playerStates[openId].forest
-    }, false);
-
-    // 组装奖励信息
-    const rewards = [];
-    if (bonus.text) rewards.push(`${bonus.text}`);
-    if (effect.text) rewards.push(`${effect.text}`);
-
-    if (rewards.length > 0) {
-      text = `费用已满足 [奖励: ${rewards.join(" + ")}]`;
-    }
-
-    return {
-      instructionState: "success",
-      instructionText: text
-    };
-  }
-
-  return {
-    instructionState: "error",
-    instructionText: `需支付: ${costs.join(" 或 ")} (已付: ${payment})`,
-  };
+  return checkInstruction({
+    openId,
+    playerStates,
+    gameState,
+    turnAction,
+    primarySelection,
+    selectedSlot,
+    primaryCard,
+    myHand,
+    selectedCount
+  });
 };
 
 const handleHandTap = (uid, currentData) => {
@@ -339,13 +215,18 @@ const handleHandTap = (uid, currentData) => {
 
   const {
     instructionState,
-    instructionText
+    instructionText,
+    instructionSegments, // 确保从 checkInstruction 接收这些额外字段
+    instructionLines
   } = computeInstruction(nextData);
+
   return {
     [`playerStates.${openId}.hand`]: newHand,
     primarySelection: newPrimary,
     instructionState,
     instructionText,
+    instructionSegments: instructionSegments || null,
+    instructionLines: instructionLines || null
   };
 };
 
@@ -430,6 +311,8 @@ const processGameData = (res, currentData) => {
   // 除非轮次发生了变化（不再是我的回合），才强制刷新
   let instructionState = currentData.instructionState;
   let instructionText = currentData.instructionText;
+  let instructionSegments = currentData.instructionSegments;
+  let instructionLines = currentData.instructionLines;
 
   // 只有在“非操作中”状态，或者是“被动状态变化”（如回合切换）时，才由轮询更新指引
   // 如果 primarySelection 有值且依然是我的回合，保持原样
@@ -439,6 +322,8 @@ const processGameData = (res, currentData) => {
     const computed = computeInstruction(nextData);
     instructionState = computed.instructionState;
     instructionText = computed.instructionText;
+    instructionSegments = computed.instructionSegments;
+    instructionLines = computed.instructionLines;
   }
 
   return {
@@ -453,12 +338,14 @@ const processGameData = (res, currentData) => {
     isMyTurn,
     instructionState,
     instructionText,
+    instructionSegments: instructionSegments || null,
+    instructionLines: instructionLines || null,
     turnAction: gameState.turnAction || {
       drawnCount: 0
     },
     currentTurn: gameState.turnCount || 1,
     lastCardCount: totalCardCount,
-    gameState: gameState, // 确保 Page.data 中有完整的 gameState 对象
+    gameState: gameState,
   };
 };
 

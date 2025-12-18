@@ -73,6 +73,16 @@ const SpecialActionUtils = {
     // 只有在这些“提交卡牌”类的特殊模式下，才允许继续点击“打出”
     const playModes = ['MOLE', 'FREE_PLAY_BAT', 'PLAY_SAPLINGS', 'PLAY_FREE'];
     return playModes.includes(mode);
+  },
+
+  /**
+   * 判断某个行动模式是否为全自动执行（无需玩家介入）
+   * @param {String} mode 
+   * @returns {Boolean}
+   */
+  isAutomatic(mode) {
+    // 根据用户反馈，不存在全自动行动，所有行动都应进入 pending 状态或交互流程
+    return false;
   }
 };
 

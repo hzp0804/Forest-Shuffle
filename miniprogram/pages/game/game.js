@@ -215,12 +215,14 @@ Page({
     }
 
     const nextData = { ...this.data, selectedSlot: nextSlot };
-    const { instructionState, instructionText } = Utils.computeInstruction(nextData);
+    const { instructionState, instructionText, instructionSegments, instructionLines } = Utils.computeInstruction(nextData);
 
     this.setData({
       selectedSlot: nextSlot,
       instructionState,
-      instructionText
+      instructionText,
+      instructionSegments: instructionSegments || null,
+      instructionLines: instructionLines || null
     });
   },
 
