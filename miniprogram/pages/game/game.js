@@ -390,13 +390,77 @@ Page({
       tTree.slots = tTree.slots || { top: null, bottom: null, left: null, right: null };
 
       const existingCard = tTree.slots[selectedSlot.side];
+
+      // 检查是否有共享槽位效果 (如刺荨麻)
+      const allSlots = Object.values(tTree.slots || {});
+      const enabler = allSlots.find(c => c && c.effectConfig && c.effectConfig.type === 'CAPACITY_SHARE_SLOT');
+      const isStackMode = enabler && enabler.effectConfig.tag && primaryCard.tags && primaryCard.tags.includes(enabler.effectConfig.tag);
+
       if (existingCard) {
-        // Existing card, assume stacking logic (validated by checkInstruction)
-        existingCard.stackedCards = existingCard.stackedCards || [];
-        existingCard.stackedCards.push(primaryCard);
-        // Keep existingCard as the slot holder
+        // 槽位已有卡片
+        if (isStackMode || existingCard.slotConfig) {
+          // 堆叠模式: 所有卡片都在stackedCards中,插槽显示最后一张
+          const newStackedCards = [...(existingCard.stackedCards || [])];
+          // 将新卡片添加到堆叠数组
+          newStackedCards.push(primaryCard);
+
+          // 插槽显示最后一张卡片(即刚插入的卡片)
+          tTree.slots[selectedSlot.side] = {
+            ...primaryCard,
+            stackedCards: newStackedCards, // 包含所有卡片
+            slotConfig: {
+              accepts: { tags: [enabler.effectConfig.tag] },
+              capacity: 99
+            }
+          };
+        } else {
+          // 非堆叠模式,正常堆叠(如大蟾蜍)
+          const newExistingCard = { ...existingCard };
+          newExistingCard.stackedCards = [...(existingCard.stackedCards || [])];
+          newExistingCard.stackedCards.push(primaryCard);
+          tTree.slots[selectedSlot.side] = newExistingCard;
+        }
       } else {
-        tTree.slots[selectedSlot.side] = primaryCard;
+        // 槽位为空
+        if (isStackMode) {
+          // 第一张卡片,处于堆叠模式环境
+          tTree.slots[selectedSlot.side] = {
+            ...primaryCard,
+            stackedCards: [primaryCard], // 第一张卡片也要放进堆里
+            slotConfig: {
+              accepts: { tags: [enabler.effectConfig.tag] },
+              capacity: 99
+            }
+          };
+        } else {
+          // 正常放置
+          tTree.slots[selectedSlot.side] = primaryCard;
+        }
+      }
+
+      // 重要: 如果刚打出的卡片有 CAPACITY_SHARE_SLOT 效果(如刺荨麻)
+      // 需要将同树其他槽位中符合条件的卡片转换为堆叠模式
+      if (primaryCard.effectConfig && primaryCard.effectConfig.type === 'CAPACITY_SHARE_SLOT') {
+        const targetTag = primaryCard.effectConfig.tag;
+        const slotsToConvert = ['top', 'bottom', 'left', 'right'];
+
+        slotsToConvert.forEach(side => {
+          if (side !== selectedSlot.side && tTree.slots[side]) {
+            const card = tTree.slots[side];
+            // 检查该卡片是否符合标签要求,且还没有堆叠配置
+            if (card.tags && card.tags.includes(targetTag) && !card.slotConfig) {
+              // 转换为堆叠模式:将原卡片放入堆叠数组
+              tTree.slots[side] = {
+                ...card,
+                stackedCards: [card], // 原卡片也要放进堆里
+                slotConfig: {
+                  accepts: { tags: [targetTag] },
+                  capacity: 99
+                }
+              };
+            }
+          }
+        });
       }
 
       forest[tIdx] = tTree;
