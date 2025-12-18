@@ -205,6 +205,25 @@ Page({
   onCloseDetail() { this.setData({ detailCardId: null }); },
   onCloseDrawing() { /* 不需要了，现在统一走 eventQueue */ },
 
+  onStackTap(e) {
+    const { treeid, side } = e.currentTarget.dataset;
+    const myForest = this.data.playerStates[this.data.openId].forest;
+    const tree = myForest.find(t => t._id === treeid);
+    if (!tree) return;
+
+    const slotCard = tree.slots[side];
+    if (!slotCard) return;
+    console.log(slotCard.stackedCards);
+    this.setData({
+      stackModalVisible: true,
+      stackModalCards: slotCard.stackedCards
+    });
+  },
+
+  closeStackModal() {
+    this.setData({ stackModalVisible: false });
+  },
+
   onSlotTap(e) {
     const { treeid, side } = e.currentTarget.dataset;
 

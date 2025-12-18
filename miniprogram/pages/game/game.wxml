@@ -117,20 +117,32 @@
                         <view class="slot-card {{!item.slots.top ? 'empty' : ''}}">
                            <view wx:if="{{item.slots.top}}" class="card-sprite-native slot-crop {{item.slots.top.cssClass}}" style="background-image: url('{{item.slots.top.bgImg}}'); background-size: {{item.slots.top.bgSize}}"></view>
                         </view>
+                        <view class="stack-badge" wx:if="{{item.slots.top.stackedCards && item.slots.top.stackedCards.length > 0}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="top">
+                           {{item.slots.top.stackedCards.length}}
+                        </view>
                      </view>
                      <view class="slot-pos slot-bottom {{selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' ? 'selected' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="bottom" data-cardid="{{item.slots.bottom.id}}">
                         <view class="slot-card {{!item.slots.bottom ? 'empty' : ''}}">
                            <view wx:if="{{item.slots.bottom}}" class="card-sprite-native slot-crop {{item.slots.bottom.cssClass}}" style="background-image: url('{{item.slots.bottom.bgImg}}'); background-size: {{item.slots.bottom.bgSize}}"></view>
+                        </view>
+                        <view class="stack-badge" wx:if="{{item.slots.bottom.stackedCards && item.slots.bottom.stackedCards.length > 0}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="bottom">
+                           {{item.slots.bottom.stackedCards.length}}
                         </view>
                      </view>
                      <view class="slot-pos slot-left {{selectedSlot.treeId === item._id && selectedSlot.side === 'left' ? 'selected' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="left" data-cardid="{{item.slots.left.id}}">
                         <view class="slot-card h-crop {{!item.slots.left ? 'empty' : ''}}">
                            <view wx:if="{{item.slots.left}}" class="card-sprite-native slot-crop {{item.slots.left.cssClass}}" style="background-image: url('{{item.slots.left.bgImg}}'); background-size: {{item.slots.left.bgSize}}"></view>
                         </view>
+                        <view class="stack-badge" wx:if="{{item.slots.left.stackedCards && item.slots.left.stackedCards.length > 0}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="left">
+                           {{item.slots.left.stackedCards.length}}
+                        </view>
                      </view>
                      <view class="slot-pos slot-right {{selectedSlot.treeId === item._id && selectedSlot.side === 'right' ? 'selected' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="right" data-cardid="{{item.slots.right.id}}">
                         <view class="slot-card h-crop {{!item.slots.right ? 'empty' : ''}}">
                            <view wx:if="{{item.slots.right}}" class="card-sprite-native slot-crop {{item.slots.right.cssClass}}" style="background-image: url('{{item.slots.right.bgImg}}'); background-size: {{item.slots.right.bgSize}}"></view>
+                        </view>
+                        <view class="stack-badge" wx:if="{{item.slots.right.stackedCards && item.slots.right.stackedCards.length > 0}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="right">
+                           {{item.slots.right.stackedCards.length}}
                         </view>
                      </view>
                   </view>
@@ -294,4 +306,17 @@
       </view>
       <card-detail card-id="{{detailCardId}}" bind:close="onCloseDetail" />
    </block>
+   <!-- 堆叠卡牌弹窗 -->
+   <view class="stack-modal-mask" wx:if="{{stackModalVisible}}" bindtap="closeStackModal">
+      <view class="stack-modal-content" catchtap="true" style="background:transparent; border:none; box-shadow:none; width:90%; max-height:none; align-items: center;">
+         <view class="stack-modal-header" style="background:rgba(0,0,0,0.6); border-radius: 10rpx; margin-bottom: 40rpx; width: fit-content; padding: 10rpx 40rpx;">
+            堆叠列表 ({{stackModalCards.length}})
+         </view>
+         <view class="stack-list-grid" style="width: 100%; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 20rpx; padding: 20rpx 0;">
+            <view wx:for="{{stackModalCards}}" wx:key="uid" class="hand-card" style="margin-bottom: 0;">
+               <view class="card-sprite-native {{'card-' + item.id}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}};"></view>
+            </view>
+         </view>
+      </view>
+   </view>
 </view>

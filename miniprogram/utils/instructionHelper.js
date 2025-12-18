@@ -130,6 +130,8 @@ const checkInstruction = (params) => {
     if (targetTree) {
       const slotContent = targetTree.slots?.[selectedSlot.side] || targetTree[selectedSlot.side];
       if (slotContent) {
+
+
         // 检查是否允许堆叠 (如: 刺荨麻)
         let canStack = false;
         if (slotContent.slotConfig && slotContent.slotConfig.accepts) {
@@ -140,6 +142,7 @@ const checkInstruction = (params) => {
           if (!matches && acceptsNames.length > 0) {
             matches = acceptsNames.includes(primaryCard.name);
           }
+
 
           const currentCount = slotContent.stackedCards ? slotContent.stackedCards.length : 0;
           const capacity = slotContent.slotConfig.capacity || 0;
@@ -167,6 +170,20 @@ const checkInstruction = (params) => {
             const currentStacked = slotContent.stackedCards ? slotContent.stackedCards.length : 0;
 
             if (currentStacked < maxStacked) {
+              canStack = true;
+            }
+          }
+        }
+
+        // 检查同树其他卡牌提供的堆叠能力 (如: 刺荨麻 Urtica)
+        // 规则: 只要树上有刺荨麻，蝴蝶就可以在该树的任意槽位堆叠 (共享槽位)
+        if (!canStack) {
+          const allSlots = targetTree.slots ? Object.values(targetTree.slots) : [];
+          // 查找是否有提供 CAPACITY_SHARE_SLOT 的卡
+          const enabler = allSlots.find(c => c && c.effectConfig && c.effectConfig.type === 'CAPACITY_SHARE_SLOT');
+          if (enabler) {
+            const config = enabler.effectConfig;
+            if (config.tag && primaryCard.tags && primaryCard.tags.includes(config.tag)) {
               canStack = true;
             }
           }
