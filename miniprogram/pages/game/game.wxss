@@ -406,6 +406,12 @@
   flex-shrink: 0;
   transition: transform 0.2s;
   overflow: visible;
+  animation: slideInUp 0.4s ease-out;
+}
+
+/* 槽位中的卡片图层增加 Entry 动画 (popIn) */
+.slot-card .card-sprite-native {
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .tree-group.target-active {
@@ -565,10 +571,11 @@
 }
 
 /* 底部区域：手牌 (Hand) */
+/* 底部区域：手牌 (Hand) */
 .hand-area {
   height: 280rpx;
   /* 预留抬升空间 */
-  background: #273746;
+  background: #34495e;
   padding: 12rpx 0rpx 6rpx;
   display: flex;
   flex-direction: column;
@@ -604,49 +611,50 @@
 .instruction-tip.warning {
   color: #f39c12;
   /* Orange */
-  animation: pulse 2s infinite;
+  display: inline-block;
+  animation: notice-shake 3s infinite;
+}
+
+@keyframes notice-shake {
+
+  0%,
+  70%,
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  75% {
+    transform: translateX(-6rpx);
+    opacity: 0.8;
+  }
+
+  80% {
+    transform: translateX(6rpx);
+    opacity: 0.8;
+  }
+
+  85% {
+    transform: translateX(-6rpx);
+    opacity: 0.8;
+  }
+
+  90% {
+    transform: translateX(6rpx);
+    opacity: 0.8;
+  }
 }
 
 .instruction-tip.error {
-  color: #e74c3c;
-  /* Red */
-  animation: shake 0.5s;
+  color: #f39c12;
+  /* Orange */
+  display: inline-block;
+  animation: notice-shake 3s infinite;
 }
 
 .instruction-tip.success {
   color: #2ecc71;
   /* Green */
-}
-
-@keyframes pulse {
-  0% {
-    opacity: 0.8;
-  }
-
-  50% {
-    opacity: 1;
-    text-shadow: 0 0 4rpx rgba(243, 156, 18, 0.4);
-  }
-
-  100% {
-    opacity: 0.8;
-  }
-}
-
-@keyframes shake {
-
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-
-  25% {
-    transform: translateX(-4rpx);
-  }
-
-  75% {
-    transform: translateX(4rpx);
-  }
 }
 
 .hand-scroll {

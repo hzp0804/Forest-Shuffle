@@ -67,10 +67,10 @@
                   </block>
                </view>
             </view>
-            <scroll-view class="clearing-scroll" scroll-x enable-flex>
+            <scroll-view class="clearing-scroll" scroll-x enable-flex scroll-into-view="{{clearingScrollId}}" scroll-with-animation>
                <view class="clearing-row">
                   <block wx:for="{{clearing}}" wx:key="uid">
-                     <view class="hand-card clearing-card {{index === selectedClearingIdx ? 'selected' : ''}}" bindtap="onClearingCardTap" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
+                     <view id="clearing-{{index}}" class="hand-card clearing-card {{index === selectedClearingIdx ? 'selected' : ''}}" bindtap="onClearingCardTap" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
                         <view wx:if="{{item.bgImg}}" class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
                         <view wx:else class="card-header" style="background-color: {{item.color || '#4caf50'}}">
                            <text class="card-name">{{item.name}}</text>
@@ -82,6 +82,8 @@
                         <view class="card-body" style="background: transparent;">+</view>
                      </view>
                   </block>
+                  <!-- 滚动锚点 -->
+                  <view id="clearing-end-anchor" style="width: 1rpx; height: 1rpx; flex-shrink: 0;"></view>
                </view>
             </scroll-view>
          </view>

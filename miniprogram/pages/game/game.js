@@ -29,6 +29,7 @@ Page({
     isCardFlipped: false, // 专门为 3D 翻转准备的本地状态
     pendingTurnToast: false, // 是否有待触发的回合提示
     pendingActionToast: null, // 是否有待触发的操作提示 (如: 还可以再拿一张)
+    clearingScrollId: "", // 空地滚动定位ID
   },
 
   onLoad(options) {
@@ -77,11 +78,10 @@ Page({
       const lastTurnCount = typeof this.data.lastTurnCount === "number" ? this.data.lastTurnCount : -1;
 
       // 1. 回合切换逻辑 (标记待提示)
-      if (lastTurnCount !== -1 && currentTurnCount > lastTurnCount && currentActive === this.data.openId) {
-        if (this.data.lastNotifiedTurnCount !== currentTurnCount) {
-          processedData.pendingTurnToast = true;
-          processedData.lastNotifiedTurnCount = currentTurnCount;
-        }
+      // 只要是我的回合，且回合数变更了（说明是新回合），就提示
+      if (currentActive === this.data.openId && this.data.lastNotifiedTurnCount !== currentTurnCount) {
+        processedData.pendingTurnToast = true;
+        processedData.lastNotifiedTurnCount = currentTurnCount;
       }
 
       // 2. 事件队列处理 (全场大图展示)
@@ -102,11 +102,29 @@ Page({
       }
 
       processedData.lastEventTime = nextLastEventTime;
-      processedData.lastActivePlayer = currentActive || '';
-      processedData.lastTurnCount = currentTurnCount;
+      const oldLen = this.data.clearing ? this.data.clearing.length : 0;
+      const newLen = processedData.clearing ? processedData.clearing.length : 0;
+      let targetScrollId = null;
 
-      this.setData(processedData);
-      if (added) this.processNextEvent();
+      // 只要卡片数量增加，就尝试滚动到最新那张卡
+      // 为了让最新卡片出现在屏幕右侧，我们滚动到它前面的第3张卡片 (适配不同机型宽度)
+      if (newLen > oldLen && newLen > 0) {
+        const targetIndex = Math.max(0, newLen - 3);
+        targetScrollId = `clearing-${targetIndex}`;
+      }
+
+      this.setData(processedData, () => {
+        if (targetScrollId) {
+          // 强制触发滚动：先置空，再赋值，确保 scroll-view 监听到变化
+          this.setData({ clearingScrollId: '' }, () => {
+            setTimeout(() => {
+              this.setData({ clearingScrollId: targetScrollId });
+            }, 100);
+          });
+        }
+        // moved inside callback to ensure data is updated
+        if (added || processedData.pendingTurnToast) this.processNextEvent();
+      });
     } catch (e) { console.error("Query Failed", e); }
   },
 
@@ -118,14 +136,23 @@ Page({
     if (this.data.isProcessingEvent) return;
 
     if (this.data.eventQueue.length === 0) {
-      this.setData({ isProcessingEvent: false });
-      // 队列结束，如果刚才有待提示的回合切换，现在触发
+      // 特殊情况处理：虽然没有事件，但有待显示的 Toast (通常是回合切换)
       if (this.data.pendingTurnToast) {
-        wx.showToast({ title: "轮到你了！", icon: "none" });
-        this.setData({ pendingTurnToast: false });
+        wx.showToast({ title: "轮到你了！", icon: "none", duration: 1500 });
+        this.setData({ pendingTurnToast: false, isProcessingEvent: false });
+        return;
       }
-      if (this.data.pendingActionToast) {
-        wx.showToast({ title: this.data.pendingActionToast, icon: "none" });
+
+      this.setData({ isProcessingEvent: false });
+
+      // 队列结束，如果刚才有待提示的回合切换，现在触发
+      // 注意：这里使用 data 中的最新状态，因为 processNextEvent 可能被多次调用
+      if (this.data.pendingTurnToast) {
+        wx.showToast({ title: "轮到你了！", icon: "none", duration: 1500 });
+        this.setData({ pendingTurnToast: false });
+      } else if (this.data.pendingActionToast) {
+        // action toast 优先级较低，只有没有 turn toast 时才显示
+        wx.showToast({ title: this.data.pendingActionToast, icon: "none", duration: 1500 });
         this.setData({ pendingActionToast: null });
       }
       return;
@@ -181,14 +208,21 @@ Page({
 
   onSlotTap(e) {
     const { treeid, side } = e.currentTarget.dataset;
+
+    // 逻辑修正：点击已选中的槽位应取消选中，且必须重新计算指引
+    let nextSlot = { treeId: treeid, side, isValid: true };
     if (this.data.selectedSlot?.treeId === treeid && this.data.selectedSlot?.side === side) {
-      this.setData({ selectedSlot: null });
-      return;
+      nextSlot = null; // 取消选中
     }
-    const slot = { treeId: treeid, side, isValid: true };
-    const nextData = { ...this.data, selectedSlot: slot };
+
+    const nextData = { ...this.data, selectedSlot: nextSlot };
     const { instructionState, instructionText } = Utils.computeInstruction(nextData);
-    this.setData({ selectedSlot: slot, instructionState, instructionText });
+
+    this.setData({
+      selectedSlot: nextSlot,
+      instructionState,
+      instructionText
+    });
   },
 
   onConfirmPlay() {
@@ -249,9 +283,17 @@ Page({
     };
 
     let newDeck = [...this.data.deck];
-    for (let i = 0; i < reward.drawCount; i++) {
+    // 奖励抽牌逻辑：受手牌上限 10 张限制
+    // 举例：手牌8张，支付1张(剩余7张)，奖励5张 -> 7+5=12 > 10，只能抽 3 张
+    const currentHandSize = newHand.length;
+    const maxCanDraw = 10 - currentHandSize;
+    const actualDraw = Math.max(0, Math.min(reward.drawCount, maxCanDraw));
+
+    for (let i = 0; i < actualDraw; i++) {
       if (newDeck.length > 0) newHand.push(newDeck.shift());
     }
+    // 如果 reward.drawCount > actualDraw，多余的抽牌机会作废（或者是顶掉牌堆顶的卡？通常规则是作废或不抽）
+    // 根据描述“只能获得3张”，意味着剩下的就不抽了，保留在牌堆顶。上述代码符合此逻辑。
 
     paymentCards.forEach(c => newClearing.push({ ...c, selected: false }));
 
@@ -311,9 +353,8 @@ Page({
     const [card] = newClearing.splice(selectedClearingIdx, 1);
     newHand.push(card);
 
-    const isEnd = (curTotal + 1) >= 2;
+    const isEnd = (curTotal + 1) >= 2 || newHand.length >= 10;
     const nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, false);
-
     const updates = {
       [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
       [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
@@ -338,14 +379,21 @@ Page({
   executeDrawFromDeck() {
     const { deck, playerStates, openId, turnAction } = this.data;
     const curTotal = (turnAction?.drawnCount || 0) + (turnAction?.takenCount || 0);
-    if (curTotal >= 2 || playerStates[openId].hand.length >= 10 || deck.length === 0) return;
+
+    // Check hand limit first and show toast if full
+    if (playerStates[openId].hand.length >= 10) {
+      wx.showToast({ title: "手牌已满", icon: "none" });
+      return;
+    }
+
+    if (curTotal >= 2 || deck.length === 0) return;
 
     const newDeck = [...deck];
     const newHand = [...playerStates[openId].hand];
     const card = newDeck.shift();
     newHand.push(card);
 
-    const isEnd = (curTotal + 1) >= 2;
+    const isEnd = (curTotal + 1) >= 2 || newHand.length >= 10;
     const nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, false);
     const updates = {
       [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
@@ -369,16 +417,27 @@ Page({
   },
 
   onEndTurn() {
-    const next = RoundUtils.getNextPlayer(this.data.openId, this.data.players, false);
-    this.submitGameUpdate({
-      [`gameState.activePlayer`]: next,
-      [`gameState.turnCount`]: db.command.inc(1),
-      [`gameState.turnAction`]: { drawnCount: 0, takenCount: 0 }
-    }, "回合结束", "主动结束了回合");
+    wx.showModal({
+      title: '结束回合',
+      content: '确定要结束本回合吗？',
+      success: (res) => {
+        if (res.confirm) {
+          const next = RoundUtils.getNextPlayer(this.data.openId, this.data.players, false);
+          this.submitGameUpdate({
+            [`gameState.activePlayer`]: next,
+            [`gameState.turnCount`]: db.command.inc(1),
+            [`gameState.turnAction`]: { drawnCount: 0, takenCount: 0 }
+          }, "回合结束", "主动结束了回合");
+        }
+      }
+    });
   },
 
   async submitGameUpdate(updates, successMsg, logMsg) {
     if (logMsg) updates["gameState.logs"] = db.command.push({ operator: this.data.openId, action: logMsg, timestamp: Date.now() });
+
+    // [Optimistic Update] 提前捕获 nextTurnAction，用于本地立即更新指引
+    const nextTurnAction = updates['gameState.turnAction'];
 
     // --- 性能优化：本地立即触发动画，不再等待轮询 ---
     const localLastEvent = updates['gameState.lastEvent'];
@@ -403,6 +462,14 @@ Page({
     }
     // ------------------------------------------
 
+    // Fix: 使用 db.command.set 避免对象更新时的自动扁平化导致的 "Cannot create field ... in element null" 错误
+    const _ = db.command;
+    ['gameState.lastEvent', 'gameState.deckRevealEvent', 'gameState.turnAction'].forEach(key => {
+      if (updates[key] !== undefined) {
+        updates[key] = _.set(updates[key]);
+      }
+    });
+
     try {
       await db.collection("rooms").doc(this.data.roomId).update({ data: updates });
       wx.hideLoading();
@@ -413,12 +480,29 @@ Page({
         playerStates[openId].hand.forEach(c => c.selected = false);
       }
 
-      this.setData({
+      // 准备本地更新的数据
+      const nextLocalData = {
         selectedClearingIdx: -1,
         primarySelection: null,
         selectedSlot: null,
         [`playerStates.${openId}.hand`]: playerStates[openId].hand || []
+      };
+
+      // 如果有 TurnAction 更新，立即应用到本地，并重算指引
+      if (nextTurnAction) {
+        nextLocalData.turnAction = nextTurnAction;
+      }
+
+      // 基于预测的本地状态计算指引文案
+      const simulationData = { ...this.data, ...nextLocalData };
+      const { instructionState, instructionText } = Utils.computeInstruction(simulationData);
+
+      this.setData({
+        ...nextLocalData,
+        instructionState,
+        instructionText
       });
+
     } catch (e) { wx.hideLoading(); console.error(e); }
   },
 
