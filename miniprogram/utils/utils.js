@@ -43,7 +43,8 @@ const enrichCard = (card) => {
   return {
     ...info,
     ...cardWithoutSpeciesDetails,
-    id
+    id,
+    stackedCards: card.stackedCards ? card.stackedCards.map(c => enrichCard(c)) : undefined
   };
 };
 

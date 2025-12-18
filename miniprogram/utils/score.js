@@ -280,6 +280,23 @@ function calculateCardScore(card, context, allPlayerStates, myOpenId, stats) {
       score = speciesCount * (config.value || 0);
       break;
 
+    // 每张堆叠卡得分 (如: 大蟾蜍)
+    case SCORING_TYPES.PER_STACKED_CARD:
+      let stackedCount = 0;
+      if (context.forest) {
+        for (const group of context.forest) {
+          if (group.slots) {
+            const mySlot = Object.values(group.slots).find(s => s && s.uid === card.uid);
+            if (mySlot && mySlot.stackedCards) {
+              stackedCount = mySlot.stackedCards.length;
+              break;
+            }
+          }
+        }
+      }
+      score = stackedCount * (config.value || 0);
+      break;
+
     // 每种不同的物种
     case SCORING_TYPES.PER_DIFFERENT_SPECIES:
       const allUnique = new Set();
@@ -649,8 +666,10 @@ function calculateCardScore(card, context, allPlayerStates, myOpenId, stats) {
     case SCORING_TYPES.COLLECT_ALL_TREES:
       const uniqueTrees = new Set();
       allCards.forEach(c => {
-        if (c.tags && c.tags.includes('树')) {
-          uniqueTrees.add(c.name);
+        // 修正：树木通常 type 为 tree，或者 tags 包含 tree。之前只检查 '树' 可能导致漏判
+        if (c.type === CARD_TYPES.TREE || (c.tags && (c.tags.includes(CARD_TYPES.TREE) || c.tags.includes(TAGS.TREE)))) {
+          const name = getCardEffectiveName(c);
+          if (name) uniqueTrees.add(name);
         }
       });
       if (uniqueTrees.size >= 8) {
@@ -763,8 +782,17 @@ function getCountByTag(paramContext, tag) {
       // 检查 slots (是否也要统计 slot 里的 tag? 通常是的)
       if (g.slots) {
         Object.values(g.slots).forEach(s => {
-          if (s && s.tags && s.tags.includes(tag)) {
-            count++;
+          if (s) {
+            if (s.tags && s.tags.includes(tag)) {
+              count++;
+            }
+            if (s.stackedCards) {
+              s.stackedCards.forEach(sc => {
+                if (sc.tags && sc.tags.includes(tag)) {
+                  count++;
+                }
+              });
+            }
           }
         });
       }
@@ -796,6 +824,15 @@ function getCountByName(paramContext, name) {
     });
   }
   return count;
+}
+
+// 辅助: 获取有效名称 (处理别名)
+function getCardEffectiveName(card) {
+  if (!card) return null;
+  if (card.effectConfig && card.effectConfig.type === 'SPECIES_ALIAS' && card.effectConfig.target) {
+    return card.effectConfig.target;
+  }
+  return card.name;
 }
 
 

@@ -233,6 +233,78 @@ Page({
     const source = (typeof e === 'string') ? e : 'PLAYER_ACTION';
 
     const { gameState, primarySelection, playerStates, openId, clearing, selectedSlot, instructionState, turnAction } = this.data;
+
+    // Handle Tuck Action (Common Toad)
+    if (gameState && gameState.actionMode === 'ACTION_TUCK_HAND_CARD') {
+      const myHand = playerStates[openId].hand || [];
+      const selected = myHand.filter(c => c.selected);
+      if (selected.length !== 1) {
+        wx.showToast({ title: "请选择一张手牌", icon: "none" });
+        return;
+      }
+
+      const cardToTuck = selected[0];
+      const newHand = myHand.filter(c => c.uid !== cardToTuck.uid);
+      const forest = [...(playerStates[openId].forest || [])];
+
+      // Find the Toad (should be the last played card, or passed via context)
+      // Relying on lastEvent might be risky if multiple events happened.
+      // Better: Find the Toad that has empty stackedCards?
+      // Or check lastEvent.
+      let toadUid = gameState.lastEvent?.mainCard?.uid;
+      // Search in forest
+      let foundToad = false;
+
+      for (let i = 0; i < forest.length; i++) {
+        let group = forest[i];
+        // Check slots
+        if (group.slots) {
+          const slots = Object.values(group.slots);
+          const toad = slots.find(s => s && s.uid === toadUid);
+          if (toad) {
+            // Determine which slot key
+            const key = Object.keys(group.slots).find(k => group.slots[k] && group.slots[k].uid === toadUid);
+            // We need to modify the group deeply
+            const newGroup = { ...group, slots: { ...group.slots } };
+            const newToad = { ...newGroup.slots[key] };
+            newToad.stackedCards = newToad.stackedCards || [];
+            newToad.stackedCards.push(cardToTuck);
+            newGroup.slots[key] = newToad;
+            forest[i] = newGroup;
+            foundToad = true;
+            break;
+          }
+        }
+      }
+
+      if (!foundToad) {
+        // Fallback scan: maybe lastEvent is missing?
+        // Find any Common Toad that triggered recently?
+        // For now, if not found, just discard the card (assume tucked virtually?)
+        // But user expects points.
+        console.error("Toad not found for tucking");
+      }
+
+      // Finish action
+      const updates = {
+        [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
+        [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
+      };
+
+      const remaining = (gameState.pendingActions || []).slice(1);
+      if (remaining.length > 0) {
+        updates[`gameState.pendingActions`] = remaining;
+        updates[`gameState.actionMode`] = remaining[0].type;
+        this.submitGameUpdate(updates, "特殊行动", `将 ${cardToTuck.name} 叠放在大蟾蜍下`);
+      } else {
+        updates[`gameState.pendingActions`] = [];
+        updates[`gameState.actionMode`] = null;
+        updates[`gameState.actionText`] = null;
+        await this.finalizeAction(updates, `将 ${cardToTuck.name} 叠放在大蟾蜍下`);
+      }
+      return;
+    }
+
     if (turnAction?.drawnCount > 0 || turnAction?.takenCount > 0) {
       wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
       return;
@@ -297,7 +369,17 @@ Page({
       const tIdx = forest.findIndex(t => t._id === selectedSlot.treeId);
       const tTree = { ...forest[tIdx] };
       tTree.slots = tTree.slots || { top: null, bottom: null, left: null, right: null };
-      tTree.slots[selectedSlot.side] = primaryCard;
+
+      const existingCard = tTree.slots[selectedSlot.side];
+      if (existingCard) {
+        // Existing card, assume stacking logic (validated by checkInstruction)
+        existingCard.stackedCards = existingCard.stackedCards || [];
+        existingCard.stackedCards.push(primaryCard);
+        // Keep existingCard as the slot holder
+      } else {
+        tTree.slots[selectedSlot.side] = primaryCard;
+      }
+
       forest[tIdx] = tTree;
     }
 

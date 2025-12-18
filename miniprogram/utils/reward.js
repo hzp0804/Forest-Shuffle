@@ -140,6 +140,14 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
         if (hasCondition) result.extraTurn = true;
       }
       break;
+
+    case TRIGGER_TYPES.ON_PLAY_OPTIONAL_TUCK:
+      result.text = isBonus ? (card.bonus || '堆叠手牌') : (card.effect || '堆叠手牌');
+      result.actions.push({
+        type: REWARD_TYPES.ACTION_TUCK_HAND_CARD,
+        max: config.max || 1
+      });
+      break;
   }
 
   // 补充基础奖励描述

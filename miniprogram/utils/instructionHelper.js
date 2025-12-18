@@ -45,9 +45,14 @@ const checkInstruction = (params) => {
     let text = gameState.actionText;
     const currentAction = (gameState.pendingActions || [])[0];
 
-    // 如果没有预设文案，且是免费打出模式，尝试生成具体提示
     if (!text && currentAction && currentAction.type === 'PLAY_FREE' && currentAction.tags && currentAction.tags.length > 0) {
       text = `免费打出一张带有 ${currentAction.tags.join('/')} 符号的牌`;
+    }
+
+    if (gameState.actionMode === 'ACTION_TUCK_HAND_CARD') {
+      text = "请选择一张手牌叠放在大蟾蜍下";
+      if (selectedCount === 1) return { instructionState: "success", instructionText: "点击确认进行堆叠" };
+      return { instructionState: "warning", instructionText: text };
     }
 
     text = text || "特殊行动中...";
@@ -124,10 +129,26 @@ const checkInstruction = (params) => {
     const targetTree = myForest.find((t) => (t._id || t.uid) === selectedSlot.treeId);
     if (targetTree) {
       const slotContent = targetTree.slots?.[selectedSlot.side] || targetTree[selectedSlot.side];
-      if (slotContent) return {
-        instructionState: "error",
-        instructionText: "该位置已有卡牌"
-      };
+      if (slotContent) {
+        // 检查是否允许堆叠 (如: 刺荨麻)
+        let canStack = false;
+        if (slotContent.slotConfig && slotContent.slotConfig.accepts) {
+          const acceptsTags = slotContent.slotConfig.accepts.tags || [];
+          const matches = acceptsTags.some(tag => primaryCard.tags && primaryCard.tags.includes(tag));
+          const currentCount = slotContent.stackedCards ? slotContent.stackedCards.length : 0;
+          const capacity = slotContent.slotConfig.capacity || 0;
+          if (matches && currentCount < capacity) {
+            canStack = true;
+          }
+        }
+
+        if (!canStack) {
+          return {
+            instructionState: "error",
+            instructionText: "该位置已有卡牌"
+          };
+        }
+      }
     }
   }
 

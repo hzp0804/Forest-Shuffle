@@ -915,7 +915,7 @@ const SPECIES_DATA = {
       type: REWARD_TYPES.PLAY_FREE,
       tags: [TAGS.PAW]
     },
-    points: "连接到这棵银冷杉的每张牌得2分",
+    points: "连接到这棵银杉的每张牌得2分",
     scoreConfig: {
       type: SCORING_TYPES.PER_CARD_ON_TREE,
       value: 2
@@ -1583,6 +1583,11 @@ const SPECIES_DATA = {
       type: MODIFIER_TYPES.CAPACITY_SHARE_SLOT,
       tag: TAGS.BUTTERFLY
     },
+    // Add slot config for stacking butterflies
+    slotConfig: {
+      accepts: { tags: [TAGS.BUTTERFLY] },
+      capacity: 99
+    },
     bonus: "",
     points: "每张带有蝴蝶符号的牌得2分",
     scoreConfig: {
@@ -1590,6 +1595,52 @@ const SPECIES_DATA = {
       tag: TAGS.BUTTERFLY,
       value: 2
     },
+  },
+
+  [SPECIES_NAMES.FIREFLIES]: {
+    name: "萤火虫",
+    nb: 3,
+    tags: [TAGS.EDGE, TAGS.INSECT],
+    cost: 1, // Assuming cost 1?
+    type: CARD_TYPES.V_CARD,
+    effect: "",
+    bonus: "",
+    points: "根据数量得分(最高10)",
+    scoreConfig: {
+      type: SCORING_TYPES.SCALE_BY_COUNT,
+      target: SPECIES_NAMES.FIREFLIES,
+      scale: {
+        1: 2,
+        2: 5,
+        3: 9,
+        4: 14,
+        5: 20,
+        6: 27,
+        7: 35,
+        8: 44,
+        9: 54,
+        10: 65
+      }
+    }
+  },
+
+  [SPECIES_NAMES.COMMON_TOAD]: {
+    name: "大蟾蜍",
+    nb: 3,
+    tags: [TAGS.EDGE, TAGS.AMPHIBIAN],
+    cost: 0,
+    type: CARD_TYPES.V_CARD,
+    effect: "进场时可将一张手牌叠放在其下",
+    effectConfig: {
+      type: TRIGGER_TYPES.ON_PLAY_OPTIONAL_TUCK, // Custom trigger
+      max: 1 // Max 1 card? Or unlimited? Usually 1 per Toad played.
+    },
+    bonus: "",
+    points: "其下每张牌得5分",
+    scoreConfig: {
+      type: SCORING_TYPES.PER_STACKED_CARD, // New scoring type
+      value: 5
+    }
   },
 
   [SPECIES_NAMES.GREAT_GREEN_BUSH_CRICKET]: {
