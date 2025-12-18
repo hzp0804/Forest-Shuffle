@@ -491,7 +491,10 @@ Page({
   },
 
   onDrawCard() {
-    if (this.data.selectedClearingIdx === -2) this.setData({ selectedClearingIdx: -1 });
+    const nextIdx = this.data.selectedClearingIdx === -2 ? -1 : -2;
+    this.setData({
+      selectedClearingIdx: nextIdx
+    });
   },
 
   onConfirmTake() {

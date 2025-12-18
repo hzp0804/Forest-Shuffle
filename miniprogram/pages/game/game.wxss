@@ -286,6 +286,12 @@
   box-shadow: 0 0 0 6rpx #e74c3c, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
 }
 
+.hand-card.selected {
+  transform: translateY(-10rpx) scale(1.05);
+  box-shadow: 0 0 0 6rpx #e74c3c, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
 .hand-card.placeholder {
   background: rgba(255, 255, 255, 0.1);
   border: 3rpx dashed rgba(255, 255, 255, 0.7);

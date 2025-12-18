@@ -43,7 +43,7 @@
                   </button>
                </block>
                <block wx:else>
-                  <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" disabled="{{selectedClearingIdx === -1 && selectedClearingIdx !== -2}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
+                  <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" style="margin:0; padding:0 12rpx; font-weight:normal;">
                      ✋拿取
                   </button>
                </block>
