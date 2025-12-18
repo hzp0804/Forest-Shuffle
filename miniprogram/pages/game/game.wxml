@@ -156,12 +156,16 @@
                   </view>
                </view>
             </block>
-            <!-- 场景2: 牌库翻开/摸牌 (3D Flip) -->
-            <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.type === 'DRAW_CARD'}}">
+            <!-- 场景2: 牌库翻开/摸牌/奖励抽牌 (3D Flip) -->
+            <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.type === 'DRAW_CARD' || currentEvent.type === 'REWARD_DRAW'}}">
                <view class="event-header">
                   <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
                   <text class="event-title">
-                     {{currentEvent.type === 'DECK_TO_CLEARING' ? '效果触发 (翻开卡牌)' : currentEvent.playerNick + ' 正在摸牌...'}}
+                     <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING'}}">效果触发 (翻开卡牌)</block>
+                     <block wx:elif="{{currentEvent.type === 'REWARD_DRAW'}}">
+                        {{currentEvent.playerNick}} 获得奖励抽牌 ({{currentEvent.count}}张)
+                     </block>
+                     <block wx:else>{{currentEvent.playerNick}} 正在摸牌...</block>
                   </text>
                </view>
                <view class="flip-container">
@@ -172,8 +176,10 @@
                      </view>
                      <!-- 翻转面 (180deg): 内容 -->
                      <view class="flip-back">
+                        <!-- 只有玩家自己或公开翻牌时才看得到正面内容 -->
                         <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.playerOpenId === openId}}">
-                           <view class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
+                           <view wx:if="{{currentEvent.mainCard}}" class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
+                           <view wx:else class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
                         </block>
                         <block wx:else>
                            <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>

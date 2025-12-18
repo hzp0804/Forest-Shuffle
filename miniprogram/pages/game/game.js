@@ -165,13 +165,14 @@ Page({
     this.setData({ currentEvent: event, eventQueue: remaining, isCardFlipped: false });
 
     // 如果是带翻页效果的事件，延迟触发翻转
-    if (event.type === 'DRAW_CARD' || event.type === 'DECK_TO_CLEARING') {
+    const needsFlip = event.type === 'DRAW_CARD' || event.type === 'DECK_TO_CLEARING' || event.type === 'REWARD_DRAW';
+    if (needsFlip) {
       setTimeout(() => { this.setData({ isCardFlipped: true }); }, 50);
     } else {
       this.setData({ isCardFlipped: true });
     }
 
-    const duration = 1000;
+    const duration = 1500;
     setTimeout(() => {
       this.setData({ currentEvent: null, isProcessingEvent: false });
       this.processNextEvent();
@@ -247,8 +248,13 @@ Page({
     const newClearing = [...(clearing || [])];
 
     const primaryIdx = hand.findIndex(c => c.uid === primarySelection);
-    const primaryCard = Utils.enrichCard(hand[primaryIdx]);
-    const isTree = primaryCard.type.toLowerCase() === 'tree';
+    const primaryCardRaw = hand[primaryIdx];
+    const isTree = (primaryCardRaw.type || '').toLowerCase() === 'tree';
+
+    // 确定当前出牌的物理位置（侧边），用于富化双属性卡片数据
+    let activeSide = 'center';
+    if (!isTree && selectedSlot) activeSide = selectedSlot.side;
+    const primaryCard = Utils.enrichCardWithSpecies(primaryCardRaw, activeSide);
 
     if (!isTree && !selectedSlot) {
       wx.hideLoading();
@@ -274,11 +280,15 @@ Page({
       forest[tIdx] = tTree;
     }
 
-    // 计算奖励
+    // 计算即时奖励 (Bonus) 和 自身携带的立即效果 (Effect)
     const bonus = RewardUtils.calculateColorReward(primaryCard, selectedSlot, paymentCards);
     const effect = RewardUtils.calculateEffect(primaryCard, { forest });
+
+    // 计算森林中已存在的常驻效果触发 (Trigger Effects)
+    const triggers = RewardUtils.calculateTriggerEffects(forest, primaryCard, { slot: selectedSlot });
+
     const reward = {
-      drawCount: (bonus.drawCount || 0) + (effect.drawCount || 0),
+      drawCount: (bonus.drawCount || 0) + (effect.drawCount || 0) + (triggers.drawCount || 0),
       extraTurn: bonus.extraTurn || effect.extraTurn
     };
 
@@ -311,6 +321,18 @@ Page({
     }
     if (newClearing.length >= 10) newClearing.length = 0;
 
+    let rewardDrawEvent = null;
+    if (actualDraw > 0) {
+      rewardDrawEvent = {
+        type: 'REWARD_DRAW',
+        playerOpenId: openId,
+        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+        count: actualDraw,
+        timestamp: Date.now() - 50 // 确保在 PLAY_CARD 之前或紧随其后
+      };
+    }
+
     const nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, reward.extraTurn);
     const updates = {
       [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
@@ -328,7 +350,8 @@ Page({
         mainCard: primaryCard, subCards: paymentCards.map(c => Utils.enrichCard(c)),
         timestamp: Date.now()
       },
-      [`gameState.deckRevealEvent`]: deckRevealEvent
+      [`gameState.deckRevealEvent`]: deckRevealEvent,
+      [`gameState.rewardDrawEvent`]: rewardDrawEvent
     };
 
     this.submitGameUpdate(updates, "出牌成功", `打出了 ${primaryCard.name}`);
@@ -442,9 +465,16 @@ Page({
     // --- 性能优化：本地立即触发动画，不再等待轮询 ---
     const localLastEvent = updates['gameState.lastEvent'];
     const localDeckReveal = updates['gameState.deckRevealEvent'];
+    const localRewardDraw = updates['gameState.rewardDrawEvent'];
     let nextLastEventTime = this.data.lastEventTime || 0;
     let added = false;
 
+    // 顺序决定显示的先后：奖励抽牌 -> 动作事件 -> 翻开事件
+    if (localRewardDraw) {
+      this.addToEventQueue(localRewardDraw);
+      nextLastEventTime = Math.max(nextLastEventTime, localRewardDraw.timestamp);
+      added = true;
+    }
     if (localLastEvent) {
       this.addToEventQueue(localLastEvent);
       nextLastEventTime = Math.max(nextLastEventTime, localLastEvent.timestamp);
@@ -464,7 +494,7 @@ Page({
 
     // Fix: 使用 db.command.set 避免对象更新时的自动扁平化导致的 "Cannot create field ... in element null" 错误
     const _ = db.command;
-    ['gameState.lastEvent', 'gameState.deckRevealEvent', 'gameState.turnAction'].forEach(key => {
+    ['gameState.lastEvent', 'gameState.deckRevealEvent', 'gameState.rewardDrawEvent', 'gameState.turnAction'].forEach(key => {
       if (updates[key] !== undefined) {
         updates[key] = _.set(updates[key]);
       }

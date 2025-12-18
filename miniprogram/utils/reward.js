@@ -13,38 +13,51 @@ function calculateColorReward(card, slot, paymentCards) {
     actions: []
   };
 
-  if (!card.bonusConfig) {
-    return result;
-  }
-
   const config = card.bonusConfig;
 
-  switch (config.type) {
-    // 摸牌 (如: 灰林鸮-得2张)
-    case BONUS_TYPES.DRAW:
-      result.drawCount += (config.count || 0);
-      break;
+  if (config) {
+    switch (config.type) {
+      // 摸牌 (如: 灰林鸮-得2张)
+      case BONUS_TYPES.DRAW:
+        result.drawCount += (config.count || 0);
+        break;
 
-    // 额外回合 (如: 橡树)
-    case BONUS_TYPES.EXTRA_TURN:
-      result.extraTurn = true;
-      break;
+      // 额外回合 (如: 橡树)
+      case BONUS_TYPES.EXTRA_TURN:
+        result.extraTurn = true;
+        break;
 
-    // 摸牌+回合 (如: 棕熊)
-    case BONUS_TYPES.DRAW_AND_TURN:
-      result.drawCount += (config.count || 0);
-      result.extraTurn = true;
-      break;
+      // 摸牌+回合 (如: 棕熊)
+      case BONUS_TYPES.DRAW_AND_TURN:
+        result.drawCount += (config.count || 0);
+        result.extraTurn = true;
+        break;
 
-    // 免费打出特定类型牌
-    case BONUS_TYPES.PLAY_FREE:
-    case BONUS_TYPES.PLAY_FREE_SPECIFIC:
-    case BONUS_TYPES.PLAY_FREE_AND_DRAW:
-    case BONUS_TYPES.PICK_FROM_CLEARING_TO_HAND:
-    case BONUS_TYPES.CLEARING_TO_CAVE:
-      // 这些都需要后续用户操作，将 Config 作为 action 返回
-      result.actions.push(config);
-      break;
+      // 免费打出特定类型牌
+      case BONUS_TYPES.PLAY_FREE:
+      case BONUS_TYPES.PLAY_FREE_SPECIFIC:
+        result.text = `免费打出-${config.tag || '指定卡'}`;
+        result.actions.push(config);
+        break;
+      case BONUS_TYPES.PLAY_FREE_AND_DRAW:
+      case BONUS_TYPES.PICK_FROM_CLEARING_TO_HAND:
+      case BONUS_TYPES.CLEARING_TO_CAVE:
+        result.text = "特殊行动";
+        result.actions.push(config);
+        break;
+    }
+  }
+
+  // 补充基础奖励描述
+  if (!result.text) {
+    const parts = [];
+    if (result.drawCount > 0) parts.push(`摸${result.drawCount}张`);
+    if (result.extraTurn) parts.push("额外回合");
+    if (parts.length > 0) {
+      result.text = parts.join("+");
+    } else if (card.bonus) {
+      result.text = card.bonus;
+    }
   }
 
   return result;
@@ -56,67 +69,91 @@ function calculateEffect(card, context) {
     actions: []
   };
 
-  if (!card.effectConfig) return result;
-
   const config = card.effectConfig;
 
-  switch (config.type) {
-    case EFFECT_TYPES.EXTRA_TURN:
-      result.extraTurn = true;
-      break;
+  if (config) {
+    switch (config.type) {
+      case EFFECT_TYPES.EXTRA_TURN:
+        result.extraTurn = true;
+        break;
 
-    // 立即摸牌 (如: 大斑啄木鸟)
-    case EFFECT_TYPES.IMMEDIATE_DRAW:
-      result.drawCount += (config.count || 0);
-      break;
+      // 立即摸牌 (如: 大斑啄木鸟)
+      case EFFECT_TYPES.IMMEDIATE_DRAW:
+        result.drawCount += (config.count || 0);
+        break;
 
-    // 根据场上某物种数量摸牌 (如: 赤狐 - 每有一对野兔摸1张)
-    case EFFECT_TYPES.DRAW_PER_EXISTING:
-      if (config.tag || config.target) {
-        let count = 0;
-        if (context && context.forest) {
-          const all = [];
-          context.forest.forEach(g => {
-            if (g.center) all.push(g.center);
-            if (g.slots) Object.values(g.slots).forEach(s => s && all.push(s));
-          });
-          all.forEach(c => {
-            if (config.tag && c.tags && c.tags.includes(config.tag)) count++;
-            else if (config.target && c.name === config.target) count++;
-          });
-        }
-        const divisor = config.perCount || 1;
-        const rewardCount = Math.floor(count / divisor) * (config.value || 1);
-        result.drawCount += rewardCount;
-      }
-      break;
-
-    // 条件额外回合 (如: 仓鸮 -> 有蝙蝠时)
-    case EFFECT_TYPES.CONDITION_EXTRATURN:
-      if (context && context.forest) {
-        let hasCondition = false;
-        for (const group of context.forest) {
-          if ((group.center && group.center.tags && group.center.tags.includes(config.tag)) ||
-            (group.slots && Object.values(group.slots).some(s => s && s.tags && s.tags.includes(config.tag)))) {
-            hasCondition = true;
-            break;
+      // 根据场上某物种数量摸牌 (如: 赤狐 - 每有一对野兔摸1张)
+      case EFFECT_TYPES.DRAW_PER_EXISTING:
+        if (config.tag || config.target) {
+          let count = 0;
+          if (context && context.forest) {
+            const all = [];
+            context.forest.forEach(g => {
+              if (g.center) all.push(g.center);
+              if (g.slots) Object.values(g.slots).forEach(s => s && all.push(s));
+            });
+            all.forEach(c => {
+              if (config.tag && c.tags && c.tags.includes(config.tag)) count++;
+              else if (config.target && c.name === config.target) count++;
+            });
           }
+          const divisor = config.perCount || 1;
+          const rewardCount = Math.floor(count / divisor) * (config.value || 1);
+          result.drawCount += rewardCount;
         }
-        if (hasCondition) result.extraTurn = true;
-      }
-      break;
+        break;
 
-    // 特殊动作类 (需要交互)
-    case EFFECT_TYPES.ACTION_MOLE:
-    case EFFECT_TYPES.ACTION_RACCOON:
-    case EFFECT_TYPES.ACTION_BEAR:
-    case EFFECT_TYPES.FREE_PLAY_BAT:
-    case EFFECT_TYPES.ACTION_REMOVE_CLEARING:
-    case EFFECT_TYPES.ACTION_CLEARING_TO_CAVE:
-    case EFFECT_TYPES.ACTION_PICK_FROM_CLEARING:
-    case EFFECT_TYPES.ACTION_PLAY_SAPLINGS:
-      result.actions.push(config);
-      break;
+      // 条件额外回合 (如: 仓鸮 -> 有蝙蝠时)
+      case EFFECT_TYPES.CONDITION_EXTRATURN:
+        if (context && context.forest) {
+          let hasCondition = false;
+          for (const group of context.forest) {
+            if ((group.center && group.center.tags && group.center.tags.includes(config.tag)) ||
+              (group.slots && Object.values(group.slots).some(s => s && s.tags && s.tags.includes(config.tag)))) {
+              hasCondition = true;
+              break;
+            }
+          }
+          if (hasCondition) result.extraTurn = true;
+        }
+        break;
+
+      // 特殊动作类 (需要交互)
+      case EFFECT_TYPES.ACTION_MOLE:
+        result.text = "鼹鼠特殊行动";
+        result.actions.push(config);
+        break;
+      case EFFECT_TYPES.ACTION_RACCOON:
+        result.text = "浣熊特殊行动";
+        result.actions.push(config);
+        break;
+      case EFFECT_TYPES.ACTION_BEAR:
+        result.text = "洞穴收入";
+        result.actions.push(config);
+        break;
+      case EFFECT_TYPES.FREE_PLAY_BAT:
+        result.text = "免费打出蝙蝠";
+        result.actions.push(config);
+        break;
+      case EFFECT_TYPES.ACTION_REMOVE_CLEARING:
+      case EFFECT_TYPES.ACTION_CLEARING_TO_CAVE:
+      case EFFECT_TYPES.ACTION_PICK_FROM_CLEARING:
+      case EFFECT_TYPES.ACTION_PLAY_SAPLINGS:
+        result.actions.push(config);
+        break;
+    }
+  }
+
+  // 补充基础效果描述
+  if (!result.text) {
+    const parts = [];
+    if (result.drawCount > 0) parts.push(`摸${result.drawCount}张`);
+    if (result.extraTurn) parts.push("额外回合");
+    if (parts.length > 0) {
+      result.text = parts.join("+");
+    } else if (card.effect) {
+      result.text = card.effect;
+    }
   }
 
   return result;

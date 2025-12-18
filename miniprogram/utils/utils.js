@@ -176,11 +176,18 @@ const computeInstruction = (data) => {
     instructionText: selectedCount === 0 ? "摸牌 / 出牌" : "请确认主牌选择",
   };
 
-  const primaryCard = myHand.find((c) => c.uid === primarySelection);
-  if (!primaryCard) return {
+  const primaryCardRaw = myHand.find((c) => c.uid === primarySelection);
+  if (!primaryCardRaw) return {
     instructionState: "error",
     instructionText: "主牌数据异常"
   };
+
+  // 根据当前选择的插槽或卡片类型，确定实际打出的物种数据
+  let activeSide = 'center';
+  if (primaryCardRaw.type === CARD_TYPES.H_CARD || primaryCardRaw.type === CARD_TYPES.V_CARD) {
+    activeSide = selectedSlot?.side;
+  }
+  const primaryCard = enrichCardWithSpecies(primaryCardRaw, activeSide);
 
   const payment = selectedCount - 1;
   const type = primaryCard.type;
@@ -237,12 +244,22 @@ const computeInstruction = (data) => {
   const isSatisfied = costs.some((cost) => payment === cost);
   if (isSatisfied) {
     let text = `费用已满足 (支付: ${payment})`;
-    try {
-      const paymentCards = myHand.filter((c) => c.selected && c.uid !== primarySelection);
-      const reward = RewardUtils.calculateColorReward(primaryCard, selectedSlot, paymentCards);
-      if (reward.bonusText) text = `费用已满足 [奖励: ${reward.bonusText}]`;
-      else if (reward.drawCount > 0) text = `费用已满足 [奖励: 摸${reward.drawCount}张]`;
-    } catch (e) { }
+
+    const paymentCards = myHand.filter((c) => c.selected && c.uid !== primarySelection);
+    const bonus = RewardUtils.calculateColorReward(primaryCard, selectedSlot, paymentCards);
+    const effect = RewardUtils.calculateEffect(primaryCard, {
+      forest: playerStates[openId].forest
+    });
+
+    // 组装奖励信息
+    const rewards = [];
+    if (bonus.text) rewards.push(`${bonus.text}`);
+    if (effect.text) rewards.push(`${effect.text}`);
+
+    if (rewards.length > 0) {
+      text = `费用已满足 [奖励: ${rewards.join(" + ")}]`;
+    }
+
     return {
       instructionState: "success",
       instructionText: text
@@ -399,6 +416,7 @@ module.exports = {
   enrichCard,
   enrichHand,
   enrichForest,
+  enrichCardWithSpecies,
   toggleHandSelection,
   computeInstruction,
   handleHandTap,
