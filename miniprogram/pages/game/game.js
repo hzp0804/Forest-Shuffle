@@ -983,28 +983,49 @@ Page({
       wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
       return;
     }
-    const { SAPLING_DATA } = require("../../data/speciesData");
+    const { primarySelection } = this.data;
+    if (!primarySelection) {
+      wx.showToast({ title: "请先选择一张手牌作为树苗", icon: "none" });
+      return;
+    }
+
     wx.showModal({
       title: '打出树苗',
-      content: '树苗不消耗手牌，费用为0。确定种植一颗树苗吗？',
+      content: '将选中的手牌作为树苗打出？',
       success: (res) => {
-        if (res.confirm) this.executePlaySapling(SAPLING_DATA);
+        if (res.confirm) this.executePlaySapling();
       }
     });
   },
 
-  async executePlaySapling(saplingData) {
+  async executePlaySapling() {
     wx.showLoading({ title: "种植中..." });
-    const { playerStates, openId, clearing, deck } = this.data;
+    const { SAPLING_DATA } = require("../../data/speciesData");
+    const { playerStates, openId, clearing, deck, primarySelection } = this.data;
+
     const myState = playerStates[openId];
+    const newHand = [...(myState.hand || [])];
+
+    // 1. 找到并移除选中的手牌
+    const cardIdx = newHand.findIndex(c => c.uid === primarySelection);
+    if (cardIdx === -1) {
+      wx.hideLoading();
+      return;
+    }
+    const originalCard = newHand[cardIdx];
+    newHand.splice(cardIdx, 1);
+
     const forest = [...(myState.forest || [])];
     const newClearing = [...(clearing || [])];
     const newDeck = [...(deck || [])];
 
+    // 2. 将该卡转化为树苗放入森林
+    // 保留原始卡的ID记录，但在视觉和逻辑上它现在是一棵树苗
     const saplingCard = {
-      ...saplingData,
-      uid: 'sapling_' + Math.random().toString(36).substr(2, 9),
-      id: 'sapling'
+      ...SAPLING_DATA,
+      uid: originalCard.uid, // 保持 uid 为了追踪？或者用新 uid 也可以，这里保持 uid 比较好
+      id: 'sapling',         // 逻辑 ID 必须是 sapling，用于识别属性
+      originalId: originalCard.id // 记录原始 ID (可选)
     };
     const enriched = Utils.enrichCard(saplingCard);
 
@@ -1014,7 +1035,37 @@ Page({
       slots: { top: null, bottom: null, left: null, right: null }
     });
 
+    // 3. 计算场上效果触发 (如鸡油菌：打出树木时抽牌)
+    // 树苗被视为树木 (type: TREE)，且是新打出的
+    const { calculateTriggerEffects } = require("../../utils/reward.js");
+    const triggers = calculateTriggerEffects(forest, enriched, { slot: null });
+
+    const reward = {
+      drawCount: triggers.drawCount || 0,
+      extraTurn: triggers.extraTurn || false,
+      actions: triggers.actions || []
+      // 树苗通常不会有 actions，除非特殊的被动效果赋予
+    };
+
+    // 4. 处理奖励抽牌
+    let drawnCards = [];
+    if (reward.drawCount > 0) {
+      const currentSize = newHand.length;
+      const maxCanDraw = 10 - currentSize;
+      const actualDraw = Math.min(reward.drawCount, maxCanDraw);
+
+      for (let i = 0; i < actualDraw; i++) {
+        if (newDeck.length > 0) {
+          const card = newDeck.shift();
+          newHand.push(card);
+          drawnCards.push(Utils.enrichCard(card));
+        }
+      }
+    }
+
+    // 5. 翻牌逻辑 (打出牌后通常需要从牌堆翻一张到空地)
     let deckRevealEvent = null;
+    // ... (现有逻辑)
     if (newDeck.length > 0) {
       const top = newDeck.shift();
       newClearing.push({ ...top, selected: false });
@@ -1028,24 +1079,53 @@ Page({
     }
     if (newClearing.length >= 10) newClearing.length = 0;
 
-    const nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, false);
+    // 6. 构造事件
+    let rewardDrawEvent = null;
+    if (drawnCards.length > 0) {
+      rewardDrawEvent = {
+        type: 'REWARD_DRAW',
+        playerOpenId: openId,
+        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+        count: drawnCards.length,
+        drawnCards: drawnCards,
+        timestamp: Date.now() - 50
+      };
+    }
+
+    let extraTurnEvent = null;
+    if (reward.extraTurn) {
+      extraTurnEvent = {
+        type: 'EXTRA_TURN',
+        playerOpenId: openId,
+        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+        timestamp: Date.now() + 50
+      };
+    }
+
+    const nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, reward.extraTurn);
     const updates = {
+      [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
       [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
       [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
       [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
       [`gameState.activePlayer`]: nextPlayer,
       [`gameState.turnAction`]: { drawnCount: 0, takenCount: 0 },
       [`gameState.turnCount`]: db.command.inc(1),
+      [`gameState.turnReason`]: reward.extraTurn ? "extra" : "normal",
       [`gameState.lastEvent`]: {
         type: 'PLAY_CARD', playerOpenId: openId,
         playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
         playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
         mainCard: enriched, subCards: [], timestamp: Date.now()
       },
-      [`gameState.deckRevealEvent`]: deckRevealEvent
+      [`gameState.deckRevealEvent`]: deckRevealEvent,
+      [`gameState.rewardDrawEvent`]: rewardDrawEvent,
+      [`gameState.extraTurnEvent`]: extraTurnEvent
     };
 
-    this.submitGameUpdate(updates, "种植成功", "种植了一棵树苗");
+    this.submitGameUpdate(updates, "种植成功", "将一张手牌作为树苗打出");
   },
 
   onClearingCardTap(e) {
