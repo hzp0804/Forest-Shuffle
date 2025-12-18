@@ -14,6 +14,27 @@
 - 同色卡：卡片包含和即将打出的物种一样的颜色，一张附属卡有两种颜色，只要其中一种相同，那就属于同色卡，可以触发奖励
 - 同标签卡：看物种标签 tag
 - 同名卡：看物种名字
+- effect 效果：分为即时效果和常驻效果
+- bonus 奖励：需要支付相同颜色的卡片作为费用才能触发奖励
+
+### 常驻效果卡片列表
+
+游戏中共有 8 张卡片具有常驻效果（打出后持续触发）：
+
+1. **鸡油菌（Chanterelle）** - 每当你打出一张带有树木符号的牌时，获得 1 张牌
+2. **毒蝇伞（Fly Agaric）** - 每当你打出一张带有爪印符号的牌时，获得 1 张牌
+3. **灰号角菇（Craterellus Cornucopiodes）** - 每当你打出一张带有高山符号的牌时，获得 1 张牌
+4. **牛肝菌（Penny Bun）** - 每当你在树顶打出一张牌时，获得 1 张牌
+5. **寄生菌（Parasol Mushroom）** - 每当你在树底打出一张牌时，获得 1 张牌
+6. **接骨木（Sambucus）** - 每当你打出一张带有植物符号的牌时，获得 1 张牌（灌木，同时有 bonus）
+7. **欧榛（Common Hazel）** - 每当你打出一张带有蝙蝠符号的牌时，获得 1 张牌（灌木，同时有 bonus）
+8. **黑刺李（Blackthorn）** - 每当你打出一张带有蝴蝶符号的牌时，获得 1 张牌（灌木，同时有 bonus）
+
+注意：
+
+- 常驻效果不需要同色支付，打出即激活
+- 当打出此物种的回合，不会触发其自身的常驻效果
+- 灌木卡片（6-8）同时具有 bonus 奖励，bonus 需要同色支付
 
 ### 颜色牌
 
@@ -31,11 +52,40 @@
 
 ## 游戏逻辑
 
+### 基本规则
+
 - 树木、灌木不需要选择插槽，作为基座打出到森林，每打出一张树木到森林，则行动结束后需要翻一张牌到空地；（灌木不属于树木）
 - 其他附属卡，需要选择插槽，才能确定需要打出的物种
 - 确定物种后，需要显示费用，计算是否符合奖励
 - 打出卡牌后，如果有奖励/触发常驻效果，需要先执行奖励，然后行动结束
 - 行动结束后，如果此回合打出了树木，则要翻牌，打了几棵树木就翻几张到空地，然后，回合结束
+
+### 重要规则
+
+#### 1. 效果/奖励触发的打牌
+
+- 通过效果或奖励打出的卡片（如鼹鼠效果、免费打牌 Bonus）：
+  - ❌ **不会触发**该卡片自身的 Bonus 和 Effect
+  - ✅ **会触发**森林中的常驻效果（Trigger Effects）
+
+#### 2. 摸牌时序
+
+- 所有摸牌奖励（Bonus、Effect、Trigger）在**所有行动结束后**统一执行
+- 不是"一边打一边摸"，而是先完成所有打牌行动，最后一次性摸牌
+
+#### 3. 特殊行动（鼹鼠等）
+
+- 鼹鼠效果：可以继续打牌，但**不能摸牌**
+- 玩家可以选择：
+  - 继续打牌（支付费用）
+  - 点击"结束"按钮 → 进入结算阶段
+- 结算阶段：统一摸牌 → 翻牌到空地 → 判断额外回合 → 回合结束
+
+#### 4. 回合控制
+
+- 每个回合 = 一次玩家行动（摸牌/打牌/结束）
+- 额外回合 = 下一个回合还是当前玩家
+- 效果触发的打牌不会产生新的额外回合
 
 ## 手牌区域提示语逻辑
 
@@ -53,3 +103,197 @@
 - 拿取：从牌库/空地拿取卡片
 - 打出：打出所选手牌
 - 树苗：把卡片当成树苗打出（树苗：树木标识，本身没有其他功能）
+
+---
+
+## 核心游戏规则详解
+
+### Bonus vs Effect 的区别
+
+#### Bonus（奖励）
+
+- **位置**：印在卡片的颜色区域（有颜色背景）
+- **触发条件**：**必须用同色卡支付费用**才能获得
+- **触发时机**：打出卡片时立即获得
+- **例子**：
+  - 刺猬：`bonus: "获得1张牌"` - 需要同色支付
+  - 接骨木：`bonus: "免费打出一张带有植物符号的牌"` - 需要同色支付
+
+#### Effect（效果）
+
+- **位置**：印在卡片的白色区域（没有颜色背景）
+- **触发条件**：**不需要同色支付**，打出即生效
+- **类型**：
+  1. **即时效果**：打出时立即生效
+     - 例如：松鸦 `effect: "获得新的回合"`
+     - 例如：大斑啄木鸟 `effect: "获得1张牌"`
+  2. **常驻效果**：打出后持续触发
+     - 例如：鸡油菌 `effect: "每当你打出一张带有树木符号的牌时，获得1张牌"`
+
+#### 特殊情况：灌木卡片
+
+- 接骨木、欧榛、黑刺李这三张灌木卡片**同时具有 Effect 和 Bonus**
+- Effect（常驻效果）：不需要同色，打出即激活
+- Bonus（奖励）：需要同色支付才能获得
+
+### 同色卡判断逻辑
+
+#### 规则
+
+- **主牌颜色**：使用 `enrichCardWithSpecies` 处理后的单色（双物种卡根据选择的插槽确定）
+- **支付卡颜色**：从 `CARDS_DATA` 获取原始颜色（双色卡保留两个颜色）
+- **判断标准**：支付卡的**任一颜色**在主牌颜色中即可
+
+#### 实现
+
+```javascript
+// utils.js
+const getCardColors = (card) => {
+  const cardData = CARDS_DATA[card.id];
+  let colors = cardData.tree_symbol || [];
+  if (!Array.isArray(colors)) colors = [colors];
+  return colors;
+};
+
+const isColorMatched = (primaryCard, paymentCards) => {
+  let targetColors = primaryCard.tree_symbol || [];
+  if (!Array.isArray(targetColors)) targetColors = [targetColors];
+
+  return paymentCards.every((payCard) => {
+    const payColors = getCardColors(payCard);
+    return payColors.some((c) => targetColors.includes(c));
+  });
+};
+```
+
+### 奖励计算流程
+
+#### 玩家主动打牌
+
+1. **Bonus 计算**：检查同色 → 计算奖励（摸牌、额外回合、特殊行动等）
+2. **Effect 计算**：直接计算效果（不需要同色）
+3. **Trigger Effects 计算**：检查森林中其他卡片的常驻效果是否被触发
+4. **合并奖励**：`总摸牌数 = Bonus摸牌 + Effect摸牌 + Trigger摸牌`
+
+#### 效果/奖励触发的打牌
+
+1. **Bonus 计算**：❌ 跳过（不触发）
+2. **Effect 计算**：❌ 跳过（不触发）
+3. **Trigger Effects 计算**：✅ 正常计算
+4. **合并奖励**：`总摸牌数 = Trigger摸牌`
+
+### 常驻效果详解
+
+#### 8 张常驻效果卡片
+
+所有常驻效果都是"获得 1 张牌"，不会产生额外回合或其他复杂效果。
+
+#### 触发规则
+
+- 当打出符合条件的卡片时，触发森林中**其他卡片**的常驻效果
+- **重要**：当打出此物种的回合，不会触发其**自身**的常驻效果
+- 实现：`if (card.uid === playedCard.uid) return;`
+
+### 摸牌时序
+
+#### 核心规则
+
+**所有摸牌在所有行动结束后统一执行**
+
+#### 流程
+
+1. 打出卡片 1 → 计算摸牌数（不立即摸）
+2. 继续打出卡片 2（如鼹鼠效果）→ 累加摸牌数（不立即摸）
+3. 继续打出卡片 3 → 累加摸牌数（不立即摸）
+4. 所有行动结束 → **统一执行摸牌**
+5. 翻牌到空地
+6. 回合结束
+
+#### 为什么这样设计
+
+- 防止玩家用刚摸到的牌继续打
+- 简化逻辑，避免频繁更新手牌
+- 所有奖励统一结算
+
+### 回合控制
+
+#### 回合定义
+
+- 每个回合 = 一次玩家行动（摸牌 / 打牌 / 结束）
+- 无论选择哪种行动，这个回合就结束了
+
+#### 额外回合
+
+- 额外回合 = 额外的一次完整行动机会
+- 在额外回合中，玩家可以选择：摸牌 / 打牌 / 结束
+- 无论选择什么，这个额外回合就结束了
+
+#### 实现方式
+
+不使用堆栈，而是动态计算下一个玩家：
+
+```javascript
+const getNextPlayer = (currentPlayer, players, gainedExtraTurn) => {
+  if (gainedExtraTurn) {
+    return currentPlayer; // 额外回合，还是当前玩家
+  }
+  // 正常切换到下一个玩家（顺时针）
+  const nextIndex = (currentIndex + 1) % validPlayers.length;
+  return validPlayers[nextIndex].openId;
+};
+```
+
+### 特殊行动（待实现）
+
+#### 鼹鼠效果
+
+- **效果**：立即支付费用打出任意数量的牌
+- **限制**：只能打牌，不能摸牌
+- **结束**：玩家点击"结束"按钮 → 进入结算阶段
+
+#### 免费打牌 Bonus
+
+- **效果**：免费打出一张带有指定标签的牌
+- **限制**：只能打出符合条件的牌，不需要支付费用
+- **结束**：打出一张牌后自动结束，或玩家选择跳过
+
+#### 实现要点
+
+1. 游戏状态需要添加：
+
+   - `pendingActions`: 待处理的特殊行动队列
+   - `actionMode`: 当前行动模式
+   - `accumulatedRewards`: 累积的奖励（在所有行动结束后统一执行）
+
+2. `onConfirmPlay` 需要支持 `source` 参数：
+
+   - `'PLAYER_ACTION'`: 玩家主动打牌 → 触发 Bonus 和 Effect
+   - `'MOLE_EFFECT'`: 鼹鼠效果触发 → 不触发 Bonus 和 Effect
+   - `'FREE_PLAY'`: 免费打牌 → 不触发 Bonus 和 Effect
+
+3. 详细实现计划见：`.agent/tasks/special-actions-implementation.md`
+
+---
+
+## 代码结构
+
+### 奖励计算模块
+
+- `bonus.js`: 处理 Bonus（奖励），需要同色支付
+- `effect.js`: 处理 Effect（效果），包括即时效果和常驻效果
+- `utils.js`: 通用工具函数，包括 `getCardColors` 和 `isColorMatched`
+
+### 关键函数
+
+- `calculateBonus(card, slot, paymentCards)`: 计算 Bonus 奖励
+- `calculateEffect(card, context, paymentCards)`: 计算即时 Effect
+- `calculateTriggerEffects(forest, playedCard, triggerContext)`: 计算常驻效果触发
+- `isColorMatched(primaryCard, paymentCards)`: 判断是否同色匹配
+
+### 数据流
+
+1. 玩家选择手牌 → `computeInstruction` 计算费用和奖励预览
+2. 玩家确认打牌 → `onConfirmPlay` 执行打牌逻辑
+3. 计算奖励 → `calculateBonus` + `calculateEffect` + `calculateTriggerEffects`
+4. 更新游戏状态 → `submitGameUpdate` 提交到数据库
+5. 触发动画 → `processNextEvent` 处理事件队列

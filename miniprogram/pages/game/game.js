@@ -1,5 +1,6 @@
 const Utils = require("../../utils/utils");
-const RewardUtils = require("../../utils/reward.js");
+const { calculateBonus } = require("../../utils/bonus.js");
+const { calculateEffect, calculateTriggerEffects } = require("../../utils/effect.js");
 const RoundUtils = require("../../utils/round.js");
 const AnimationUtils = require("../../utils/animation.js");
 const DbHelper = require("../../utils/dbHelper.js");
@@ -226,7 +227,8 @@ Page({
     });
   },
 
-  onConfirmPlay() {
+  // source: 'PLAYER_ACTION' | 'MOLE_EFFECT' | 'FREE_PLAY' | ...
+  onConfirmPlay(source = 'PLAYER_ACTION') {
     const { primarySelection, playerStates, openId, clearing, selectedSlot, instructionState, turnAction } = this.data;
     if (turnAction?.drawnCount > 0 || turnAction?.takenCount > 0) {
       wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
@@ -280,18 +282,59 @@ Page({
       forest[tIdx] = tTree;
     }
 
-    // 计算即时奖励 (Bonus) 和 自身携带的立即效果 (Effect)
-    const bonus = RewardUtils.calculateColorReward(primaryCard, selectedSlot, paymentCards);
-    const effect = RewardUtils.calculateEffect(primaryCard, { forest });
+    // 根据打牌来源决定是否计算 Bonus 和 Effect
+    // 效果触发的打牌不会触发该卡片自身的 Bonus 和 Effect
+    let bonus = { drawCount: 0, extraTurn: false, actions: [] };
+    let effect = { drawCount: 0, extraTurn: false, actions: [] };
 
-    // 计算森林中已存在的常驻效果触发 (Trigger Effects)
-    const triggers = RewardUtils.calculateTriggerEffects(forest, primaryCard, { slot: selectedSlot });
+    if (source === 'PLAYER_ACTION') {
+      // 只有玩家主动打牌才计算 Bonus 和 Effect
+      bonus = calculateBonus(primaryCard, selectedSlot, paymentCards);
+      effect = calculateEffect(primaryCard, { forest }, paymentCards);
+    }
+
+    // 始终计算森林中已存在的常驻效果触发 (Trigger Effects)
+    const triggers = calculateTriggerEffects(forest, primaryCard, { slot: selectedSlot });
 
     const reward = {
       drawCount: (bonus.drawCount || 0) + (effect.drawCount || 0) + (triggers.drawCount || 0),
-      extraTurn: bonus.extraTurn || effect.extraTurn
+      extraTurn: bonus.extraTurn || effect.extraTurn,
+      actions: [...(bonus.actions || []), ...(effect.actions || [])]
     };
 
+    // 检查是否有待处理的特殊行动
+    if (reward.actions && reward.actions.length > 0) {
+      // 有特殊行动，进入特殊行动模式，不立即摸牌和结束回合
+      // TODO: 实现 detectActionMode 函数
+      const actionMode = 'SPECIAL_ACTION'; // 临时简化
+
+      paymentCards.forEach(c => newClearing.push({ ...c, selected: false }));
+
+      const updates = {
+        [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
+        [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
+        [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
+        [`gameState.pendingActions`]: reward.actions,
+        [`gameState.actionMode`]: actionMode,
+        [`gameState.accumulatedRewards`]: {
+          drawCount: reward.drawCount,
+          extraTurn: reward.extraTurn
+        },
+        [`gameState.lastEvent`]: {
+          type: 'PLAY_CARD', playerOpenId: openId,
+          playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+          playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+          mainCard: primaryCard, subCards: paymentCards.map(c => Utils.enrichCard(c)),
+          timestamp: Date.now()
+        }
+      };
+
+      wx.hideLoading();
+      this.submitGameUpdate(updates, "出牌成功", `打出了 ${primaryCard.name}，进入特殊行动模式`);
+      return;
+    }
+
+    // 没有特殊行动，正常流程：摸牌、翻牌、结束回合
     let newDeck = [...this.data.deck];
     // 奖励抽牌逻辑：受手牌上限 10 张限制
     // 举例：手牌8张，支付1张(剩余7张)，奖励5张 -> 7+5=12 > 10，只能抽 3 张
@@ -303,7 +346,7 @@ Page({
       if (newDeck.length > 0) newHand.push(newDeck.shift());
     }
     // 如果 reward.drawCount > actualDraw，多余的抽牌机会作废（或者是顶掉牌堆顶的卡？通常规则是作废或不抽）
-    // 根据描述“只能获得3张”，意味着剩下的就不抽了，保留在牌堆顶。上述代码符合此逻辑。
+    // 根据描述"只能获得3张"，意味着剩下的就不抽了，保留在牌堆顶。上述代码符合此逻辑。
 
     paymentCards.forEach(c => newClearing.push({ ...c, selected: false }));
 
@@ -359,7 +402,6 @@ Page({
 
   onDrawCard() {
     if (this.data.selectedClearingIdx === -2) this.setData({ selectedClearingIdx: -1 });
-    else this.setData({ selectedClearingIdx: -2 });
   },
 
   onConfirmTake() {

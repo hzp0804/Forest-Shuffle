@@ -1,6 +1,9 @@
 const { DECK_TYPES, CARD_TYPES, TAGS, SPECIES_NAMES } = require('./constants');
 const { EFFECT_TYPES, BONUS_TYPES, SCORING_TYPES } = require('./enums');
 
+// effect 效果：不需要同色卡作为费用
+// bonus 奖励：需要同色卡作为费用
+
 const SPECIES_DATA = {
   [SPECIES_NAMES.BLACKBERRIES]: {
     name: "黑莓",
@@ -74,7 +77,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "每当你打出一张带有树木符号的牌时，获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.TRIGGER_ON_PLAY,
+      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
       tag: CARD_TYPES.TREE,
       reward: { type: 'DRAW', value: 1 }
     },

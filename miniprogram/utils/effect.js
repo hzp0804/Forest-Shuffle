@@ -1,69 +1,15 @@
-const { BONUS_TYPES, EFFECT_TYPES } = require('../data/enums');
+const { EFFECT_TYPES } = require('../data/enums');
 const { TAGS, CARD_TYPES } = require('../data/constants');
 
 /**
- * 计算打牌奖励 (Bonus) 和 触发效果 (Effect)
+ * 计算即时效果 (Immediate Effect)
+ * Effect 不需要同色支付
+ * @param {Object} card - 主牌
+ * @param {Object} context - 上下文 { forest }
+ * @param {Array} paymentCards - 支付卡片数组（暂未使用）
+ * @returns {Object} 效果结果 { drawCount, extraTurn, actions, text }
  */
-
-function calculateColorReward(card, slot, paymentCards) {
-  const result = {
-    drawCount: 0,
-    extraTurn: false,
-    playFree: null,
-    actions: []
-  };
-
-  const config = card.bonusConfig;
-
-  if (config) {
-    switch (config.type) {
-      // 摸牌 (如: 灰林鸮-得2张)
-      case BONUS_TYPES.DRAW:
-        result.drawCount += (config.count || 0);
-        break;
-
-      // 额外回合 (如: 橡树)
-      case BONUS_TYPES.EXTRA_TURN:
-        result.extraTurn = true;
-        break;
-
-      // 摸牌+回合 (如: 棕熊)
-      case BONUS_TYPES.DRAW_AND_TURN:
-        result.drawCount += (config.count || 0);
-        result.extraTurn = true;
-        break;
-
-      // 免费打出特定类型牌
-      case BONUS_TYPES.PLAY_FREE:
-      case BONUS_TYPES.PLAY_FREE_SPECIFIC:
-        result.text = `免费打出-${config.tag || '指定卡'}`;
-        result.actions.push(config);
-        break;
-      case BONUS_TYPES.PLAY_FREE_AND_DRAW:
-      case BONUS_TYPES.PICK_FROM_CLEARING_TO_HAND:
-      case BONUS_TYPES.CLEARING_TO_CAVE:
-        result.text = "特殊行动";
-        result.actions.push(config);
-        break;
-    }
-  }
-
-  // 补充基础奖励描述
-  if (!result.text) {
-    const parts = [];
-    if (result.drawCount > 0) parts.push(`摸${result.drawCount}张`);
-    if (result.extraTurn) parts.push("额外回合");
-    if (parts.length > 0) {
-      result.text = parts.join("+");
-    } else if (card.bonus) {
-      result.text = card.bonus;
-    }
-  }
-
-  return result;
-}
-
-function calculateEffect(card, context) {
+function calculateEffect(card, context, paymentCards) {
   const result = {
     drawCount: 0,
     actions: []
@@ -159,6 +105,14 @@ function calculateEffect(card, context) {
   return result;
 }
 
+/**
+ * 计算常驻效果 (Trigger Effects)
+ * 即已经在森林里的物种携带的奖励，当打出某个物种的回合，打出的卡片本身不触发其常驻奖励
+ * @param {Array} forest - 森林卡牌数组
+ * @param {Object} playedCard - 刚打出的卡片
+ * @param {Object} triggerContext - 触发上下文 { slot }
+ * @returns {Object} 触发效果结果 { drawCount, actions }
+ */
 function calculateTriggerEffects(forest, playedCard, triggerContext) {
   const result = {
     drawCount: 0,
@@ -180,11 +134,13 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
 
   // 遍历检查触发
   allCards.forEach(card => {
+    // 规则：当打出此物种的回合是不会触发其自身的常驻奖励的
+    if (card.uid === playedCard.uid) return;
+
     if (!card.effectConfig) return;
     const config = card.effectConfig;
 
     switch (config.type) {
-      case EFFECT_TYPES.TRIGGER_ON_PLAY:
       case EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW:
         // 检查触发条件: 此时打出的牌 playedCard 是否包含目标 tag
         if (playedCard.tags && playedCard.tags.includes(config.tag)) {
@@ -219,7 +175,6 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
 }
 
 module.exports = {
-  calculateColorReward,
   calculateEffect,
   calculateTriggerEffects
 };

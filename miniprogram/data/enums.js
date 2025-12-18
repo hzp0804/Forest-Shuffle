@@ -6,7 +6,7 @@
 // 1. 被动/触发效果类型 (Effect)
 const EFFECT_TYPES = {
   // 触发类
-  TRIGGER_ON_PLAY: 'TRIGGER_ON_PLAY', // 每当打出特定牌时触发 (如: 鸡油菌-打出树木得1牌)
+  TRIGGER_ON_PLAY_TAG_DRAW: 'TRIGGER_ON_PLAY_TAG_DRAW', // 打出某TAG牌时摸牌 (如: 鸡油菌-树木, 接骨木-植物)
   TRIGGER_ON_PLAY_POSITION: 'TRIGGER_ON_PLAY_POSITION', // 每当在特定位置打出牌时触发 (如: 牛肝菌-树顶)
 
   // 容量/规则修改类
