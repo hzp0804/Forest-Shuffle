@@ -594,8 +594,8 @@
   display: flex;
   flex-direction: row;
   align-items: flex-end;
-  padding: 85rpx 4rpx 12rpx 20rpx;
-  gap: 16rpx;
+  padding: 85rpx 12rpx 12rpx 20rpx;
+  gap: 24rpx;
   box-sizing: border-box;
   width: max-content;
 }
@@ -626,17 +626,35 @@
   margin-bottom: 0;
 }
 
+.hand-card.primary-selected {
+  transform: translateY(-10rpx) scale(1.05);
+  box-shadow: 0 0 0 6rpx #2ecc71, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.hand-card.payment-selected {
+  transform: translateY(-10rpx) scale(1.05);
+  box-shadow: 0 0 0 6rpx #f1c40f, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
+  z-index: 5;
+}
+
 .hand-card.selected {
   transform: translateY(-10rpx) scale(1.05);
   box-shadow: 0 0 0 6rpx #f1c40f, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
+  z-index: 5;
 }
 
-.hand-card.primary:not(.selected) {
-  box-shadow: 0 0 0 4rpx #2ecc71, 0 4rpx 12rpx rgba(0, 0, 0, 0.28);
-}
-
-.hand-card.primary.selected {
-  box-shadow: 0 0 0 6rpx #2ecc71, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
+.pay-flag {
+  position: absolute;
+  top: 6rpx;
+  right: 6rpx;
+  background: rgba(149, 165, 166, 0.9);
+  color: #fff;
+  font-size: 18rpx;
+  padding: 4rpx 10rpx;
+  border-radius: 6rpx;
+  font-weight: 700;
+  z-index: 2;
 }
 
 .primary-flag {
@@ -1342,7 +1360,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2000;
+  /* Ensure it's above everything */
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -1353,27 +1372,66 @@
   animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.preview-card {
-  width: 500rpx;
-  /* 大卡片尺寸 */
-  height: 750rpx;
-  background: #fff;
-  border-radius: 20rpx;
-  overflow: hidden;
-  box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.5);
-  position: relative;
+.event-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+  gap: 12rpx;
 }
 
-/* 预览大图不需要裁切 */
-.preview-card .card-sprite-native {
+.p-avatar-small {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 1rpx solid #fff;
+}
+
+.event-title {
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.5);
+}
+
+/* 统一使用 140x210 尺寸，不再是巨大的 500rpx */
+.main-card-display {
+  width: 140rpx;
+  height: 210rpx;
+  position: relative;
+  box-shadow: 0 0 0 4rpx #2ecc71, 0 10rpx 30rpx rgba(0, 0, 0, 0.5);
+  border-radius: 8rpx;
+  overflow: hidden;
+  background: #34495e;
+}
+
+.sub-cards-label {
+  font-size: 20rpx;
+  color: #bdc3c7;
+  margin: 20rpx 0 10rpx 0;
+}
+
+.sub-cards-display {
   width: 100%;
-  height: 100%;
-  border-radius: 20rpx;
+  max-width: 500rpx;
+  white-space: nowrap;
+  display: flex;
+  justify-content: center;
+  gap: 10rpx;
+}
+
+.event-sub-card {
+  width: 80rpx;
+  height: 120rpx;
+  position: relative;
+  border-radius: 4rpx;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2rpx #f1c40f, 0 4rpx 10rpx rgba(0, 0, 0, 0.3);
 }
 
 .preview-tip {
   margin-top: 30rpx;
-  font-size: 36rpx;
+  font-size: 32rpx;
   color: #f1c40f;
   font-weight: bold;
   text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.5);

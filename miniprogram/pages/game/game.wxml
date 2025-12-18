@@ -1,5 +1,5 @@
 <view class="game-container">
-   <view class="loading-mask" wx:if="{{!playerStates}}">
+   <view class="loading-mask" wx:if="{{!playerStates || !openId}}">
       <text>正在进入森林...</text>
    </view>
    <block wx:else>
@@ -25,35 +25,29 @@
       </scroll-view>
       <!-- 中间：牌桌区域 (Board) -->
       <view class="game-board">
-         <!-- 空地 (Re-styled as Hand-like) -->
          <!-- 空地 Header with Actions -->
          <view style="display: flex; justify-content: space-between; align-items: center; padding: 0 10rpx;">
             <view style="display: flex; align-items: center; gap: 16rpx;">
                <view class="area-label" style="margin-bottom:0; padding-right: 0;">
                   空地 ({{clearing.length || 0}}/10)
                </view>
-               <!-- 1. 结束：改为红色文字样式，放在文案右边 -->
                <view class="end-turn-text" bindtap="onEndTurn" wx:if="{{isMyTurn}}">结束</view>
             </view>
             <view class="action-bar-inline" wx:if="{{isMyTurn}}" style="display:flex; gap:12rpx;">
-               <!-- 2. 拿取：从空地拿取一张牌 -->
                <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" disabled="{{selectedClearingIdx === -1 && selectedClearingIdx !== -2}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
                   ✋拿取
                </button>
-               <!-- 3. 出牌：统一按钮（包含出树/附属） -->
-               <button size="mini" class="game-btn {{selectedSlot && selectedSlot.isValid ? 'valid-play-btn' : ''}}" bindtap="onConfirmPlay" style="margin:0; padding:0 12rpx; font-weight:normal;">
+               <button size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}}" bindtap="onConfirmPlay" style="margin:0; padding:0 12rpx; font-weight:normal;">
                   ✅打出
                </button>
-               <!-- 4. 树苗 -->
                <button size="mini" class="game-btn secondary sapling-btn" bindtap="onPlaySapling" style="margin:0; padding:0 12rpx; font-weight:normal;">
                   🌱树苗
                </button>
             </view>
          </view>
-         <!-- 空地区域：牌库固定 + 空地卡片可滚动 -->
+         <!-- 牌库与空地 -->
          <view style="display:flex; gap:16rpx; align-items:flex-start;">
-            <!-- P1: 固定的牌库容器 (用于对齐) -->
-            <view style="display:flex; align-items:flex-end; padding: 40rpx 0 12rpx 0rpx; flex-shrink:0;">
+            <view id="deck-card" style="display:flex; align-items:flex-end; padding: 40rpx 0 12rpx 0rpx; flex-shrink:0;">
                <view class="hand-card {{selectedClearingIdx === -2 ? 'selected' : ''}}" bindtap="onDrawCard" style="background:#8e44ad; color:white; border:none; position: relative; overflow: hidden; margin:0;">
                   <block wx:if="{{deckVisual && deckVisual.bgImg}}">
                      <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}}; pointer-events: none;"></view>
@@ -69,41 +63,18 @@
                         </view>
                      </view>
                   </block>
-                  <block wx:else>
-                     <view class="card-body" style="background:#27ae60; color:white; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                        <view style="font-size:64rpx;">🌱</view>
-                        <view style="font-size:32rpx; font-weight:bold;">牌库</view>
-                        <view style="font-size:24rpx;">{{deck.length || 0}}</view>
-                        <view style="font-size:20rpx; margin-top:8rpx; opacity:0.9; font-weight:bold;">
-                           回合 {{currentTurn || 1}}
+               </view>
+            </view>
+            <scroll-view class="clearing-scroll" scroll-x enable-flex>
+               <view class="clearing-row">
+                  <block wx:for="{{clearing}}" wx:key="uid">
+                     <view class="hand-card clearing-card {{index === selectedClearingIdx ? 'selected' : ''}}" bindtap="onClearingCardTap" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
+                        <view wx:if="{{item.bgImg}}" class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
+                        <view wx:else class="card-header" style="background-color: {{item.color || '#4caf50'}}">
+                           <text class="card-name">{{item.name}}</text>
                         </view>
                      </view>
                   </block>
-               </view>
-            </view>
-            <!-- P2: 可滚动的空地卡片区域 -->
-            <scroll-view class="clearing-scroll" scroll-x enable-flex>
-               <view class="clearing-row">
-                  <!-- Clearing Cards -->
-                  <block wx:for="{{clearing}}" wx:key="uid">
-                     <view class="hand-card clearing-card {{index === selectedClearingIdx ? 'selected' : ''}}" bindtap="onClearingCardTap" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
-                        <block wx:if="{{item.bgImg}}">
-                           <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
-                        </block>
-                        <block wx:else>
-                           <view class="card-header" style="background-color: {{item.color || '#4caf50'}}">
-                              <text class="card-name">{{item.name}}</text>
-                              <view class="card-cost-badge" wx:if="{{item.cost !== undefined}}">
-                                 {{item.cost}}
-                              </view>
-                           </view>
-                           <view class="card-body">
-                              <text class="card-type">{{item.type}}</text>
-                           </view>
-                        </block>
-                     </view>
-                  </block>
-                  <!-- Limited Placeholders (Max 10 total clearing) -->
                   <block wx:for="{{[1,2,3,4,5,6,7,8,9,10]}}" wx:key="*this">
                      <view class="hand-card placeholder" wx:if="{{index >= (clearing.length || 0)}}">
                         <view class="card-body" style="background: transparent;">+</view>
@@ -112,10 +83,7 @@
                </view>
             </scroll-view>
          </view>
-         <!-- Logs Modal Removed -->
-         <!-- 操作按钮区 (Moved Here) -->
-         <!-- 操作按钮区 (Placed immediately after Clearing) -->
-         <!-- 玩家森林区域 -->
+         <!-- 森林区域 -->
          <view class="forest-area">
             <view class="area-label" style="display:flex; justify-content:space-between; width:100%; padding-right:20rpx; box-sizing:border-box;">
                <text>{{viewingPlayerNick}}的森林 {{!isViewingSelf ? '(仅查看)' : ''}}</text>
@@ -123,105 +91,100 @@
             </view>
             <scroll-view class="forest-scroll" scroll-x enable-flex>
                <block wx:for="{{myForest}}" wx:key="_id">
-                  <view class="tree-group {{targetTreeId === item._id ? 'target-active' : ''}}">
-                     <!-- Center: Tree -->
+                  <view class="tree-group">
                      <view class="tree-center" bindlongpress="onShowDetail" data-cardid="{{item.center.id}}">
-                        <block wx:if="{{item.center.bgImg}}">
-                           <view class="card-sprite-native {{item.center.cssClass}}" style="background-image: url('{{item.center.bgImg}}'); background-size: {{item.center.bgSize}}; {{item.center.bgPosition ? 'background-position:' + item.center.bgPosition : ''}}"></view>
-                        </block>
+                        <view wx:if="{{item.center.bgImg}}" class="card-sprite-native {{item.center.cssClass}}" style="background-image: url('{{item.center.bgImg}}'); background-size: {{item.center.bgSize}}; {{item.center.bgPosition ? 'background-position:' + item.center.bgPosition : ''}}"></view>
                         <view wx:else class="small-card forest-fallback">
                            {{item.center.name || 'Tree'}}
                         </view>
                      </view>
-                     <!-- Slots -->
-                     <!-- Top -->
-                     <view class="slot-pos slot-top {{selectedSlot.treeId === item._id && selectedSlot.side === 'top' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="top" data-cardid="{{item.slots.top.id}}">
+                     <!-- 槽位渲染：使用你原始的详细布局 -->
+                     <view class="slot-pos slot-top {{selectedSlot.treeId === item._id && selectedSlot.side === 'top' ? 'selected' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="top" data-cardid="{{item.slots.top.id}}">
                         <view class="slot-card {{!item.slots.top ? 'empty' : ''}}">
-                           <view class="card-sprite-native slot-crop {{item.slots.top.cssClass}}" style="background-image: url('{{item.slots.top.bgImg}}'); background-size: {{item.slots.top.bgSize}}"></view>
+                           <view wx:if="{{item.slots.top}}" class="card-sprite-native slot-crop {{item.slots.top.cssClass}}" style="background-image: url('{{item.slots.top.bgImg}}'); background-size: {{item.slots.top.bgSize}}"></view>
                         </view>
                      </view>
-                     <!-- Bottom -->
-                     <view class="slot-pos slot-bottom {{selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="bottom" data-cardid="{{item.slots.bottom.id}}">
+                     <view class="slot-pos slot-bottom {{selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' ? 'selected' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="bottom" data-cardid="{{item.slots.bottom.id}}">
                         <view class="slot-card {{!item.slots.bottom ? 'empty' : ''}}">
-                           <view class="card-sprite-native slot-crop {{item.slots.bottom.cssClass}}" style="background-image: url('{{item.slots.bottom.bgImg}}'); background-size: {{item.slots.bottom.bgSize}}"></view>
+                           <view wx:if="{{item.slots.bottom}}" class="card-sprite-native slot-crop {{item.slots.bottom.cssClass}}" style="background-image: url('{{item.slots.bottom.bgImg}}'); background-size: {{item.slots.bottom.bgSize}}"></view>
                         </view>
                      </view>
-                     <!-- Left -->
-                     <view class="slot-pos slot-left {{selectedSlot.treeId === item._id && selectedSlot.side === 'left' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="left" data-cardid="{{item.slots.left.id}}">
+                     <view class="slot-pos slot-left {{selectedSlot.treeId === item._id && selectedSlot.side === 'left' ? 'selected' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="left" data-cardid="{{item.slots.left.id}}">
                         <view class="slot-card h-crop {{!item.slots.left ? 'empty' : ''}}">
-                           <view class="card-sprite-native slot-crop {{item.slots.left.cssClass}}" style="background-image: url('{{item.slots.left.bgImg}}'); background-size: {{item.slots.left.bgSize}}"></view>
+                           <view wx:if="{{item.slots.left}}" class="card-sprite-native slot-crop {{item.slots.left.cssClass}}" style="background-image: url('{{item.slots.left.bgImg}}'); background-size: {{item.slots.left.bgSize}}"></view>
                         </view>
                      </view>
-                     <!-- Right -->
-                     <view class="slot-pos slot-right {{selectedSlot.treeId === item._id && selectedSlot.side === 'right' ? (selectedSlot.isValid ? 'valid-target selected' : 'invalid-target selected') : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="right" data-cardid="{{item.slots.right.id}}">
+                     <view class="slot-pos slot-right {{selectedSlot.treeId === item._id && selectedSlot.side === 'right' ? 'selected' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="right" data-cardid="{{item.slots.right.id}}">
                         <view class="slot-card h-crop {{!item.slots.right ? 'empty' : ''}}">
-                           <view class="card-sprite-native slot-crop {{item.slots.right.cssClass}}" style="background-image: url('{{item.slots.right.bgImg}}'); background-size: {{item.slots.right.bgSize}}"></view>
+                           <view wx:if="{{item.slots.right}}" class="card-sprite-native slot-crop {{item.slots.right.cssClass}}" style="background-image: url('{{item.slots.right.bgImg}}'); background-size: {{item.slots.right.bgSize}}"></view>
                         </view>
                      </view>
                   </view>
                </block>
-               <!-- 占位符提示 -->
-               <view class="forest-card placeholder" wx:if="{{myForest.length === 0}}">
-                  <text>暂无树木</text>
+               <!-- 森林占位：如果没有树，至少显示一个引导框 -->
+               <view class="tree-group placeholder" wx:if="{{myForest.length === 0}}">
+                  <view class="tree-center" style="background: rgba(255,255,255,0.05); border: 2rpx dashed rgba(255,255,255,0.2); box-shadow:none; display: flex; align-items: center; justify-content: center;">
+                     <view style="color:rgba(255,255,255,0.2); font-size:40rpx;">+</view>
+                  </view>
                </view>
             </scroll-view>
          </view>
       </view>
-      <!-- 抽卡展示遮罩/悬浮层 -->
-      <view class="preview-overlay" wx:if="{{drawingCard}}">
+      <!-- 全局动作展示层 (Action Event Display) -->
+      <view class="preview-overlay" wx:if="{{currentEvent}}" bindtap="onCloseEvent">
          <view class="preview-card-container">
-            <view class="preview-card">
-               <block wx:if="{{drawingCard.bgImg}}">
-                  <view class="card-sprite-native {{drawingCard.cssClass}}" style="background-image: url('{{drawingCard.bgImg}}'); background-size: {{drawingCard.bgSize}}"></view>
-               </block>
-               <block wx:else>
-                  <view class="fallback-card">{{drawingCard.name}}</view>
-               </block>
-            </view>
-            <view class="preview-tip">摸到了这张牌</view>
-         </view>
-      </view>
-      <!-- Turn Summary Modal (Overlay) -->
-      <view class="summary-modal-mask" wx:if="{{showTurnSummary && turnSummaryData}}" bindtap="onCloseSummary">
-         <view class="summary-panel" catchtap="noop">
-            <view class="summary-header">
-               <image class="p-avatar-small" src="{{turnSummaryData.playerAvatar || '/images/default_avatar.png'}}" />
-               <text class="summary-title">{{turnSummaryData.playerNick}} 打出了：</text>
-            </view>
-            <view class="summary-body">
-               <!-- Played Card -->
-               <view class="summary-section">
-                  <text class="section-label">打出牌</text>
-                  <view class="summary-card-lg">
-                     <block wx:if="{{turnSummaryData.playedCard.bgImg}}">
-                        <view class="card-sprite-native {{turnSummaryData.playedCard.cssClass}}" style="background-image: url('{{turnSummaryData.playedCard.bgImg}}'); background-size: {{turnSummaryData.playedCard.bgSize}}"></view>
-                     </block>
-                     <block wx:else>
-                        <view class="fallback-card">{{turnSummaryData.playedCard.name}}</view>
-                     </block>
-                     <view class="card-name-label">{{turnSummaryData.playedCard.name}}</view>
+            <!-- 场景1: 玩家出牌 -->
+            <block wx:if="{{currentEvent.type === 'PLAY_CARD'}}">
+               <view class="event-header">
+                  <image class="p-avatar-small" src="{{currentEvent.playerAvatar || '/images/default_avatar.png'}}" />
+                  <text class="event-title">{{currentEvent.playerNick}} 打出了</text>
+               </view>
+               <view class="main-card-display">
+                  <view class="primary-flag">主牌</view>
+                  <view class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
+               </view>
+               <view class="sub-cards-label" wx:if="{{currentEvent.subCards.length > 0}}">
+                  支付费用：
+               </view>
+               <view class="sub-cards-display" wx:if="{{currentEvent.subCards.length > 0}}">
+                  <view wx:for="{{currentEvent.subCards}}" wx:key="uid" class="event-sub-card">
+                     <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
                   </view>
                </view>
-               <!-- Paid Cards (Discards) -->
-               <view class="summary-section" wx:if="{{turnSummaryData.paidCards.length > 0}}">
-                  <text class="section-label">支付费用 (弃牌)</text>
-                  <scroll-view scroll-x enable-flex class="summary-discards-scroll">
-                     <block wx:for="{{turnSummaryData.paidCards}}" wx:key="uid">
-                        <view class="summary-card-sm">
-                           <block wx:if="{{item.bgImg}}">
-                              <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
-                           </block>
-                           <block wx:else>
-                              <view class="fallback-card-sm">{{item.name}}</view>
-                           </block>
-                        </view>
-                     </block>
-                  </scroll-view>
+            </block>
+            <!-- 场景2: 牌库翻开/摸牌 (3D Flip) -->
+            <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.type === 'DRAW_CARD'}}">
+               <view class="event-title">
+                  {{currentEvent.type === 'DECK_TO_CLEARING' ? '由树木效果翻开卡牌' : currentEvent.playerNick + ' 正在摸牌...'}}
                </view>
-            </view>
+               <view class="flip-container">
+                  <view class="flip-inner {{isCardFlipped ? 'is-flipped' : ''}}">
+                     <!-- 初始面 (0deg): 背面 (Sapling) -->
+                     <view class="flip-front">
+                        <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                     </view>
+                     <!-- 翻转面 (180deg): 内容 -->
+                     <view class="flip-back">
+                        <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.playerOpenId === openId}}">
+                           <view class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
+                        </block>
+                        <block wx:else>
+                           <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                        </block>
+                     </view>
+                  </view>
+               </view>
+            </block>
+            <!-- 场景3: 玩家拿取卡片 -->
+            <block wx:if="{{currentEvent.type === 'TAKE_CARD'}}">
+               <view class="event-title">{{currentEvent.playerNick}} 拿走了</view>
+               <view class="main-card-display">
+                  <view class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
+               </view>
+            </block>
          </view>
       </view>
-      <!-- 底部：玩家手牌 (Hand) -->
+      <!-- 底部手牌 -->
       <view class="hand-area">
          <view class="hand-header">
             <view class="area-title">手牌 ({{playerStates[openId].hand.length}})</view>
@@ -230,29 +193,15 @@
          <scroll-view scroll-x class="hand-scroll" enable-flex>
             <view class="hand-grid">
                <block wx:for="{{playerStates[openId].hand}}" wx:key="uid">
-                  <view class="hand-card {{item.selected ? 'selected' : ''}} {{item.uid === primarySelection ? 'primary' : ''}}" bindtap="onHandTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
-                     <view class="primary-flag" wx:if="{{item.uid === primarySelection}}">主牌</view>
-                     <block wx:if="{{item.bgImg}}">
-                        <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
-                     </block>
-                     <block wx:else>
-                        <!-- Fallback for cards without images -->
-                        <view class="card-header" style="background-color: {{item.color || '#4caf50'}}">
-                           <text class="card-name">{{item.name}}</text>
-                           <view class="card-cost-badge" wx:if="{{item.cost !== undefined}}">
-                              {{item.cost}}
-                           </view>
-                        </view>
-                        <view class="card-body">
-                           <text class="card-type">{{item.type}}</text>
-                           <text class="card-tags">{{item.tags[0] || ''}}</text>
-                        </view>
-                        <view class="card-footer">
-                           <text class="card-effect-text" wx:if="{{item.effect}}">
-                              {{item.effect}}
-                           </text>
-                        </view>
-                     </block>
+                  <view class="hand-card {{item.uid === primarySelection ? 'primary-selected' : (item.selected ? 'payment-selected' : '')}}" bindtap="onHandTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
+                     <view wx:if="{{item.uid === primarySelection}}" class="primary-flag">主牌</view>
+                     <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
+                  </view>
+               </block>
+               <!-- 手牌占位：模仿空地逻辑 -->
+               <block wx:for="{{[1,2,3,4,5,6,7,8,9,10]}}" wx:key="*this">
+                  <view class="hand-card placeholder" wx:if="{{index >= (playerStates[openId].hand.length || 0)}}">
+                     <view class="card-body" style="background: transparent;">+</view>
                   </view>
                </block>
             </view>
