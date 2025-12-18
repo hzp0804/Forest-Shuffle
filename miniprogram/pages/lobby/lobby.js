@@ -45,7 +45,7 @@ const clearStoredProfile = () => {
 };
 
 const buildRoomCode = () => {
-  return Math.random().toString().slice(2, 8).padEnd(6, "0");
+  return Math.random().toString().slice(2, 5).padEnd(3, "0");
 };
 
 Page({
@@ -160,102 +160,132 @@ Page({
     });
   },
 
-  onCreateRoom() {
+  async onCreateRoom() {
     if (!this.ensureProfileOrBack()) return;
-    const { createForm, userProfile } = this.data;
+    const {
+      createForm,
+      userProfile
+    } = this.data;
     const cardCount = Number(createForm.cardCount) || BASE_DECK_SIZE;
     const winterStartOffset = Number(createForm.winterStartOffset) || 0;
 
-    this.ensureRoomCode();
-    const roomCode = this.data.roomCode; // generated unique code
-
-    wx.showLoading({ title: "创建房间中...", mask: true });
+    wx.showLoading({
+      title: "创建房间中...",
+      mask: true
+    });
 
     const db = wx.cloud.database();
     const _ = db.command;
 
-    // 清理该用户已创建的其他未开始房间（进行中不删）
-    db.collection("rooms")
-      .where({
+    try {
+      // 1. 清理该用户已创建的其他未开始房间（进行中不删）
+      const oldRoomsRes = await db.collection("rooms").where({
         hostOpenId: userProfile.openId,
         status: "waiting",
-      })
-      .get()
-      .then((res) => {
-        // 将之前的等待房间状态改为 closed
-        const closePromises = (res.data || []).map((r) =>
-          db
-            .collection("rooms")
-            .doc(r._id)
-            .update({
-              data: { status: "closed" },
-            })
-        );
-        return Promise.all(closePromises);
-      })
-      .then(() => {
-        // 初始座位数据：6个位置，第一个是房主
-        const initialSeats = Array(6).fill(null);
-        initialSeats[0] = {
-          openId: userProfile.openId, // 明确使用 openId
-          nickName: userProfile.nickName,
-          avatarUrl: userProfile.avatarUrl,
-          seatId: 1, // 这里的ID对应界面显示的1-6
-          ready: true,
-        };
+      }).get();
 
-        // 构建房间数据
-        const roomData = {
-          roomCode: roomCode,
-          hostOpenId: userProfile.openId, // 记录房主OpenID权限
-          status: "waiting",
-          players: initialSeats,
-          settings: {
-            totalCardCount: cardCount,
-            winterStartOffset,
+      const closePromises = (oldRoomsRes.data || []).map((r) =>
+        db.collection("rooms").doc(r._id).update({
+          data: {
+            status: "closed"
           },
-          createTime: db.serverDate(),
-          updateTime: db.serverDate(),
-        };
+        })
+      );
+      await Promise.all(closePromises);
 
-        return db.collection("rooms").add({ data: roomData });
-      })
-      .then((res) => {
-        console.log("Room created:", res);
-        wx.hideLoading();
+      // 2. 生成 001 开始的 3 位房间号 (按顺序查找可用)
+      // 查询当前活跃房间
+      const activeRes = await db.collection("rooms")
+        .where({
+          status: _.in(['waiting', 'playing'])
+        })
+        .field({
+          roomCode: true
+        })
+        .get();
 
-        // 更新本地状态，进入房间视图
-        this.setData({
-          isInRoom: true,
-          isHost: true,
-          roomId: res._id,
-          roomCode: roomCode,
-          // seats: displaySeats // 由 watcher 更新
-        });
-
-        wx.showToast({ title: "创建成功", icon: "success" });
-
-        // 开启监听
-        this.initRoomWatcher(res._id);
-      })
-      .catch((err) => {
-        wx.hideLoading();
-        console.error("Create room failed:", err);
-        if (
-          err.errMsg &&
-          (err.errMsg.includes("not exists") ||
-            err.errMsg.includes("not found"))
-        ) {
-          wx.showModal({
-            title: "提示",
-            content:
-              '请在云开发控制台创建 "rooms" 集合，并在"数据权限"中设置为"所有用户可读，创建者可写"（开发阶段）或使用云函数创建。',
-            showCancel: false,
-          });
-        } else {
-          wx.showToast({ title: "创建失败", icon: "none" });
+      const usedCodes = new Set(activeRes.data.map(r => r.roomCode));
+      let codeInt = 1;
+      let finalCode = "001";
+      while (codeInt <= 999) {
+        const s = String(codeInt).padStart(3, "0");
+        if (!usedCodes.has(s)) {
+          finalCode = s;
+          break;
         }
+        codeInt++;
+      }
+      // 如果 999 满了，fallback 到随机
+      if (codeInt > 999) {
+        finalCode = Math.floor(Math.random() * 900 + 100).toString();
+      }
+
+      // 3. 构建房间数据
+      const initialSeats = Array(6).fill(null);
+      initialSeats[0] = {
+        openId: userProfile.openId, // 明确使用 openId
+        nickName: userProfile.nickName,
+        avatarUrl: userProfile.avatarUrl,
+        seatId: 1, // 这里的ID对应界面显示的1-6
+        ready: true,
+      };
+
+      const roomData = {
+        roomCode: finalCode,
+        hostOpenId: userProfile.openId,
+        status: "waiting",
+        players: initialSeats,
+        settings: {
+          totalCardCount: cardCount,
+          winterStartOffset,
+        },
+        createTime: db.serverDate(),
+        updateTime: db.serverDate(),
+      };
+
+      const res = await db.collection("rooms").add({
+        data: roomData
       });
+
+      console.log("Room created:", res);
+      wx.hideLoading();
+
+      // 更新本地状态，进入房间视图
+      this.setData({
+        isInRoom: true,
+        isHost: true,
+        roomId: res._id,
+        roomCode: finalCode,
+      });
+
+      wx.showToast({
+        title: "创建成功",
+        icon: "success"
+      });
+
+      // 开启监听
+      this.initRoomWatcher(res._id);
+
+    } catch (err) {
+      wx.hideLoading();
+      console.error("Create room failed:", err);
+      if (
+        err.errMsg &&
+        (err.errMsg.includes("not exists") ||
+          err.errMsg.includes("not found"))
+      ) {
+        wx.showModal({
+          title: "提示",
+          content: '请在云开发控制台创建 "rooms" 集合，并在"数据权限"中设置为"所有用户可读，创建者可写"（开发阶段）或使用云函数创建。',
+          showCancel: false,
+        });
+      } else {
+        wx.showToast({
+          title: "创建失败",
+          icon: "none"
+        });
+      }
+    }
   },
 
   onJoinInput(e) {

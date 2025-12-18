@@ -145,10 +145,13 @@
 }
 
 .player-slot.selected {
+  background: rgba(52, 152, 219, 0.2);
   border: 2rpx solid #3498db;
+  box-shadow: 0 0 16rpx rgba(52, 152, 219, 0.4);
 }
 
 .player-slot.is-active {
+  background: rgba(46, 204, 113, 0.2);
   border: 2rpx solid #2ecc71;
   box-shadow: 0 0 16rpx #2ecc71;
   animation: pulseActivePlayer 1.5s infinite;
