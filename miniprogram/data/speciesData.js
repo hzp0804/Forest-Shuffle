@@ -1,5 +1,5 @@
 const { DECK_TYPES, CARD_TYPES, TAGS, SPECIES_NAMES } = require('./constants');
-const { EFFECT_TYPES, BONUS_TYPES, SCORING_TYPES } = require('./enums');
+const { REWARD_TYPES, TRIGGER_TYPES, MODIFIER_TYPES, SCORING_TYPES } = require('./enums');
 
 // effect 效果：不需要同色卡作为费用
 // bonus 奖励：需要同色卡作为费用
@@ -77,7 +77,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "每当你打出一张带有树木符号的牌时，获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
+      type: TRIGGER_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
       tag: CARD_TYPES.TREE,
       reward: { type: 'DRAW', value: 1 }
     },
@@ -93,7 +93,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "该槽位最多可容纳2只大蟾蜍",
     effectConfig: {
-      type: EFFECT_TYPES.CAPACITY_INCREASE,
+      type: MODIFIER_TYPES.CAPACITY_INCREASE,
       value: 2,
       target: SPECIES_NAMES.COMMON_TOAD
     },
@@ -115,7 +115,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "获得新的回合",
     effectConfig: {
-      type: EFFECT_TYPES.EXTRA_TURN
+      type: REWARD_TYPES.EXTRA_TURN
     },
     bonus: "",
     points: "获得3分",
@@ -134,8 +134,8 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "免费打出一张带有爪印符号的牌",
     bonusConfig: {
-      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
-      tag: TAGS.PAW
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.PAW]
     },
     points: "根据你拥有的火蛾螈数量获得分数",
     scoreConfig: {
@@ -173,7 +173,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "每当你打出一张带有爪印符号的牌时，获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
+      type: TRIGGER_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
       tag: TAGS.PAW,
       reward: { type: 'DRAW', value: 1 }
     },
@@ -205,7 +205,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.IMMEDIATE_DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     bonus: "",
@@ -227,7 +227,7 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "获得1张牌",
     bonusConfig: {
-      type: BONUS_TYPES.DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     points: "每张带有蝴蝶符号的牌得2分",
@@ -290,7 +290,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "每当你打出一张位于树木下方的牌时，获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.TRIGGER_ON_PLAY_POSITION,
+      type: TRIGGER_TYPES.TRIGGER_ON_PLAY_POSITION,
       position: 'bottom',
       reward: { type: 'DRAW', value: 1 }
     },
@@ -322,7 +322,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "每当你往树木顶端打一张牌将会奖励一张牌（仅树木，灌木不算）",
     effectConfig: {
-      type: EFFECT_TYPES.TRIGGER_ON_PLAY_POSITION,
+      type: TRIGGER_TYPES.TRIGGER_ON_PLAY_POSITION,
       position: 'top',
       tag: CARD_TYPES.TREE,
       reward: { type: 'DRAW', value: 1 }
@@ -339,7 +339,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.IMMEDIATE_DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     bonus: "",
@@ -406,6 +406,10 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "免费打出一张带有鸟符号的牌",
+    bonusConfig: {
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.BIRD]
+    },
     points: "每张带有爪印符号的牌得1分",
     scoreConfig: {
       type: SCORING_TYPES.PER_TAG,
@@ -422,12 +426,12 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.IMMEDIATE_DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     bonus: "获得2张牌",
     bonusConfig: {
-      type: BONUS_TYPES.DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 2
     },
     points: "获得5分",
@@ -445,7 +449,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.IMMEDIATE_DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     bonus: "",
@@ -543,7 +547,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.IMMEDIATE_DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     bonus: "",
@@ -562,11 +566,11 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "将空地上的所有卡牌放入你的洞穴",
     effectConfig: {
-      type: EFFECT_TYPES.ACTION_BEAR
+      type: REWARD_TYPES.ACTION_BEAR
     },
     bonus: "获得1张牌并获得新的回合",
     bonusConfig: {
-      type: BONUS_TYPES.DRAW_AND_TURN,
+      type: REWARD_TYPES.DRAW_AND_TURN,
       count: 1
     },
     points: "",
@@ -597,8 +601,8 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "免费打出一张带有爪印符号的牌",
     bonusConfig: {
-      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
-      tag: TAGS.PAW
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.PAW]
     },
     points: "获得2分",
     scoreConfig: {
@@ -630,7 +634,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "该槽位可以容纳任意数量的欧洲野兔",
     effectConfig: {
-      type: EFFECT_TYPES.CAPACITY_UNLIMITED,
+      type: MODIFIER_TYPES.CAPACITY_UNLIMITED,
       target: SPECIES_NAMES.EUROPEAN_HARE
     },
     bonus: "",
@@ -651,7 +655,7 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "获得2张牌",
     bonusConfig: {
-      type: BONUS_TYPES.DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 2
     },
     points: "每张带有偶蹄动物符号的牌得3分",
@@ -670,7 +674,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "免费打出任意数量的蝙蝠牌",
     effectConfig: {
-      type: EFFECT_TYPES.FREE_PLAY_BAT
+      type: REWARD_TYPES.FREE_PLAY_BAT
     },
     bonus: "",
     points: "每张带有蝙蝠符号的牌得1分",
@@ -721,7 +725,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "将手牌中任意数量的卡牌放入你的洞穴；从牌库中抽出相同数量的牌",
     effectConfig: {
-      type: EFFECT_TYPES.ACTION_RACCOON
+      type: REWARD_TYPES.ACTION_RACCOON
     },
     bonus: "",
     points: "",
@@ -736,8 +740,8 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "免费打出一张带有鹿符号的牌",
     bonusConfig: {
-      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
-      tag: TAGS.DEER
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.DEER]
     },
     points: "每张带有树木或植物符号的牌得1分",
     scoreConfig: {
@@ -755,7 +759,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "每有一只欧洲野兔获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.DRAW_PER_EXISTING,
+      type: REWARD_TYPES.DRAW_PER_EXISTING,
       target: SPECIES_NAMES.EUROPEAN_HARE,
       perCount: 1,
       value: 1
@@ -778,7 +782,7 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "获得1张牌",
     bonusConfig: {
-      type: BONUS_TYPES.DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     points: "每张带有匹配树木符号的牌得3分",
@@ -811,7 +815,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "这只蜜蜂占据的树木被算作同类型的一棵额外树木",
     effectConfig: {
-      type: EFFECT_TYPES.TREE_MULTIPLIER
+      type: MODIFIER_TYPES.TREE_MULTIPLIER
     },
     bonus: "",
     points: "",
@@ -841,14 +845,14 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "每有一只鹿获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.DRAW_PER_EXISTING,
+      type: REWARD_TYPES.DRAW_PER_EXISTING,
       tag: TAGS.DEER,
       perCount: 1,
       value: 1
     },
     bonus: "获得新的回合",
     bonusConfig: {
-      type: BONUS_TYPES.EXTRA_TURN
+      type: REWARD_TYPES.EXTRA_TURN
     },
     points: "每张带有鹿符号的牌得5分",
     scoreConfig: {
@@ -884,7 +888,7 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "获得新的回合",
     bonusConfig: {
-      type: BONUS_TYPES.EXTRA_TURN
+      type: REWARD_TYPES.EXTRA_TURN
     },
     points: "如果你集齐所有8种不同的树木，获得10分",
     scoreConfig: {
@@ -902,8 +906,8 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "免费打出一张带有爪印符号的牌",
     bonusConfig: {
-      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
-      tag: TAGS.PAW
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.PAW]
     },
     points: "连接到这棵银冷杉的每张牌得2分",
     scoreConfig: {
@@ -920,7 +924,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.TREE,
     effect: "获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.IMMEDIATE_DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     bonus: "",
@@ -939,7 +943,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.TREE,
     effect: "获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.IMMEDIATE_DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     bonus: "",
@@ -977,7 +981,7 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "获得新的回合",
     bonusConfig: {
-      type: BONUS_TYPES.EXTRA_TURN
+      type: REWARD_TYPES.EXTRA_TURN
     },
     points: "获得5分",
     scoreConfig: {
@@ -1023,6 +1027,10 @@ const SPECIES_DATA = {
     type: CARD_TYPES.TREE,
     effect: "",
     bonus: "免费打出一张带有高山符号的牌",
+    bonusConfig: {
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.MOUNTAIN]
+    },
     points: "获得3分",
     scoreConfig: {
       type: SCORING_TYPES.FLAT,
@@ -1038,12 +1046,12 @@ const SPECIES_DATA = {
     type: CARD_TYPES.TREE,
     effect: "获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.IMMEDIATE_DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     bonus: "获得1张牌",
     bonusConfig: {
-      type: BONUS_TYPES.DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     points: "每张带有高山符号的牌得1分",
@@ -1062,7 +1070,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "每当你打出一张带有高山符号的牌时，获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
+      type: TRIGGER_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
       tag: TAGS.MOUNTAIN,
       reward: { type: 'DRAW', value: 1 }
     },
@@ -1094,7 +1102,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "免费打出一张带有蝴蝶符号的牌",
     effectConfig: {
-      type: EFFECT_TYPES.FREE_PLAY_SPECIFIC,
+      type: REWARD_TYPES.FREE_PLAY_SPECIFIC,
       tag: TAGS.BUTTERFLY
     },
     bonus: "",
@@ -1114,7 +1122,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "免费打出一张带有两栖动物符号的牌",
     effectConfig: {
-      type: EFFECT_TYPES.FREE_PLAY_SPECIFIC,
+      type: REWARD_TYPES.FREE_PLAY_SPECIFIC,
       tag: TAGS.AMPHIBIAN
     },
     bonus: "",
@@ -1135,7 +1143,7 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "免费打出一张带有高山符号的牌和一张带有昆虫符号的牌",
     bonusConfig: {
-      type: BONUS_TYPES.PLAY_FREE_MULTIPLE,
+      type: REWARD_TYPES.PLAY_FREE,
       tags: [TAGS.MOUNTAIN, TAGS.INSECT]
     },
     points: "每张带有昆虫符号的牌得2分",
@@ -1170,7 +1178,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.IMMEDIATE_DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     bonus: "",
@@ -1189,12 +1197,12 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.IMMEDIATE_DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     bonus: "获得1张牌",
     bonusConfig: {
-      type: BONUS_TYPES.DRAW,
+      type: REWARD_TYPES.DRAW,
       count: 1
     },
     points: "获得3分",
@@ -1227,7 +1235,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "获得新的回合",
     effectConfig: {
-      type: EFFECT_TYPES.EXTRA_TURN
+      type: REWARD_TYPES.EXTRA_TURN
     },
     bonus: "",
     points: "获得10分",
@@ -1245,7 +1253,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "被视为一只欧洲野兔",
     effectConfig: {
-      type: EFFECT_TYPES.TREATED_AS,
+      type: REWARD_TYPES.TREATED_AS,
       target: SPECIES_NAMES.EUROPEAN_HARE
     },
     bonus: "",
@@ -1265,7 +1273,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "该槽位可以容纳任意数量的高山旱獭",
     effectConfig: {
-      type: EFFECT_TYPES.CAPACITY_UNLIMITED,
+      type: MODIFIER_TYPES.CAPACITY_UNLIMITED,
       target: SPECIES_NAMES.MARMOTA_MARMOTA
     },
     bonus: "",
@@ -1301,7 +1309,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "免费打出一张带有植物符号的牌",
     effectConfig: {
-      type: EFFECT_TYPES.FREE_PLAY_SPECIFIC,
+      type: REWARD_TYPES.FREE_PLAY_SPECIFIC,
       tag: TAGS.PLANT
     },
     bonus: "",
@@ -1321,14 +1329,14 @@ const SPECIES_DATA = {
     type: CARD_TYPES.TREE,
     effect: "每当你打出一张带有植物符号的牌时，获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
+      type: TRIGGER_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
       tag: TAGS.PLANT,
       reward: { type: 'DRAW', value: 1 }
     },
     bonus: "免费打出一张带有植物符号的牌",
     bonusConfig: {
-      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
-      tag: TAGS.PLANT
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.PLANT]
     },
     points: "",
   },
@@ -1341,14 +1349,14 @@ const SPECIES_DATA = {
     type: CARD_TYPES.TREE,
     effect: "每当你打出一张带有蝙蝠符号的牌时，获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
+      type: TRIGGER_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
       tag: TAGS.BAT,
       reward: { type: 'DRAW', value: 1 }
     },
     bonus: "免费打出一张带有蝙蝠符号的牌",
     bonusConfig: {
-      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
-      tag: TAGS.BAT
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.BAT]
     },
     points: "",
   },
@@ -1361,14 +1369,14 @@ const SPECIES_DATA = {
     type: CARD_TYPES.TREE,
     effect: "每当你打出一张带有蝴蝶符号的牌时，获得1张牌",
     effectConfig: {
-      type: EFFECT_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
+      type: TRIGGER_TYPES.TRIGGER_ON_PLAY_TAG_DRAW,
       tag: TAGS.BUTTERFLY,
       reward: { type: 'DRAW', value: 1 }
     },
     bonus: "免费打出一张带有蝴蝶符号的牌",
     bonusConfig: {
-      type: BONUS_TYPES.PLAY_FREE_SPECIFIC,
-      tag: TAGS.BUTTERFLY
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.BUTTERFLY]
     },
     points: "",
   },
@@ -1381,11 +1389,11 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "将空地上所有的牌从游戏中移除",
     effectConfig: {
-      type: EFFECT_TYPES.ACTION_REMOVE_CLEARING
+      type: REWARD_TYPES.ACTION_REMOVE_CLEARING
     },
     bonus: "免费打出一只小野猪",
     bonusConfig: {
-      type: BONUS_TYPES.PLAY_FREE_SPECIFIC_NAME,
+      type: REWARD_TYPES.PLAY_FREE_SPECIFIC_NAME,
       target: SPECIES_NAMES.SQUEAKER
     },
     points: "每有一只小野猪获得10分",
@@ -1404,7 +1412,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "将所有带有植物、灌木或树木符号的卡片放进你的洞穴",
     effectConfig: {
-      type: EFFECT_TYPES.ACTION_CLEARING_TO_CAVE,
+      type: REWARD_TYPES.ACTION_CLEARING_TO_CAVE,
       tags: [TAGS.PLANT, TAGS.SHRUB, CARD_TYPES.TREE]
     },
     bonus: "",
@@ -1424,7 +1432,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "获得新的回合",
     effectConfig: {
-      type: EFFECT_TYPES.EXTRA_TURN
+      type: REWARD_TYPES.EXTRA_TURN
     },
     bonus: "",
     points: "每张带有橡木或山毛榉标志的卡片可获得2分",
@@ -1443,7 +1451,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "从空地中拿一张牌",
     effectConfig: {
-      type: EFFECT_TYPES.ACTION_PICK_FROM_CLEARING
+      type: REWARD_TYPES.ACTION_PICK_FROM_CLEARING
     },
     bonus: "",
     points: "每张带有林地边缘符号的牌得1分",
@@ -1493,11 +1501,11 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "免费打出任意数量的蝙蝠牌",
     effectConfig: {
-      type: EFFECT_TYPES.FREE_PLAY_BAT
+      type: REWARD_TYPES.FREE_PLAY_BAT
     },
     bonus: "把所有有蝙蝠符号的牌从空地上拿到手里",
     bonusConfig: {
-      type: BONUS_TYPES.PICK_FROM_CLEARING_TO_HAND,
+      type: REWARD_TYPES.PICK_FROM_CLEARING_TO_HAND,
       tag: TAGS.BAT
     },
     points: "每张带有蝙蝠符号的牌得1分",
@@ -1517,7 +1525,7 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "获得新的回合",
     bonusConfig: {
-      type: BONUS_TYPES.EXTRA_TURN
+      type: REWARD_TYPES.EXTRA_TURN
     },
     points: "若位于树或灌木上，获得10分",
     scoreConfig: {
@@ -1566,7 +1574,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "任何数量的蝴蝶都可以在这棵树或灌木上共享一个槽",
     effectConfig: {
-      type: EFFECT_TYPES.CAPACITY_SHARE_SLOT,
+      type: MODIFIER_TYPES.CAPACITY_SHARE_SLOT,
       tag: TAGS.BUTTERFLY
     },
     bonus: "",
@@ -1586,7 +1594,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "免费打出一张带有鸟符号的牌",
     effectConfig: {
-      type: EFFECT_TYPES.FREE_PLAY_SPECIFIC,
+      type: REWARD_TYPES.FREE_PLAY_SPECIFIC,
       tag: TAGS.BIRD
     },
     bonus: "",
@@ -1606,11 +1614,11 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "立即打出任意数量的树苗",
     effectConfig: {
-      type: EFFECT_TYPES.ACTION_PLAY_SAPLINGS
+      type: REWARD_TYPES.ACTION_PLAY_SAPLINGS
     },
     bonus: "获得新的回合",
     bonusConfig: {
-      type: BONUS_TYPES.EXTRA_TURN
+      type: REWARD_TYPES.EXTRA_TURN
     },
     points: "",
   },
@@ -1623,11 +1631,11 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "从空地中拿一张牌",
     effectConfig: {
-      type: EFFECT_TYPES.ACTION_PICK_FROM_CLEARING
+      type: REWARD_TYPES.ACTION_PICK_FROM_CLEARING
     },
     bonus: "从空地上放两张牌到你的洞穴里",
     bonusConfig: {
-      type: BONUS_TYPES.CLEARING_TO_CAVE,
+      type: REWARD_TYPES.CLEARING_TO_CAVE,
       count: 2
     },
     points: "获得3分",
@@ -1646,7 +1654,7 @@ const SPECIES_DATA = {
     effect: "",
     bonus: "获得新的回合",
     bonusConfig: {
-      type: BONUS_TYPES.EXTRA_TURN
+      type: REWARD_TYPES.EXTRA_TURN
     },
     points: "若位于灌木丛上，获得5分",
     scoreConfig: {
@@ -1663,7 +1671,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "如果你的森林里至少有一只蝙蝠，获得新的回合",
     effectConfig: {
-      type: EFFECT_TYPES.CONDITION_EXTRATURN,
+      type: REWARD_TYPES.CONDITION_EXTRATURN,
       tag: TAGS.BAT
     },
     bonus: "",

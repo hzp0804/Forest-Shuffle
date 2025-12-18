@@ -1,10 +1,10 @@
 const Utils = require("../../utils/utils");
-const { calculateBonus } = require("../../utils/bonus.js");
-const { calculateEffect, calculateTriggerEffects } = require("../../utils/effect.js");
+const { calculateBonus, calculateEffect, calculateTriggerEffects } = require("../../utils/reward.js");
 const RoundUtils = require("../../utils/round.js");
 const AnimationUtils = require("../../utils/animation.js");
 const DbHelper = require("../../utils/dbHelper.js");
 const SpecialActionUtils = require("../../utils/specialAction.js");
+const ClearingUtils = require("../../utils/clearing.js");
 const app = getApp();
 const db = wx.cloud.database();
 
@@ -102,27 +102,13 @@ Page({
         nextLastEventTime = Math.max(nextLastEventTime, deckRevealEvent.timestamp);
         added = true;
       }
-
       processedData.lastEventTime = nextLastEventTime;
-      const oldLen = this.data.clearing ? this.data.clearing.length : 0;
-      const newLen = processedData.clearing ? processedData.clearing.length : 0;
-      let targetScrollId = null;
 
-      // 只要卡片数量增加，就尝试滚动到最新那张卡
-      // 为了让最新卡片出现在屏幕右侧，我们滚动到它前面的第3张卡片 (适配不同机型宽度)
-      if (newLen > oldLen && newLen > 0) {
-        const targetIndex = Math.max(0, newLen - 3);
-        targetScrollId = `clearing-${targetIndex}`;
-      }
-
+      // 3. 空地滚动处理
+      const targetScrollId = ClearingUtils.getScrollTarget(this.data.clearing, processedData.clearing);
       this.setData(processedData, () => {
         if (targetScrollId) {
-          // 强制触发滚动：先置空，再赋值，确保 scroll-view 监听到变化
-          this.setData({ clearingScrollId: '' }, () => {
-            setTimeout(() => {
-              this.setData({ clearingScrollId: targetScrollId });
-            }, 100);
-          });
+          ClearingUtils.executeScroll(this, targetScrollId);
         }
         // moved inside callback to ensure data is updated
         if (added || processedData.pendingTurnToast) this.processNextEvent();
@@ -134,6 +120,7 @@ Page({
     this.setData({ eventQueue: [...this.data.eventQueue, event] });
   },
 
+  // 4. 事件处理
   async processNextEvent() {
     if (this.data.isProcessingEvent) return;
 
@@ -229,7 +216,11 @@ Page({
   },
 
   // source: 'PLAYER_ACTION' | 'MOLE_EFFECT' | 'FREE_PLAY' | ...
-  async onConfirmPlay(source = 'PLAYER_ACTION') {
+  // 注意：当从 wxml 调用时，第一个参数是事件对象 e
+  async onConfirmPlay(e) {
+    // 判断是事件对象还是 source 字符串
+    const source = (typeof e === 'string') ? e : 'PLAYER_ACTION';
+
     const { gameState, primarySelection, playerStates, openId, clearing, selectedSlot, instructionState, turnAction } = this.data;
     if (turnAction?.drawnCount > 0 || turnAction?.takenCount > 0) {
       wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
@@ -304,7 +295,7 @@ Page({
     let bonus = { drawCount: 0, extraTurn: false, actions: [] };
     let effect = { drawCount: 0, extraTurn: false, actions: [] };
 
-    const isSpecialPlayMode = ['MOLE', 'FREE_PLAY_BAT', 'PLAY_SAPLINGS', 'PLAY_FREE', 'PLAY_FREE_SPECIFIC'].includes(gameState.actionMode);
+    const isSpecialPlayMode = ['MOLE', 'FREE_PLAY_BAT', 'PLAY_SAPLINGS', 'PLAY_FREE'].includes(gameState.actionMode);
 
     if (source === 'PLAYER_ACTION') {
       // 在特殊模式下打牌，不重新触发该牌自身的 Bonus 和 Effect (防止无限循环)
@@ -427,8 +418,13 @@ Page({
     const maxCanDraw = 10 - currentHandSize;
     const actualDraw = Math.max(0, Math.min(reward.drawCount, maxCanDraw));
 
+    const drawnCards = []; // 记录抽到的卡片
     for (let i = 0; i < actualDraw; i++) {
-      if (newDeck.length > 0) newHand.push(newDeck.shift());
+      if (newDeck.length > 0) {
+        const card = newDeck.shift();
+        newHand.push(card);
+        drawnCards.push(card);
+      }
     }
     // 如果 reward.drawCount > actualDraw，多余的抽牌机会作废（或者是顶掉牌堆顶的卡？通常规则是作废或不抽）
     // 根据描述"只能获得3张"，意味着剩下的就不抽了，保留在牌堆顶。上述代码符合此逻辑。
@@ -462,6 +458,7 @@ Page({
         playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
         playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
         count: actualDraw,
+        drawnCards: drawnCards.map(c => Utils.enrichCard(c)), // 添加抽到的卡片信息
         timestamp: Date.now() - 50 // 确保在 PLAY_CARD 之前或紧随其后
       };
     }
@@ -816,6 +813,20 @@ Page({
     updates[`gameState.playerStates.${openId}.hand`] = DbHelper.cleanHand(newHand);
     updates[`gameState.deck`] = newDeck;
 
+    // 创建奖励抽牌事件
+    let rewardDrawEvent = null;
+    if (actualDraw > 0) {
+      rewardDrawEvent = {
+        type: 'REWARD_DRAW',
+        playerOpenId: openId,
+        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+        count: actualDraw,
+        timestamp: Date.now()
+      };
+    }
+    updates['gameState.rewardDrawEvent'] = rewardDrawEvent;
+
     // 3. 决定是否结束回合
     // 如果没有额外回合奖励，则切换玩家
     if (!rewards.extraTurn) {
@@ -850,15 +861,15 @@ Page({
     let nextLastEventTime = this.data.lastEventTime || 0;
     let added = false;
 
-    // 顺序决定显示的先后：奖励抽牌 -> 动作事件 -> 翻开事件
-    if (localRewardDraw) {
-      this.addToEventQueue(localRewardDraw);
-      nextLastEventTime = Math.max(nextLastEventTime, localRewardDraw.timestamp);
-      added = true;
-    }
+    // 顺序决定显示的先后：打出卡片 -> 奖励抽牌 -> 空地翻牌
     if (localLastEvent) {
       this.addToEventQueue(localLastEvent);
       nextLastEventTime = Math.max(nextLastEventTime, localLastEvent.timestamp);
+      added = true;
+    }
+    if (localRewardDraw) {
+      this.addToEventQueue(localRewardDraw);
+      nextLastEventTime = Math.max(nextLastEventTime, localRewardDraw.timestamp);
       added = true;
     }
     if (localDeckReveal) {

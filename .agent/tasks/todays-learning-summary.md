@@ -185,9 +185,8 @@ function countHorseChestnut(forest) {
 以下 Bonus 类型还需要确认具体规则：
 
 1. PLAY_FREE - 免费打出特定类型牌
-2. PLAY_FREE_AND_DRAW - 免费打牌+摸牌
-3. PICK_FROM_CLEARING_TO_HAND - 空地拿回手牌
-4. CLEARING_TO_CAVE（Bonus）- 空地进洞穴
+2. PICK_FROM_CLEARING_TO_HAND - 空地拿回手牌
+3. CLEARING_TO_CAVE（Bonus）- 空地进洞穴
 
 ---
 

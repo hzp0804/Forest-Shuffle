@@ -1,0 +1,218 @@
+const { REWARD_TYPES, TRIGGER_TYPES, MODIFIER_TYPES } = require('../data/enums');
+const { isColorMatched } = require('./colorMatcher');
+const { TAGS, CARD_TYPES } = require('../data/constants');
+
+/**
+ * 统一的奖励计算函数
+ * @param {Object} card - 主牌
+ * @param {Object} slot - 选择的插槽
+ * @param {Array} paymentCards - 支付卡片数组
+ * @param {Object} context - 上下文 { forest }
+ * @param {Boolean} isBonus - 是否为 bonus（需要颜色匹配）
+ * @returns {Object} 奖励结果 { drawCount, extraTurn, actions, text }
+ */
+function calculateReward(card, slot, paymentCards, context = {}, isBonus = false) {
+  const result = {
+    drawCount: 0,
+    extraTurn: false,
+    actions: [],
+    text: ''
+  };
+
+  // 获取配置
+  const config = isBonus ? card.bonusConfig : card.effectConfig;
+  if (!config) return result;
+
+  // 如果是 bonus，需要检查颜色匹配
+  if (isBonus && !isColorMatched(card, paymentCards)) {
+    return result;
+  }
+
+  // 根据类型处理奖励
+  switch (config.type) {
+    case REWARD_TYPES.DRAW:
+      result.drawCount = config.count || 0;
+      break;
+
+    case REWARD_TYPES.EXTRA_TURN:
+      result.extraTurn = true;
+      break;
+
+    case REWARD_TYPES.DRAW_AND_TURN:
+      result.drawCount = config.count || 0;
+      result.extraTurn = true;
+      break;
+
+    // 免费打牌
+    case REWARD_TYPES.PLAY_FREE:
+      result.text = "特殊行动";
+      result.actions.push(config);
+      break;
+
+    // 特殊行动
+    case REWARD_TYPES.ACTION_MOLE:
+      result.text = "鼹鼠特殊行动";
+      result.actions.push(config);
+      break;
+
+    case REWARD_TYPES.ACTION_RACCOON:
+      result.text = "浣熊特殊行动";
+      result.actions.push(config);
+      break;
+
+    case REWARD_TYPES.ACTION_BEAR:
+      result.text = "洞穴收入";
+      result.actions.push(config);
+      break;
+
+    case REWARD_TYPES.FREE_PLAY_BAT:
+      result.text = "免费打出蝙蝠";
+      result.actions.push(config);
+      break;
+
+    case REWARD_TYPES.ACTION_REMOVE_CLEARING:
+    case REWARD_TYPES.ACTION_CLEARING_TO_CAVE:
+    case REWARD_TYPES.ACTION_PICK_FROM_CLEARING:
+    case REWARD_TYPES.ACTION_PLAY_SAPLINGS:
+    case REWARD_TYPES.PICK_FROM_CLEARING_TO_HAND:
+    case REWARD_TYPES.CLEARING_TO_CAVE:
+      result.actions.push(config);
+      break;
+
+    // 动态收益
+    case REWARD_TYPES.DRAW_PER_EXISTING:
+      if (config.tag || config.target) {
+        let count = 0;
+        if (context && context.forest) {
+          const all = [];
+          context.forest.forEach(g => {
+            if (g.center) all.push(g.center);
+            if (g.slots) Object.values(g.slots).forEach(s => s && all.push(s));
+          });
+          all.forEach(c => {
+            if (config.tag && c.tags && c.tags.includes(config.tag)) count++;
+            else if (config.target && c.name === config.target) count++;
+          });
+        }
+        const divisor = config.perCount || 1;
+        const rewardCount = Math.floor(count / divisor) * (config.value || 1);
+        result.drawCount += rewardCount;
+      }
+      break;
+
+    case REWARD_TYPES.CONDITION_EXTRATURN:
+      if (context && context.forest) {
+        let hasCondition = false;
+        for (const group of context.forest) {
+          if ((group.center && group.center.tags && group.center.tags.includes(config.tag)) ||
+            (group.slots && Object.values(group.slots).some(s => s && s.tags && s.tags.includes(config.tag)))) {
+            hasCondition = true;
+            break;
+          }
+        }
+        if (hasCondition) result.extraTurn = true;
+      }
+      break;
+  }
+
+  // 补充基础奖励描述
+  if (!result.text) {
+    const parts = [];
+    if (result.drawCount > 0) parts.push(`摸${result.drawCount}张`);
+    if (result.extraTurn) parts.push("额外回合");
+    if (parts.length > 0) {
+      result.text = parts.join("+");
+    } else if (isBonus && card.bonus) {
+      result.text = card.bonus;
+    } else if (!isBonus && card.effect) {
+      result.text = card.effect;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * 计算 effect（不需要颜色匹配）
+ */
+function calculateEffect(card, context, paymentCards) {
+  return calculateReward(card, null, paymentCards, context, false);
+}
+
+/**
+ * 计算 bonus（需要颜色匹配）
+ */
+function calculateBonus(card, slot, paymentCards) {
+  return calculateReward(card, slot, paymentCards, {}, true);
+}
+
+/**
+ * 计算常驻效果触发 (Trigger Effects)
+ */
+function calculateTriggerEffects(forest, playedCard, triggerContext) {
+  const result = {
+    drawCount: 0,
+    actions: []
+  };
+
+  if (!forest || !Array.isArray(forest)) return result;
+
+  // 扁平化森林卡牌
+  const allCards = [];
+  forest.forEach(group => {
+    if (group.center) allCards.push(group.center);
+    if (group.slots) {
+      Object.values(group.slots).forEach(c => {
+        if (c) allCards.push(c);
+      });
+    }
+  });
+
+  // 遍历检查触发
+  allCards.forEach(card => {
+    // 规则：当打出此物种的回合是不会触发其自身的常驻奖励的
+    if (card.uid === playedCard.uid) return;
+
+    if (!card.effectConfig) return;
+    const config = card.effectConfig;
+
+    switch (config.type) {
+      case TRIGGER_TYPES.TRIGGER_ON_PLAY_TAG_DRAW:
+        // 检查触发条件: 此时打出的牌 playedCard 是否包含目标 tag
+        if (playedCard.tags && playedCard.tags.includes(config.tag)) {
+          if (config.reward) {
+            if (config.reward.type === 'DRAW') {
+              result.drawCount += (config.reward.value || 0);
+            }
+          }
+        }
+        break;
+
+      case TRIGGER_TYPES.TRIGGER_ON_PLAY_POSITION:
+        // 检查位置
+        if (triggerContext && triggerContext.slot && triggerContext.slot.side === config.position) {
+          let match = true;
+          if (config.tag) {
+            if (!playedCard.tags || !playedCard.tags.includes(config.tag)) {
+              match = false;
+            }
+          }
+          if (match && config.reward) {
+            if (config.reward.type === 'DRAW') {
+              result.drawCount += (config.reward.value || 0);
+            }
+          }
+        }
+        break;
+    }
+  });
+
+  return result;
+}
+
+module.exports = {
+  calculateReward,
+  calculateEffect,
+  calculateBonus,
+  calculateTriggerEffects
+};

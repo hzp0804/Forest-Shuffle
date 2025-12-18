@@ -47,7 +47,7 @@
                      ✋拿取
                   </button>
                </block>
-               <button size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}} {{gameState.actionMode && !(gameState.actionMode === 'MOLE' || gameState.actionMode === 'FREE_PLAY_BAT' || gameState.actionMode === 'PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'PLAY_FREE_SPECIFIC') ? 'disabled' : ''}}" bindtap="onConfirmPlay" disabled="{{gameState.actionMode && !(gameState.actionMode === 'MOLE' || gameState.actionMode === 'FREE_PLAY_BAT' || gameState.actionMode === 'PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'PLAY_FREE_SPECIFIC')}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
+               <button size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}} {{gameState.actionMode && !(gameState.actionMode === 'MOLE' || gameState.actionMode === 'FREE_PLAY_BAT' || gameState.actionMode === 'PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE') ? 'disabled' : ''}}" bindtap="onConfirmPlay" disabled="{{gameState.actionMode && !(gameState.actionMode === 'MOLE' || gameState.actionMode === 'FREE_PLAY_BAT' || gameState.actionMode === 'PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE')}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
                   ✅打出
                </button>
                <button size="mini" class="game-btn secondary sapling-btn {{gameState.actionMode ? 'disabled' : ''}}" bindtap="onPlaySapling" disabled="{{gameState.actionMode}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
@@ -176,25 +176,52 @@
                      <block wx:else>{{currentEvent.playerNick}} 正在摸牌...</block>
                   </text>
                </view>
-               <view class="flip-container">
-                  <view class="flip-inner {{isCardFlipped ? 'is-flipped' : ''}}">
-                     <!-- 初始面 (0deg): 背面 (Sapling) -->
-                     <view class="flip-front">
-                        <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
-                     </view>
-                     <!-- 翻转面 (180deg): 内容 -->
-                     <view class="flip-back">
-                        <!-- 只有玩家自己或公开翻牌时才看得到正面内容 -->
-                        <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.playerOpenId === openId}}">
-                           <view wx:if="{{currentEvent.mainCard}}" class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
-                           <view wx:else class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
-                        </block>
-                        <block wx:else>
-                           <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
-                        </block>
+               <!-- 奖励抽牌：显示多张卡片 -->
+               <block wx:if="{{currentEvent.type === 'REWARD_DRAW' && currentEvent.drawnCards}}">
+                  <view class="reward-cards-display">
+                     <view wx:for="{{currentEvent.drawnCards}}" wx:key="uid" class="reward-card-item">
+                        <view class="flip-container">
+                           <view class="flip-inner {{isCardFlipped ? 'is-flipped' : ''}}">
+                              <!-- 初始面: 背面 -->
+                              <view class="flip-front">
+                                 <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                              </view>
+                              <!-- 翻转面: 只有自己能看到正面 -->
+                              <view class="flip-back">
+                                 <block wx:if="{{currentEvent.playerOpenId === openId}}">
+                                    <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
+                                 </block>
+                                 <block wx:else>
+                                    <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                                 </block>
+                              </view>
+                           </view>
+                        </view>
                      </view>
                   </view>
-               </view>
+               </block>
+               <!-- 其他抽牌事件：单张卡片 -->
+               <block wx:else>
+                  <view class="flip-container">
+                     <view class="flip-inner {{isCardFlipped ? 'is-flipped' : ''}}">
+                        <!-- 初始面 (0deg): 背面 (Sapling) -->
+                        <view class="flip-front">
+                           <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                        </view>
+                        <!-- 翻转面 (180deg): 内容 -->
+                        <view class="flip-back">
+                           <!-- 只有玩家自己或公开翻牌时才看得到正面内容 -->
+                           <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.playerOpenId === openId}}">
+                              <view wx:if="{{currentEvent.mainCard}}" class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
+                              <view wx:else class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                           </block>
+                           <block wx:else>
+                              <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                           </block>
+                        </view>
+                     </view>
+                  </view>
+               </block>
             </block>
             <!-- 场景3: 玩家拿取卡片 -->
             <block wx:if="{{currentEvent.type === 'TAKE_CARD'}}">

@@ -13,8 +13,7 @@ const {
   CARD_TYPES
 } = require("../data/constants");
 const { CARDS_DATA } = require("../data/cardData");
-const { calculateBonus } = require("./bonus");
-const { calculateEffect, calculateTriggerEffects } = require("./effect");
+const { calculateBonus, calculateEffect, calculateTriggerEffects } = require("./reward");
 const {
   SAPLING_DATA
 } = require("../data/speciesData");
@@ -259,7 +258,7 @@ const computeInstruction = (data) => {
     }
   }
 
-  const isFreeMode = ['FREE_PLAY_BAT', 'PLAY_SAPLINGS', 'PLAY_FREE', 'PLAY_FREE_SPECIFIC'].includes(gameState?.actionMode);
+  const isFreeMode = ['FREE_PLAY_BAT', 'PLAY_SAPLINGS', 'PLAY_FREE'].includes(gameState?.actionMode);
 
   // 免费模式下的特殊验证
   if (isFreeMode) {
@@ -268,10 +267,13 @@ const computeInstruction = (data) => {
     if (mode === 'FREE_PLAY_BAT' && (!primaryCard.tags || !primaryCard.tags.includes(TAGS.BAT))) {
       return { instructionState: "error", instructionText: "✨ 奖励限制: 只能打出带有蝙蝠符号的牌" };
     }
-    if (mode === 'PLAY_FREE_SPECIFIC') {
+    if (mode === 'PLAY_FREE') {
       const config = (gameState.pendingActions || [])[0];
-      if (config && config.tag && (!primaryCard.tags || !primaryCard.tags.includes(config.tag))) {
-        return { instructionState: "error", instructionText: `✨ 奖励限制: 只能打出带有 [${config.tag}] 符号的牌` };
+      if (config && config.tags && Array.isArray(config.tags)) {
+        const hasMatchingTag = config.tags.some(tag => primaryCard.tags && primaryCard.tags.includes(tag));
+        if (!hasMatchingTag) {
+          return { instructionState: "error", instructionText: `✨ 奖励限制: 只能打出带有指定符号的牌` };
+        }
       }
     }
 
