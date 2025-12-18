@@ -233,13 +233,22 @@
                   <view class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
                </view>
             </block>
+            <!-- 场景4: 额外回合 -->
+            <block wx:if="{{currentEvent.type === 'EXTRA_TURN'}}">
+               <view class="event-header">
+                  <image class="p-avatar-small" src="{{currentEvent.playerAvatar || '/images/default_avatar.png'}}" />
+                  <text class="event-title">🎉 {{currentEvent.playerNick}} 获得额外回合！</text>
+               </view>
+            </block>
          </view>
       </view>
       <!-- 底部手牌 -->
       <view class="hand-area">
          <view class="hand-header">
             <view class="area-title">手牌 ({{playerStates[openId].hand.length}})</view>
-            <view class="instruction-tip {{instructionState}}">{{instructionText}}</view>
+            <view wx:if="{{gameState.activePlayer === openId}}" class="instruction-tip {{instructionState}}">
+               {{instructionText}}
+            </view>
          </view>
          <scroll-view scroll-x class="hand-scroll" enable-flex>
             <view class="hand-grid">

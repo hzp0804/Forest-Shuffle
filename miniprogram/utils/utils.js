@@ -1,6 +1,5 @@
 const {
   getCardInfoById,
-  getCardVisual,
   getSaplingVisual
 } = require("./getCardInfoById");
 const {
@@ -12,14 +11,10 @@ const {
 const {
   CARD_TYPES
 } = require("../data/constants");
-const { CARDS_DATA } = require("../data/cardData");
-const { calculateBonus, calculateEffect, calculateTriggerEffects } = require("./reward");
 const {
   SAPLING_DATA
 } = require("../data/speciesData");
-const DbHelper = require("./dbHelper");
-const RoundUtils = require("./round");
-
+const { calculateReward } = require("./reward.js");
 
 const { getCardColors, isColorMatched } = require('./colorMatcher');
 
@@ -290,10 +285,10 @@ const computeInstruction = (data) => {
     let text = `费用已满足 (支付: ${payment})`;
 
     const paymentCards = myHand.filter((c) => c.selected && c.uid !== primarySelection);
-    const bonus = calculateBonus(primaryCard, selectedSlot, paymentCards);
-    const effect = calculateEffect(primaryCard, {
+    const bonus = calculateReward(primaryCard, selectedSlot, paymentCards, {}, true);
+    const effect = calculateReward(primaryCard, null, paymentCards, {
       forest: playerStates[openId].forest
-    }, paymentCards);
+    }, false);
 
     // 组装奖励信息
     const rewards = [];
@@ -428,13 +423,23 @@ const processGameData = (res, currentData) => {
     gameState,
     primarySelection: currentData.primarySelection
   };
-  const {
-    instructionState,
-    instructionText
-  } = computeInstruction(nextData);
-
   const activePlayerId = gameState.activePlayer || res.data.activePlayer;
   const isMyTurn = activePlayerId ? activePlayerId === myOpenId : true;
+
+  // 优化：如果是我正在操作（已选主牌），轮询不应该重算指引（避免覆盖本地交互结果，也避免昂贵的费用计算）
+  // 除非轮次发生了变化（不再是我的回合），才强制刷新
+  let instructionState = currentData.instructionState;
+  let instructionText = currentData.instructionText;
+
+  // 只有在“非操作中”状态，或者是“被动状态变化”（如回合切换）时，才由轮询更新指引
+  // 如果 primarySelection 有值且依然是我的回合，保持原样
+  const shouldSkipCompute = isMyTurn && currentData.primarySelection;
+
+  if (!shouldSkipCompute) {
+    const computed = computeInstruction(nextData);
+    instructionState = computed.instructionState;
+    instructionText = computed.instructionText;
+  }
 
   return {
     players: enrichedPlayers,

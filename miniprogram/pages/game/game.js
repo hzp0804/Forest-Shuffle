@@ -1,11 +1,9 @@
 const Utils = require("../../utils/utils");
-const { calculateBonus, calculateEffect, calculateTriggerEffects } = require("../../utils/reward.js");
+const { calculateReward, calculateTriggerEffects } = require("../../utils/reward.js");
 const RoundUtils = require("../../utils/round.js");
-const AnimationUtils = require("../../utils/animation.js");
 const DbHelper = require("../../utils/dbHelper.js");
 const SpecialActionUtils = require("../../utils/specialAction.js");
 const ClearingUtils = require("../../utils/clearing.js");
-const app = getApp();
 const db = wx.cloud.database();
 
 Page({
@@ -89,19 +87,30 @@ Page({
       // 2. 事件队列处理 (全场大图展示)
       const lastEvent = gameState.lastEvent;
       const deckRevealEvent = gameState.deckRevealEvent;
+      const rewardDrawEvent = gameState.rewardDrawEvent;
+      const extraTurnEvent = gameState.extraTurnEvent;
+
       let nextLastEventTime = this.data.lastEventTime || 0;
       let added = false;
 
-      if (lastEvent && lastEvent.timestamp > nextLastEventTime) {
-        this.addToEventQueue(lastEvent);
-        nextLastEventTime = Math.max(nextLastEventTime, lastEvent.timestamp);
-        added = true;
-      }
-      if (deckRevealEvent && deckRevealEvent.timestamp > nextLastEventTime) {
-        this.addToEventQueue(deckRevealEvent);
-        nextLastEventTime = Math.max(nextLastEventTime, deckRevealEvent.timestamp);
-        added = true;
-      }
+      // 辅助函数：尝试添加事件
+      const tryAddEvent = (evt) => {
+        if (evt && evt.timestamp > nextLastEventTime) {
+          this.addToEventQueue(evt);
+          nextLastEventTime = Math.max(nextLastEventTime, evt.timestamp);
+          added = true;
+        }
+      };
+
+      // 按可能的发生顺序尝试捕获
+      // 注意：由于 timestamp 的存在，顺序其实不影响去重，但影响队列里的播放顺序
+      // 通常逻辑顺序：打牌(lastEvent) -> 翻开牌堆顶(deckReveal) -> 奖励抽牌(rewardDraw) -> 额外回合(extraTurn)
+      // 但实际上这些 timestamp 非常接近，我们按逻辑顺序添加即可
+      tryAddEvent(lastEvent);
+      tryAddEvent(deckRevealEvent);
+      tryAddEvent(rewardDrawEvent);
+      tryAddEvent(extraTurnEvent);
+
       processedData.lastEventTime = nextLastEventTime;
 
       // 3. 空地滚动处理
@@ -300,8 +309,11 @@ Page({
     if (source === 'PLAYER_ACTION') {
       // 在特殊模式下打牌，不重新触发该牌自身的 Bonus 和 Effect (防止无限循环)
       if (!isSpecialPlayMode) {
-        bonus = calculateBonus(primaryCard, selectedSlot, paymentCards);
-        effect = calculateEffect(primaryCard, { forest }, paymentCards);
+        console.log('奖励计算中....')
+        // bonus: 需要颜色匹配 (isBonus = true)
+        bonus = calculateReward(primaryCard, selectedSlot, paymentCards, {}, true);
+        // effect: 不需要颜色匹配 (isBonus = false)
+        effect = calculateReward(primaryCard, null, paymentCards, { forest }, false);
       }
     }
 
@@ -463,6 +475,18 @@ Page({
       };
     }
 
+    // 额外回合事件
+    let extraTurnEvent = null;
+    if (reward.extraTurn) {
+      extraTurnEvent = {
+        type: 'EXTRA_TURN',
+        playerOpenId: openId,
+        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+        timestamp: Date.now() + 50
+      };
+    }
+
     const nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, reward.extraTurn);
     const updates = {
       [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
@@ -481,7 +505,8 @@ Page({
         timestamp: Date.now()
       },
       [`gameState.deckRevealEvent`]: deckRevealEvent,
-      [`gameState.rewardDrawEvent`]: rewardDrawEvent
+      [`gameState.rewardDrawEvent`]: rewardDrawEvent,
+      [`gameState.extraTurnEvent`]: extraTurnEvent
     };
 
     this.submitGameUpdate(updates, "出牌成功", `打出了 ${primaryCard.name}`);
@@ -858,6 +883,7 @@ Page({
     const localLastEvent = updates['gameState.lastEvent'];
     const localDeckReveal = updates['gameState.deckRevealEvent'];
     const localRewardDraw = updates['gameState.rewardDrawEvent'];
+    const localExtraTurn = updates['gameState.extraTurnEvent'];
     let nextLastEventTime = this.data.lastEventTime || 0;
     let added = false;
 
@@ -877,6 +903,11 @@ Page({
       nextLastEventTime = Math.max(nextLastEventTime, localDeckReveal.timestamp);
       added = true;
     }
+    if (localExtraTurn) {
+      this.addToEventQueue(localExtraTurn);
+      nextLastEventTime = Math.max(nextLastEventTime, localExtraTurn.timestamp);
+      added = true;
+    }
 
     if (added) {
       this.setData({ lastEventTime: nextLastEventTime });
@@ -886,7 +917,7 @@ Page({
 
     // Fix: 使用 db.command.set 避免对象更新时的自动扁平化导致的 "Cannot create field ... in element null" 错误
     const _ = db.command;
-    ['gameState.lastEvent', 'gameState.deckRevealEvent', 'gameState.rewardDrawEvent', 'gameState.turnAction'].forEach(key => {
+    ['gameState.lastEvent', 'gameState.deckRevealEvent', 'gameState.rewardDrawEvent', 'gameState.extraTurnEvent', 'gameState.turnAction'].forEach(key => {
       if (updates[key] !== undefined) {
         updates[key] = _.set(updates[key]);
       }

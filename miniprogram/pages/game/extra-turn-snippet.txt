@@ -1,0 +1,5 @@
+    if (localExtraTurn) {
+      this.addToEventQueue(localExtraTurn);
+      nextLastEventTime = Math.max(nextLastEventTime, localExtraTurn.timestamp);
+      added = true;
+    }

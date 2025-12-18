@@ -12,15 +12,20 @@ const { TAGS, CARD_TYPES } = require('../data/constants');
  * @returns {Object} 奖励结果 { drawCount, extraTurn, actions, text }
  */
 function calculateReward(card, slot, paymentCards, context = {}, isBonus = false) {
+  console.log('选中的手牌', card, paymentCards);
+
   const result = {
     drawCount: 0,
     extraTurn: false,
     actions: [],
     text: ''
   };
+  if (!isBonus) result
 
   // 获取配置
+  console.log('isBonus', card)
   const config = isBonus ? card.bonusConfig : card.effectConfig;
+  console.log('config', config, isBonus, isColorMatched(card, paymentCards))
   if (!config) return result;
 
   // 如果是 bonus，需要检查颜色匹配
@@ -28,14 +33,18 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
     return result;
   }
 
+  console.log('逻辑计算中...', card);
+
   // 根据类型处理奖励
   switch (config.type) {
+    // 获得卡片（测试通过）
     case REWARD_TYPES.DRAW:
       result.drawCount = config.count || 0;
       break;
 
     case REWARD_TYPES.EXTRA_TURN:
       result.extraTurn = true;
+      console.log("extra turn");
       break;
 
     case REWARD_TYPES.DRAW_AND_TURN:
@@ -133,20 +142,6 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
 }
 
 /**
- * 计算 effect（不需要颜色匹配）
- */
-function calculateEffect(card, context, paymentCards) {
-  return calculateReward(card, null, paymentCards, context, false);
-}
-
-/**
- * 计算 bonus（需要颜色匹配）
- */
-function calculateBonus(card, slot, paymentCards) {
-  return calculateReward(card, slot, paymentCards, {}, true);
-}
-
-/**
  * 计算常驻效果触发 (Trigger Effects)
  */
 function calculateTriggerEffects(forest, playedCard, triggerContext) {
@@ -212,7 +207,6 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
 
 module.exports = {
   calculateReward,
-  calculateEffect,
-  calculateBonus,
   calculateTriggerEffects
 };
+

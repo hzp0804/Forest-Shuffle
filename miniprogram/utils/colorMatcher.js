@@ -23,19 +23,11 @@ const getCardColors = (card) => {
  * @returns {boolean} 是否所有支付卡都符合同色要求
  */
 const isColorMatched = (primaryCard, paymentCards) => {
+  console.log('颜色匹配', primaryCard, paymentCards)
   if (!paymentCards || paymentCards.length === 0) return true;
-
-  // 主牌颜色（已经过 enrichCardWithSpecies 处理为单色）
-  let targetColors = primaryCard.tree_symbol || [];
-  if (!Array.isArray(targetColors)) targetColors = [targetColors];
-
-  if (targetColors.length === 0) return true;
-
-  // 检查每张支付卡是否至少有一个颜色匹配
-  return paymentCards.every(payCard => {
-    const payColors = getCardColors(payCard);
-    // 支付卡的任一颜色在主牌颜色中即可
-    return payColors.some(c => targetColors.includes(c));
+  let targetColor = primaryCard.tree_symbol[0] // 主卡颜色
+  return paymentCards.every(payCard => { // 费用卡全都包含主卡颜色
+    return payCard.tree_symbol.includes(targetColor)
   });
 };
 
