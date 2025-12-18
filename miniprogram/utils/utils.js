@@ -22,44 +22,7 @@ const DbHelper = require("./dbHelper");
 const RoundUtils = require("./round");
 
 
-/**
- * 辅助函数：从 CARDS_DATA 获取卡片的原始颜色信息
- * @param {Object} card - 卡片对象（必须包含 id 字段）
- * @returns {Array} 颜色数组
- */
-const getCardColors = (card) => {
-  if (!card || !card.id) return [];
-  const cardData = CARDS_DATA[card.id];
-  if (!cardData) return [];
-
-  let colors = cardData.tree_symbol || [];
-  if (!Array.isArray(colors)) colors = [colors];
-  return colors;
-};
-
-/**
- * 判断支付卡片是否符合同色要求
- * @param {Object} primaryCard - 主牌（已经过 enrichCardWithSpecies 处理，单色）
- * @param {Array} paymentCards - 支付卡片数组
- * @returns {boolean} 是否所有支付卡都符合同色要求
- */
-const isColorMatched = (primaryCard, paymentCards) => {
-  if (!paymentCards || paymentCards.length === 0) return true;
-
-  // 主牌颜色（已经过 enrichCardWithSpecies 处理为单色）
-  let targetColors = primaryCard.tree_symbol || [];
-  if (!Array.isArray(targetColors)) targetColors = [targetColors];
-
-  if (targetColors.length === 0) return true;
-
-  // 检查每张支付卡是否至少有一个颜色匹配
-  return paymentCards.every(payCard => {
-    // 从 CARDS_DATA 获取支付卡的完整颜色信息（可能是双色）
-    const payColors = getCardColors(payCard);
-    // 支付卡的任一颜色在主牌颜色中即可
-    return payColors.some(c => targetColors.includes(c));
-  });
-};
+const { getCardColors, isColorMatched } = require('./colorMatcher');
 
 const enrichCard = (card) => {
   if (!card) return null;
@@ -192,12 +155,25 @@ const computeInstruction = (data) => {
     primarySelection,
     playerStates,
     selectedSlot,
-    turnAction
+    turnAction,
+    gameState
   } = data;
   if (!playerStates?.[openId]) return {
     instructionState: "normal",
     instructionText: "加载中..."
   };
+
+  // 1. 如果处于特殊行动模式，优先显示特殊行动提示
+  if (gameState && gameState.actionMode) {
+    const mode = gameState.actionMode;
+    // 优先使用传入的原始描述文案（通常是物种数据里的 reward 描述）
+    let text = gameState.actionText || "特殊行动中...";
+
+    return {
+      instructionState: "warning",
+      instructionText: `✨ 奖励: ${text}`
+    };
+  }
 
   const drawnCount = turnAction?.drawnCount || 0;
   const takenCount = turnAction?.takenCount || 0;
@@ -281,6 +257,30 @@ const computeInstruction = (data) => {
         instructionText: "该位置已有卡牌"
       };
     }
+  }
+
+  const isFreeMode = ['FREE_PLAY_BAT', 'PLAY_SAPLINGS', 'PLAY_FREE', 'PLAY_FREE_SPECIFIC'].includes(gameState?.actionMode);
+
+  // 免费模式下的特殊验证
+  if (isFreeMode) {
+    const mode = gameState.actionMode;
+    // 1. 验证卡牌类型限制
+    if (mode === 'FREE_PLAY_BAT' && (!primaryCard.tags || !primaryCard.tags.includes(TAGS.BAT))) {
+      return { instructionState: "error", instructionText: "✨ 奖励限制: 只能打出带有蝙蝠符号的牌" };
+    }
+    if (mode === 'PLAY_FREE_SPECIFIC') {
+      const config = (gameState.pendingActions || [])[0];
+      if (config && config.tag && (!primaryCard.tags || !primaryCard.tags.includes(config.tag))) {
+        return { instructionState: "error", instructionText: `✨ 奖励限制: 只能打出带有 [${config.tag}] 符号的牌` };
+      }
+    }
+
+    // 2. 验证费用 (免费模式下支付卡必须为0)
+    if (payment > 0) {
+      return { instructionState: "error", instructionText: "✨ 奖励模式下无需支付额外费用，请取消选中其他手牌" };
+    }
+
+    return { instructionState: "success", instructionText: "✨ 免费打出该卡 (费用: 0)" };
   }
 
   const isSatisfied = costs.some((cost) => payment === cost);
@@ -423,6 +423,7 @@ const processGameData = (res, currentData) => {
   const nextData = {
     ...currentData,
     playerStates,
+    gameState,
     primarySelection: currentData.primarySelection
   };
   const {
@@ -450,6 +451,7 @@ const processGameData = (res, currentData) => {
     },
     currentTurn: gameState.turnCount || 1,
     lastCardCount: totalCardCount,
+    gameState: gameState, // 确保 Page.data 中有完整的 gameState 对象
   };
 };
 

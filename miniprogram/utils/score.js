@@ -297,7 +297,36 @@ function calculateCardScore(card, context, allPlayerStates, myOpenId, stats) {
 
       // 收集所有同名卡以便去重计分
       const matchingCards = allCards.filter(c => c.name === targetName);
-      const targetCount = matchingCards.length;
+
+      // 计算实际数量（考虑 TREE_MULTIPLIER 效果）
+      let targetCount = 0;
+      if (context && context.forest) {
+        context.forest.forEach(group => {
+          // 检查 center 是否是目标卡片
+          if (group.center && group.center.name === targetName) {
+            targetCount += 1;
+
+            // 检查左右插槽是否有紫木蜂（TREE_MULTIPLIER）
+            const hasMultiplier =
+              (group.slots?.left?.effectConfig?.type === 'TREE_MULTIPLIER') ||
+              (group.slots?.right?.effectConfig?.type === 'TREE_MULTIPLIER');
+
+            if (hasMultiplier) {
+              targetCount += 1;  // 额外算1棵
+            }
+          }
+
+          // 检查 slots 中是否有目标卡片
+          if (group.slots) {
+            Object.values(group.slots).forEach(slotCard => {
+              if (slotCard && slotCard.name === targetName) {
+                targetCount += 1;
+                // 注意：插槽中的卡片通常不受 TREE_MULTIPLIER 影响
+              }
+            });
+          }
+        });
+      }
 
       // 避免重复计分：只有 UID 最小（或排序第一）的那张卡获得分数
       // 确保 matchingCards 排序稳定
@@ -817,8 +846,8 @@ function precalculateStats(context) {
     if (card.name) {
       nameCounts[card.name] = (nameCounts[card.name] || 0) + 1;
 
-      // 处理 TREATED_AS 效果 (如: 雪兔被视为欧洲野兔)
-      if (card.effectConfig && card.effectConfig.type === 'TREATED_AS' && card.effectConfig.target) {
+      // 处理 SPECIES_ALIAS 效果 (如: 雪兔被视为欧洲野兔，仅用于计分)
+      if (card.effectConfig && card.effectConfig.type === 'SPECIES_ALIAS' && card.effectConfig.target) {
         nameCounts[card.effectConfig.target] = (nameCounts[card.effectConfig.target] || 0) + 1;
       }
     }

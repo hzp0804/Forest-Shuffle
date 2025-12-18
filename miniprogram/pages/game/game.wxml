@@ -36,13 +36,21 @@
                <view class="end-turn-text" bindtap="onEndTurn" wx:if="{{isMyTurn}}">结束</view>
             </view>
             <view class="action-bar-inline" wx:if="{{isMyTurn}}" style="display:flex; gap:12rpx;">
-               <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" disabled="{{selectedClearingIdx === -1 && selectedClearingIdx !== -2}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
-                  ✋拿取
-               </button>
-               <button size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}}" bindtap="onConfirmPlay" style="margin:0; padding:0 12rpx; font-weight:normal;">
+               <!-- 动态切换 拿取 与 确认 -->
+               <block wx:if="{{gameState.actionMode}}">
+                  <button size="mini" class="game-btn valid-play-btn" bindtap="onConfirmSpecialAction" style="margin:0; padding:0 12rpx; font-weight:normal;">
+                     ✅确认
+                  </button>
+               </block>
+               <block wx:else>
+                  <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" disabled="{{selectedClearingIdx === -1 && selectedClearingIdx !== -2}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
+                     ✋拿取
+                  </button>
+               </block>
+               <button size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}} {{gameState.actionMode && !(gameState.actionMode === 'MOLE' || gameState.actionMode === 'FREE_PLAY_BAT' || gameState.actionMode === 'PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'PLAY_FREE_SPECIFIC') ? 'disabled' : ''}}" bindtap="onConfirmPlay" disabled="{{gameState.actionMode && !(gameState.actionMode === 'MOLE' || gameState.actionMode === 'FREE_PLAY_BAT' || gameState.actionMode === 'PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'PLAY_FREE_SPECIFIC')}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
                   ✅打出
                </button>
-               <button size="mini" class="game-btn secondary sapling-btn" bindtap="onPlaySapling" style="margin:0; padding:0 12rpx; font-weight:normal;">
+               <button size="mini" class="game-btn secondary sapling-btn {{gameState.actionMode ? 'disabled' : ''}}" bindtap="onPlaySapling" disabled="{{gameState.actionMode}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
                   🌱树苗
                </button>
             </view>
@@ -161,7 +169,7 @@
                <view class="event-header">
                   <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
                   <text class="event-title">
-                     <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING'}}">效果触发 (翻开卡牌)</block>
+                     <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING'}}">打出树木（翻牌到空地）</block>
                      <block wx:elif="{{currentEvent.type === 'REWARD_DRAW'}}">
                         {{currentEvent.playerNick}} 获得奖励抽牌 ({{currentEvent.count}}张)
                      </block>

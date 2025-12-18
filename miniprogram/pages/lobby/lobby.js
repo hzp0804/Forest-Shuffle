@@ -945,6 +945,13 @@ Page({
       turnReason: "normal",
       winterCount: 0,
       logs: [],
+      // 特殊行动相关字段
+      pendingActions: [],  // 待处理的特殊行动队列
+      actionMode: null,    // 当前行动模式：null | 'MOLE' | 'FREE_PLAY_BAT' | 'RACCOON' 等
+      accumulatedRewards: { // 累积的奖励（在所有行动结束后统一执行）
+        drawCount: 0,
+        extraTurn: false
+      }
     };
 
     // 9. 写入数据库

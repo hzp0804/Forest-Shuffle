@@ -1,5 +1,5 @@
 const { BONUS_TYPES } = require('../data/enums');
-const { isColorMatched } = require('./utils');
+const { isColorMatched } = require('./colorMatcher');
 
 /**
  * 计算打牌奖励 (Bonus)
