@@ -210,9 +210,27 @@ Page({
   onClearingCardTap(e) {
     const idx = e.currentTarget.dataset.idx;
     if (this.data.selectedClearingIdx === idx) {
-      this.setData({ selectedClearingIdx: -1 });
+      this.setData({
+        selectedClearingIdx: -1
+      });
     } else {
-      this.setData({ selectedClearingIdx: idx });
+      this.setData({
+        selectedClearingIdx: idx
+      });
+    }
+  },
+
+  // 6.5 点击牌库 (切换选中状态)
+  onDrawCard() {
+    // 如果当前选中的就是牌库，则取消选中；否则切换到牌库选中状态 (-2 表示牌库)
+    if (this.data.selectedClearingIdx === -2) {
+      this.setData({
+        selectedClearingIdx: -1
+      });
+    } else {
+      this.setData({
+        selectedClearingIdx: -2
+      });
     }
   },
 
@@ -597,29 +615,43 @@ Page({
     this.submitGameUpdate(updates, "出牌成功", logMsg);
   },
 
-  // 8. 摸牌 (从牌库)
-  onDrawCard() {
-    const { deck, playerStates, openId, turnAction } = this.data;
-    const db = wx.cloud.database(); // Ensure db is available
+  // 8. 摸牌逻辑 (内部调用，统一资源检查与更新)
+  executeDrawFromDeck() {
+    const {
+      deck,
+      playerStates,
+      openId,
+      turnAction
+    } = this.data;
+    const db = wx.cloud.database();
 
     // 1. 手牌上限检查 (10张)
     const myState = playerStates[openId];
     const currentHandSize = (myState.hand || []).length;
     if (currentHandSize >= 10) {
-      wx.showToast({ title: "手牌已满 (上限10张)", icon: "none" });
+      wx.showToast({
+        title: "手牌已满 (上限10张)",
+        icon: "none"
+      });
       return;
     }
 
     // 2. 牌库检查
     if (!deck || deck.length < 1) {
-      wx.showToast({ title: "牌库到底了", icon: "none" });
+      wx.showToast({
+        title: "牌库到底了",
+        icon: "none"
+      });
       return;
     }
 
-    // 3. 回合行动检查
-    const currentDrawn = (turnAction && turnAction.drawnCount) || 0;
-    if (currentDrawn >= 2) {
-      wx.showToast({ title: "本回合摸牌次数已用完", icon: "none" });
+    // 3. 回合行动检查 (摸牌/拿牌共用行动次数)
+    const currentTotalDrawn = (turnAction && (turnAction.drawnCount || 0) + (turnAction.takenCount || 0)) || 0;
+    if (currentTotalDrawn >= 2) {
+      wx.showToast({
+        title: "本回合操作次数已用完",
+        icon: "none"
+      });
       return;
     }
 
@@ -628,14 +660,16 @@ Page({
 
     // 只摸一张
     const card = newDeck.shift();
-    if (!card) return; // Should not happen if check passed
+    if (!card) return;
 
-    // 直接执行实际入手牌逻辑和提交
     newHand.push(card);
 
-    const newDrawnCount = currentDrawn + 1;
+    const newDrawnCount = (turnAction.drawnCount || 0) + 1;
     let nextPlayer = this.data.activePlayer;
-    let nextTurnAction = { drawnCount: newDrawnCount };
+    let nextTurnAction = {
+      ...turnAction,
+      drawnCount: newDrawnCount
+    };
 
     const updates = {
       [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
@@ -643,42 +677,56 @@ Page({
       [`gameState.turnAction`]: nextTurnAction,
     };
 
-    // 4. 判断回合结束
-    if (newDrawnCount >= 2) {
+    // 4. 判断回合结束 (摸/拿累计满2次)
+    if (newDrawnCount + (turnAction.takenCount || 0) >= 2) {
       nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, false);
       updates[`gameState.activePlayer`] = nextPlayer;
-      updates[`gameState.turnAction`] = { drawnCount: 0 };
+      updates[`gameState.turnAction`] = {
+        drawnCount: 0,
+        takenCount: 0
+      };
       updates[`gameState.turnCount`] = db.command.inc(1);
       updates[`gameState.turnReason`] = "normal";
-    } else {
-      updates[`gameState.activePlayer`] = nextPlayer;
     }
 
     // 提交
     this.submitGameUpdate(
       updates,
       null,
-      `摸了一张牌 (本回合第${newDrawnCount}张)`
+      `摸了一张牌 (本回合第${newDrawnCount + (turnAction.takenCount || 0)}次操作)`
     );
   },
 
-  // 9. 确认拿取 (从空地)
+  // 9. 确认拿取 (统一处理：空地 or 牌库)
   onConfirmTake() {
-    const { selectedClearingIdx, clearing, playerStates, openId, turnAction } =
+    const {
+      selectedClearingIdx,
+      clearing,
+      playerStates,
+      openId,
+      turnAction
+    } =
       this.data;
-    const db = wx.cloud.database();
 
-    // 检查回合锁定：如果已经摸牌，不能拿牌
-    if (turnAction && turnAction.drawnCount > 0) {
-      wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
-      return;
-    }
+    // 1. 回合检查：如果已经出过牌奖励（或者其他逻辑锁定），则无法拿牌
+    // 这里保持原有逻辑：如果是拿牌/摸牌阶段，允许继续操作
 
     if (selectedClearingIdx === -1 || selectedClearingIdx === undefined) {
-      wx.showToast({ title: "请选择空地卡牌", icon: "none" });
+      wx.showToast({
+        title: "请选择卡牌或牌库",
+        icon: "none"
+      });
       return;
     }
 
+    // 情况 A: 选中了牌库 (-2)
+    if (selectedClearingIdx === -2) {
+      this.executeDrawFromDeck();
+      return;
+    }
+
+    // 情况 B: 选中了空地卡片 (>=0)
+    const db = wx.cloud.database();
     const newClearing = [...clearing];
     const myState = playerStates[openId];
     const newHand = [...(myState.hand || [])];
@@ -689,14 +737,20 @@ Page({
 
     // 检查手牌上限
     if (newHand.length >= 10) {
-      wx.showToast({ title: "手牌已达上限（10张）", icon: "none" });
+      wx.showToast({
+        title: "手牌已达上限（10张）",
+        icon: "none"
+      });
       return;
     }
 
-    // 检查本回合已拿牌数量
-    const currentTakenCount = (turnAction && turnAction.takenCount) || 0;
-    if (currentTakenCount >= 2) {
-      wx.showToast({ title: "本回合已拿2张牌", icon: "none" });
+    // 检查本回合已操作数量 (摸/拿累计)
+    const currentTotalDrawn = (turnAction && (turnAction.drawnCount || 0) + (turnAction.takenCount || 0)) || 0;
+    if (currentTotalDrawn >= 2) {
+      wx.showToast({
+        title: "本回合操作次数已用完",
+        icon: "none"
+      });
       return;
     }
 
@@ -706,24 +760,30 @@ Page({
 
     newHand.push(takenCard);
 
-    const newTakenCount = currentTakenCount + 1;
-    const isEndTurn = newTakenCount >= 2; // 拿满2张后结束回合
+    const newTakenCount = (turnAction.takenCount || 0) + 1;
+    const totalNow = (turnAction.drawnCount || 0) + newTakenCount;
+    const isEndTurn = totalNow >= 2;
 
     const updates = {
       [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
       [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
-      [`gameState.turnAction`]: { drawnCount: 0, takenCount: newTakenCount },
+      [`gameState.turnAction`]: {
+        ...turnAction,
+        takenCount: newTakenCount
+      },
     };
 
-    // 如果拿满2张，结束回合
     if (isEndTurn) {
       updates[`gameState.activePlayer`] = RoundUtils.getNextPlayer(openId, this.data.players, false);
       updates[`gameState.turnCount`] = db.command.inc(1);
-      updates[`gameState.turnAction`] = { drawnCount: 0, takenCount: 0 }; // 重置
+      updates[`gameState.turnAction`] = {
+        drawnCount: 0,
+        takenCount: 0
+      };
       updates[`gameState.turnReason`] = "normal";
     }
 
-    this.submitGameUpdate(updates, null, isEndTurn ? "拿了2张牌，回合结束" : `从空地拿了第${newTakenCount}张牌`);
+    this.submitGameUpdate(updates, null, isEndTurn ? "操作2次，回合结束" : `拿了一张牌 (第${totalNow}次操作)`);
   },
 
   // 10. 打出树苗

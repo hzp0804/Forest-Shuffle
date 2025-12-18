@@ -27,13 +27,13 @@
       <view class="game-board">
          <!-- 空地 (Re-styled as Hand-like) -->
          <!-- 空地 Header with Actions -->
-         <view style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10rpx; padding-right: 10rpx;">
+         <view style="display: flex; justify-content: space-between; align-items: center; padding-right: 10rpx;">
             <view class="area-label" style="margin-bottom:0; padding-right: 10rpx;">
                空地 ({{clearing.length || 0}}/10)
             </view>
             <view class="action-bar-inline" wx:if="{{isMyTurn}}" style="display:flex; gap:12rpx;">
                <!-- 2. 拿取：从空地拿取一张牌 -->
-               <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" disabled="{{selectedClearingIdx === -1}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
+               <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" disabled="{{selectedClearingIdx === -1 && selectedClearingIdx !== -2}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
                   ✋拿取
                </button>
                <!-- 3. 出牌：统一按钮（包含出树/附属） -->
@@ -47,10 +47,10 @@
             </view>
          </view>
          <!-- 空地区域：牌库固定 + 空地卡片可滚动 -->
-         <view style="display:flex; gap:16rpx; padding-top:20rpx; align-items:flex-start;">
+         <view style="display:flex; gap:16rpx; align-items:flex-start;">
             <!-- P1: 固定的牌库容器 (用于对齐) -->
-            <view style="display:flex; align-items:flex-end; padding: 10rpx 0 12rpx 0; flex-shrink:0;">
-               <view class="hand-card" bindtap="onDrawCard" style="background:#8e44ad; color:white; border:none; position: relative; overflow: hidden; margin:0;">
+            <view style="display:flex; align-items:flex-end; padding: 40rpx 0 12rpx 0rpx; flex-shrink:0;">
+               <view class="hand-card {{selectedClearingIdx === -2 ? 'selected' : ''}}" bindtap="onDrawCard" style="background:#8e44ad; color:white; border:none; position: relative; overflow: hidden; margin:0;">
                   <block wx:if="{{deckVisual && deckVisual.bgImg}}">
                      <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}}; pointer-events: none;"></view>
                      <view class="card-body" style="background:transparent; color:white; z-index:1; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
@@ -78,7 +78,7 @@
                </view>
             </view>
             <!-- P2: 可滚动的空地卡片区域 -->
-            <scroll-view class="clearing-scroll" scroll-x enable-flex style="flex:1;">
+            <scroll-view class="clearing-scroll" scroll-x enable-flex>
                <view class="clearing-row">
                   <!-- Clearing Cards -->
                   <block wx:for="{{clearing}}" wx:key="uid">

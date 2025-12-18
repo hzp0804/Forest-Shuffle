@@ -165,7 +165,7 @@
   flex-direction: column;
   /* 禁止整体滚动 */
   align-items: stretch;
-  gap: 20rpx;
+  gap: 10rpx;
   flex: 1;
   overflow: hidden;
 }
@@ -183,25 +183,23 @@
 /* 空地布局与手牌保持一致 */
 /* 空地布局与手牌保持一致 */
 .clearing-scroll {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
+  /* 确保在 flex 布局中能正确缩小 */
   white-space: nowrap;
-  overflow: visible;
+  overflow: hidden;
+  /* 必须设为 hidden 以便正常限制滚动区域 */
 }
 
 .clearing-row {
   display: flex;
   flex-direction: row;
   align-items: flex-end;
-  padding: 10rpx 4rpx 12rpx 0;
-  /* 移除左侧 padding，让间距统一 */
+  padding: 40rpx 4rpx 12rpx 20rpx;
+  /* 右侧保留最小安全间距 */
   gap: 16rpx;
   box-sizing: border-box;
   width: max-content;
-}
-
-.clearing-row::after {
-  content: "";
-  flex: 0 0 40rpx;
 }
 
 .clearing-card {
@@ -356,12 +354,15 @@
 .tree-center {
   width: 120rpx;
   height: 180rpx;
-  /* background: #aaa; */
+  background: #34495e;
+  /* 使用与棋盘一致的底色，防止透出底层的虚线 */
   position: relative;
   border-radius: 8rpx;
-  box-shadow: 0 4rpx 8rpx rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4rpx 8rpx rgba(0, 0, 0, 0.3), 0 0 0 1rpx #34495e;
+  /* 增加 1rpx 扩展阴影作为“边缘密封” */
   z-index: 10;
   /* Tree is above slots */
+  transition: all 0.3s ease;
 }
 
 /* Slots Positioning */
@@ -399,16 +400,17 @@
   position: relative;
   overflow: hidden;
   border-radius: 8rpx;
-  background: #fff;
+  background: #34495e;
+  /* 有卡片时也要遮挡背景 */
   box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.3);
   transition: all 0.2s;
   border: none;
 }
 
 .slot-card.empty {
-  background: rgba(255, 255, 255, 0.1);
-  border: 3rpx dashed rgba(255, 255, 255, 0.7);
-  /* Brighter and slightly thicker */
+  background: rgba(255, 255, 255, 0.05);
+  border: 2rpx dashed rgba(255, 255, 255, 0.3);
+  /* 减弱虚线亮度和粗细 */
   box-shadow: none;
 }
 
@@ -505,6 +507,7 @@
   display: flex;
   flex-direction: column;
   overflow: visible;
+  padding-bottom: 100rpx;
 }
 
 .hand-header {
