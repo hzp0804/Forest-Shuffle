@@ -126,7 +126,7 @@ const SPECIES_NAMES = {
   EURASIAN_MAGPIE: "欧亚喜鹊",
   COMMON_NIGHTINGALE: "夜莺",
   BARN_OWL: "仓鸮",
-  WILD_BOAR_FEMALE_: "野猪（雌性）",
+  WILD_BOAR_FEMALE: "野猪（雌性）",
   BEEHIVE: "蜂群",
   EUROPEAN_BISON: "欧洲野牛",
   EUROPEAN_WILDCAT: "欧洲野猫",

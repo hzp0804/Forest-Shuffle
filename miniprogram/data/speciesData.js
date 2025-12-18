@@ -1387,7 +1387,7 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  [SPECIES_NAMES.WILD_BOAR_FEMALE_]: {
+  [SPECIES_NAMES.WILD_BOAR_FEMALE]: {
     name: "野猪（雌性）",
     nb: 3,
     tags: [TAGS.EDGE, TAGS.CLOVEN],
@@ -1399,8 +1399,8 @@ const SPECIES_DATA = {
     },
     bonus: "免费打出一只小野猪",
     bonusConfig: {
-      type: REWARD_TYPES.PLAY_FREE_SPECIFIC_NAME,
-      target: SPECIES_NAMES.SQUEAKER
+      type: REWARD_TYPES.PLAY_FREE,
+      targetName: SPECIES_NAMES.SQUEAKER
     },
     points: "每有一只小野猪获得10分",
     scoreConfig: {

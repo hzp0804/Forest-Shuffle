@@ -658,128 +658,29 @@ Page({
     let logMsg = "";
 
     try {
-      switch (mode) {
-        case 'ACTION_RACCOON': {
-          // 浣熊效果：选择手牌放入洞穴，并摸取相同数量
-          const selectedCards = myState.hand.filter(c => c.selected);
-          if (selectedCards.length === 0) {
-            wx.showToast({ title: "请先选择手牌", icon: "none" });
-            return;
-          }
+      // 构建上下文
+      const context = {
+        gameState: gameState,
+        playerState: myState,
+        clearing: this.data.clearing,
+        selectedClearingIdx: this.data.selectedClearingIdx,
+        openId: openId,
+        actionConfig: (gameState.pendingActions || [])[0]
+      };
 
-          const newHand = myState.hand.filter(c => !c.selected);
-          const newCave = [...(myState.cave || []), ...selectedCards.map(c => ({ ...c, selected: false }))];
+      // 调用工具类处理逻辑
+      const actionResult = SpecialActionUtils.handleAction(mode, context);
 
-          // 记录摸牌数量
-          const drawCount = selectedCards.length;
+      if (!actionResult.success) {
+        wx.showToast({ title: actionResult.errorMsg, icon: "none" });
+        wx.hideLoading();
+        return;
+      }
 
-          updates = {
-            [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
-            [`gameState.playerStates.${openId}.cave`]: DbHelper.cleanHand(newCave), // cave 也可以用 cleanHand 处理
-          };
-
-          // 标记需要摸牌
-          this.pendingDrawCount = drawCount;
-          logMsg = `完成了浣熊行动：${selectedCards.length}张进洞穴，将摸${drawCount}张牌`;
-          break;
-        }
-
-        case 'ACTION_BEAR': {
-          // 棕熊效果：将空地所有卡牌放入洞穴
-          const clearingCards = [...(this.data.clearing || [])];
-          if (clearingCards.length === 0) {
-            // 空地没牌，直接跳过
-          } else {
-            const newCave = [...(myState.cave || []), ...clearingCards.map(c => ({ ...c, selected: false }))];
-            updates = {
-              [`gameState.clearing`]: [],
-              [`gameState.playerStates.${openId}.cave`]: DbHelper.cleanHand(newCave),
-            };
-            logMsg = `完成了棕熊行动：${clearingCards.length}张牌进洞穴`;
-          }
-          break;
-        }
-
-        case 'ACTION_PICK_FROM_CLEARING': {
-          // 欧洲野猫：从空地选一张牌进洞穴
-          const { selectedClearingIdx, clearing } = this.data;
-          if (selectedClearingIdx < 0) {
-            wx.showToast({ title: "请先选择空地牌", icon: "none" });
-            return;
-          }
-
-          const card = clearing[selectedClearingIdx];
-          const newClearing = clearing.filter((_, idx) => idx !== selectedClearingIdx);
-          const newCave = [...(myState.cave || []), { ...card, selected: false }];
-
-          updates = {
-            [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
-            [`gameState.playerStates.${openId}.cave`]: DbHelper.cleanHand(newCave),
-          };
-          logMsg = `完成了欧洲野猫行动：从空地拿走 ${card.name} 放入洞穴`;
-          break;
-        }
-
-        case 'ACTION_CLEARING_TO_CAVE':
-        case 'CLEARING_TO_CAVE': {
-          // 蜂群效果：将符合条件的空地牌放入洞穴 (树、灌木、植物)
-          const config = (gameState.pendingActions || [])[0];
-          const tags = config?.tags || [];
-
-          const clearingCards = this.data.clearing || [];
-          const toCave = clearingCards.filter(c => {
-            if (c.type === CARD_TYPES.TREE) return true;
-            if (c.tags && c.tags.some(t => tags.includes(t))) return true;
-            return false;
-          });
-
-          if (toCave.length === 0) {
-            // 没有符合条件的
-          } else {
-            const newClearing = clearingCards.filter(c => !toCave.includes(c));
-            const newCave = [...(myState.cave || []), ...toCave.map(c => ({ ...c, selected: false }))];
-            updates = {
-              [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
-              [`gameState.playerStates.${openId}.cave`]: DbHelper.cleanHand(newCave),
-            };
-            logMsg = `完成了蜂群行动：${toCave.length}张符合条件的牌进洞穴`;
-          }
-          break;
-        }
-
-        case 'ACTION_PLAY_SAPLINGS': {
-          // 水田鼠模式：打出树苗的过程已经在 onConfirmPlay 中完成了物理移动
-          // 这里确认只是为了统一日志。
-          logMsg = `完成了水田鼠行动：打出了多棵树苗`;
-          break;
-        }
-
-        case 'PICK_FROM_CLEARING_TO_HAND': {
-          // 大蚊：从空地选卡进手牌 (Bonus)
-          const { selectedClearingIdx, clearing } = this.data;
-          if (selectedClearingIdx < 0) {
-            wx.showToast({ title: "请选择空地牌", icon: "none" });
-            return;
-          }
-          const card = clearing[selectedClearingIdx];
-          if (myState.hand.length >= 10) {
-            wx.showToast({ title: "手牌已满", icon: "none" });
-            return;
-          }
-          const newHand = [...myState.hand, { ...card, selected: false }];
-          const newClearing = clearing.filter((_, idx) => idx !== selectedClearingIdx);
-          updates = {
-            [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
-            [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand)
-          };
-          logMsg = `奖励：从空地拿走 ${card.name} 放入手牌`;
-          break;
-        }
-
-        default:
-          // 其他模式（如 MOLE, FREE_PLAY_BAT）是通过连续打牌完成的
-          logMsg = `完成了特殊行动: ${mode}`;
-          break;
+      updates = actionResult.updates || {};
+      logMsg = actionResult.logMsg;
+      if (actionResult.drawCount > 0) {
+        this.pendingDrawCount = actionResult.drawCount;
       }
 
       // 执行状态清理和最终结算
