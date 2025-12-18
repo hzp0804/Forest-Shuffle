@@ -85,27 +85,7 @@ const SPECIES_DATA = {
     points: "",
   },
 
-  [SPECIES_NAMES.COMMON_TOAD]: {
-    name: "大蟾蜍",
-    nb: 6,
-    tags: [TAGS.AMPHIBIAN],
-    cost: 0,
-    type: CARD_TYPES.V_CARD,
-    effect: "该槽位最多可容纳2只大蟾蜍",
-    effectConfig: {
-      type: MODIFIER_TYPES.CAPACITY_INCREASE,
-      value: 2,
-      target: SPECIES_NAMES.COMMON_TOAD
-    },
-    bonus: "",
-    points: "若2只大蟾蜍共享此槽位，获得5分",
-    scoreConfig: {
-      type: SCORING_TYPES.POSITION_SHARE_SLOT,
-      target: SPECIES_NAMES.COMMON_TOAD,
-      count: 2,
-      value: 5
-    },
-  },
+
 
   [SPECIES_NAMES.EURASIAN_JAY]: {
     name: "松鸦",
@@ -147,23 +127,7 @@ const SPECIES_DATA = {
     },
   },
 
-  [SPECIES_NAMES.FIREFLIES]: {
-    name: "萤火虫",
-    nb: 4,
-    tags: [TAGS.INSECT],
-    cost: 0,
-    type: CARD_TYPES.V_CARD,
-    effect: "",
-    bonus: "",
-    points: "根据你拥有的萤火虫数量获得分数",
-    scoreConfig: {
-      type: SCORING_TYPES.SCALE_BY_COUNT,
-      target: SPECIES_NAMES.FIREFLIES,
-      scale: {
-        1: 1, 2: 3, 3: 6, 4: 10
-      }
-    },
-  },
+
 
   [SPECIES_NAMES.FLY_AGARIC]: {
     name: "毒蝇伞",
@@ -1507,7 +1471,9 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "免费打出任意数量的蝙蝠牌",
     effectConfig: {
-      type: REWARD_TYPES.FREE_PLAY_BAT
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.BAT],
+      isInfinite: true
     },
     bonus: "把所有有蝙蝠符号的牌从空地上拿到手里",
     bonusConfig: {
@@ -1599,48 +1565,42 @@ const SPECIES_DATA = {
 
   [SPECIES_NAMES.FIREFLIES]: {
     name: "萤火虫",
-    nb: 3,
-    tags: [TAGS.EDGE, TAGS.INSECT],
-    cost: 1, // Assuming cost 1?
+    nb: 4,
+    tags: [TAGS.INSECT],
+    cost: 0,
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "",
-    points: "根据数量得分(最高10)",
+    points: "根据你拥有的萤火虫数量获得分数",
     scoreConfig: {
       type: SCORING_TYPES.SCALE_BY_COUNT,
       target: SPECIES_NAMES.FIREFLIES,
       scale: {
-        1: 2,
-        2: 5,
-        3: 9,
-        4: 14,
-        5: 20,
-        6: 27,
-        7: 35,
-        8: 44,
-        9: 54,
-        10: 65
+        1: 1, 2: 3, 3: 6, 4: 10
       }
-    }
+    },
   },
 
   [SPECIES_NAMES.COMMON_TOAD]: {
     name: "大蟾蜍",
-    nb: 3,
-    tags: [TAGS.EDGE, TAGS.AMPHIBIAN],
+    nb: 6,
+    tags: [TAGS.AMPHIBIAN], // Removed EDGE tag as per screenshot
     cost: 0,
     type: CARD_TYPES.V_CARD,
-    effect: "进场时可将一张手牌叠放在其下",
+    effect: "该槽位最多可容纳2只大蟾蜍",
     effectConfig: {
-      type: TRIGGER_TYPES.ON_PLAY_OPTIONAL_TUCK, // Custom trigger
-      max: 1 // Max 1 card? Or unlimited? Usually 1 per Toad played.
+      type: MODIFIER_TYPES.CAPACITY_INCREASE,
+      value: 2,
+      target: SPECIES_NAMES.COMMON_TOAD
     },
     bonus: "",
-    points: "其下每张牌得5分",
+    points: "若2只大蟾蜍共享此槽位，获得5分",
     scoreConfig: {
-      type: SCORING_TYPES.PER_STACKED_CARD, // New scoring type
+      type: SCORING_TYPES.POSITION_SHARE_SLOT,
+      target: SPECIES_NAMES.COMMON_TOAD,
+      count: 2,
       value: 5
-    }
+    },
   },
 
   [SPECIES_NAMES.GREAT_GREEN_BUSH_CRICKET]: {

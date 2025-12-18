@@ -134,11 +134,41 @@ const checkInstruction = (params) => {
         let canStack = false;
         if (slotContent.slotConfig && slotContent.slotConfig.accepts) {
           const acceptsTags = slotContent.slotConfig.accepts.tags || [];
-          const matches = acceptsTags.some(tag => primaryCard.tags && primaryCard.tags.includes(tag));
+          const acceptsNames = slotContent.slotConfig.accepts.names || [];
+
+          let matches = acceptsTags.some(tag => primaryCard.tags && primaryCard.tags.includes(tag));
+          if (!matches && acceptsNames.length > 0) {
+            matches = acceptsNames.includes(primaryCard.name);
+          }
+
           const currentCount = slotContent.stackedCards ? slotContent.stackedCards.length : 0;
           const capacity = slotContent.slotConfig.capacity || 0;
-          if (matches && currentCount < capacity) {
+          if (matches && currentCount < capacity - 1) { // Capacity is total (e.g. 2). Current is stacked (0). So 0 < 2-1 (1). OK.
+            // Wait. slotContent takes 1 space. capacity is TOTAL capacity of slot?
+            // Urtica: Capacity 99. Stacked can be 98?
+            // Toad: Capacity 2. Stacked can be 1.
+            // currentCount (stacked) < capacity - 1.
             canStack = true;
+          }
+        }
+
+        // 检查 CAPACITY_UNLIMITED (如: 欧洲野兔)
+        if (!canStack && slotContent.effectConfig && slotContent.effectConfig.type === 'CAPACITY_UNLIMITED') {
+          if (slotContent.effectConfig.target === primaryCard.name) {
+            canStack = true;
+          }
+        }
+
+        // 检查 CAPACITY_INCREASE (如: 大蟾蜍)
+        if (!canStack && slotContent.effectConfig && slotContent.effectConfig.type === 'CAPACITY_INCREASE') {
+          // 校验目标是否匹配
+          if (slotContent.effectConfig.target === primaryCard.name) {
+            const maxStacked = (slotContent.effectConfig.value || 1) - 1;
+            const currentStacked = slotContent.stackedCards ? slotContent.stackedCards.length : 0;
+
+            if (currentStacked < maxStacked) {
+              canStack = true;
+            }
           }
         }
 
