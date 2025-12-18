@@ -49,7 +49,7 @@
                      ✋拿取
                   </button>
                </block>
-               <button size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}} {{gameState.actionMode && !(gameState.actionMode === 'MOLE' || gameState.actionMode === 'FREE_PLAY_BAT' || gameState.actionMode === 'PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE') ? 'disabled' : ''}}" bindtap="onConfirmPlay" disabled="{{gameState.actionMode && !(gameState.actionMode === 'MOLE' || gameState.actionMode === 'FREE_PLAY_BAT' || gameState.actionMode === 'PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE')}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
+               <button size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}} {{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE') ? 'disabled' : ''}}" bindtap="onConfirmPlay" disabled="{{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE')}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
                   ✅打出
                </button>
                <button size="mini" class="game-btn secondary sapling-btn {{gameState.actionMode ? 'disabled' : ''}}" bindtap="onPlaySapling" disabled="{{gameState.actionMode}}" style="margin:0; padding:0 12rpx; font-weight:normal;">

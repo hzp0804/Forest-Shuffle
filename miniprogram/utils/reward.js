@@ -93,15 +93,14 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
       result.actions.push(config);
       break;
 
-    case REWARD_TYPES.FREE_PLAY_BAT:
-      result.text = "免费打出蝙蝠";
+    case REWARD_TYPES.ACTION_PLAY_SAPLINGS:
+      result.text = isBonus ? (card.bonus || '特殊行动') : (card.effect || '特殊行动');
       result.actions.push(config);
       break;
 
     case REWARD_TYPES.ACTION_REMOVE_CLEARING:
     case REWARD_TYPES.ACTION_CLEARING_TO_CAVE:
     case REWARD_TYPES.ACTION_PICK_FROM_CLEARING:
-    case REWARD_TYPES.ACTION_PLAY_SAPLINGS:
     case REWARD_TYPES.PICK_FROM_CLEARING_TO_HAND:
     case REWARD_TYPES.CLEARING_TO_CAVE:
       result.actions.push(config);

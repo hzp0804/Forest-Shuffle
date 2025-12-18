@@ -262,7 +262,7 @@ Page({
     let primaryCard = Utils.enrichCardWithSpecies(primaryCardRaw, activeSide);
 
     // 特殊模式修正：如果是树苗模式，强制打出为树苗
-    if (gameState.actionMode === 'PLAY_SAPLINGS') {
+    if (gameState.actionMode === 'ACTION_PLAY_SAPLINGS') {
       primaryCard = {
         ...primaryCard,
         name: "树苗",
@@ -306,7 +306,7 @@ Page({
     let bonus = { drawCount: 0, extraTurn: false, actions: [] };
     let effect = { drawCount: 0, extraTurn: false, actions: [] };
 
-    const isSpecialPlayMode = ['MOLE', 'FREE_PLAY_BAT', 'PLAY_SAPLINGS', 'PLAY_FREE'].includes(gameState.actionMode);
+    const isSpecialPlayMode = ['ACTION_MOLE', 'ACTION_PLAY_SAPLINGS', 'PLAY_FREE'].includes(gameState.actionMode);
 
     if (source === 'PLAYER_ACTION') {
       // 在特殊模式下打牌，不重新触发该牌自身的 Bonus 和 Effect (防止无限循环)
@@ -363,7 +363,7 @@ Page({
       if (nextPending.length > 0) {
         // 还有后续行动，更新状态继续
         const nextAction = nextPending[0];
-        const nextMode = SpecialActionUtils.detectActionMode(nextAction);
+        const nextMode = nextAction ? nextAction.type : null;
         updates[`gameState.pendingActions`] = nextPending;
         updates[`gameState.actionMode`] = nextMode;
         updates[`gameState.actionText`] = null; // 重置文案，让 helper 重新生成
@@ -385,37 +385,11 @@ Page({
       paymentCards.forEach(c => newClearing.push({ ...c, selected: false }));
 
       const firstAction = reward.actions[0];
-      const actionMode = SpecialActionUtils.detectActionMode(firstAction);
+      const actionMode = firstAction ? firstAction.type : 'SPECIAL_ACTION';
       const actionText = bonus.text || effect.text || "特殊行动中...";
 
       // 如果是全自动行动，直接执行并提交
-      if (SpecialActionUtils.isAutomatic(actionMode)) {
-        const autoResult = this.executeAutomaticAction(actionMode, {
-          hand: newHand,
-          forest: forest,
-          clearing: newClearing,
-          playerState: myState,
-          actionConfig: firstAction
-        });
 
-        const updates = {
-          [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
-          [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
-          ...autoResult.updates,
-          [`gameState.accumulatedRewards`]: { drawCount: reward.drawCount, extraTurn: reward.extraTurn },
-          [`gameState.lastEvent`]: {
-            type: 'PLAY_CARD', playerOpenId: openId,
-            playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
-            playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-            mainCard: primaryCard, subCards: paymentCards.map(c => Utils.enrichCard(c)),
-            timestamp: Date.now()
-          }
-        };
-
-        this.pendingDrawCount = 0;
-        await this.finalizeAction(updates, `触发效果: ${actionText}`);
-        return;
-      }
 
       // 非自动行动，进入特殊行动模式
       const updates = {
@@ -633,7 +607,7 @@ Page({
             if (pending.length > 0) {
               // 还有后续行动，更新状态
               const nextAction = pending[0];
-              const nextMode = SpecialActionUtils.detectActionMode(nextAction);
+              const nextMode = nextAction ? nextAction.type : null;
               updates['gameState.pendingActions'] = pending;
               updates['gameState.actionMode'] = nextMode;
               // 提示更新
@@ -665,42 +639,7 @@ Page({
     });
   },
 
-  /**
-   * 执行自动特殊行动逻辑（无需玩家选择）
-   */
-  executeAutomaticAction(mode, context) {
-    const { clearing, playerState, actionConfig } = context;
-    const updates = {};
-    const openId = this.data.openId;
 
-    switch (mode) {
-      case 'BEAR': {
-        const clearingCards = [...clearing];
-        if (clearingCards.length > 0) {
-          const newCave = [...(playerState.cave || []), ...clearingCards.map(c => ({ ...c, selected: false }))];
-          updates[`gameState.clearing`] = [];
-          updates[`gameState.playerStates.${openId}.cave`] = DbHelper.cleanHand(newCave);
-        }
-        break;
-      }
-      case 'CLEARING_TO_CAVE': {
-        const tags = actionConfig?.tags || [];
-        const toCave = clearing.filter(c => {
-          if (c.type === 'tree') return true;
-          if (c.tags && c.tags.some(t => tags.includes(t))) return true;
-          return false;
-        });
-        if (toCave.length > 0) {
-          const newClearing = clearing.filter(c => !toCave.includes(c));
-          const newCave = [...(playerState.cave || []), ...toCave.map(c => ({ ...c, selected: false }))];
-          updates[`gameState.clearing`] = DbHelper.cleanClearing(newClearing);
-          updates[`gameState.playerStates.${openId}.cave`] = DbHelper.cleanHand(newCave);
-        }
-        break;
-      }
-    }
-    return { updates };
-  },
 
   /**
    * 确认执行当前模式下的特殊行动
@@ -720,7 +659,7 @@ Page({
 
     try {
       switch (mode) {
-        case 'RACCOON': {
+        case 'ACTION_RACCOON': {
           // 浣熊效果：选择手牌放入洞穴，并摸取相同数量
           const selectedCards = myState.hand.filter(c => c.selected);
           if (selectedCards.length === 0) {
@@ -745,7 +684,7 @@ Page({
           break;
         }
 
-        case 'BEAR': {
+        case 'ACTION_BEAR': {
           // 棕熊效果：将空地所有卡牌放入洞穴
           const clearingCards = [...(this.data.clearing || [])];
           if (clearingCards.length === 0) {
@@ -761,7 +700,7 @@ Page({
           break;
         }
 
-        case 'PICK_FROM_CLEARING': {
+        case 'ACTION_PICK_FROM_CLEARING': {
           // 欧洲野猫：从空地选一张牌进洞穴
           const { selectedClearingIdx, clearing } = this.data;
           if (selectedClearingIdx < 0) {
@@ -781,6 +720,7 @@ Page({
           break;
         }
 
+        case 'ACTION_CLEARING_TO_CAVE':
         case 'CLEARING_TO_CAVE': {
           // 蜂群效果：将符合条件的空地牌放入洞穴 (树、灌木、植物)
           const config = (gameState.pendingActions || [])[0];
@@ -807,7 +747,7 @@ Page({
           break;
         }
 
-        case 'PLAY_SAPLINGS': {
+        case 'ACTION_PLAY_SAPLINGS': {
           // 水田鼠模式：打出树苗的过程已经在 onConfirmPlay 中完成了物理移动
           // 这里确认只是为了统一日志。
           logMsg = `完成了水田鼠行动：打出了多棵树苗`;

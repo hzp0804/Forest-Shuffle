@@ -261,6 +261,10 @@ const SPECIES_DATA = {
     cost: 2,
     type: CARD_TYPES.V_CARD,
     effect: "立即支付费用打出任意数量的牌",
+    effectConfig: {
+      type: REWARD_TYPES.ACTION_MOLE,
+      isInfinite: true
+    },
     bonus: "",
     points: "",
   },
@@ -1616,7 +1620,8 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "立即打出任意数量的树苗",
     effectConfig: {
-      type: REWARD_TYPES.ACTION_PLAY_SAPLINGS
+      type: REWARD_TYPES.ACTION_PLAY_SAPLINGS,
+      isInfinite: true
     },
     bonus: "获得新的回合",
     bonusConfig: {
