@@ -765,6 +765,20 @@
   /* 紫色，致敬原来的牌库颜色 */
 }
 
+.end-turn-text {
+  font-size: 24rpx;
+  color: #e74c3c;
+  font-weight: bold;
+  text-decoration: underline;
+  padding: 4rpx 8rpx;
+  transition: all 0.2s ease;
+}
+
+.end-turn-text:active {
+  opacity: 0.6;
+  transform: scale(0.95);
+}
+
 /* Sprite Card Styles */
 .card-sprite-viewport {
   position: relative;

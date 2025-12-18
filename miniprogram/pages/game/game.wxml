@@ -27,9 +27,13 @@
       <view class="game-board">
          <!-- 空地 (Re-styled as Hand-like) -->
          <!-- 空地 Header with Actions -->
-         <view style="display: flex; justify-content: space-between; align-items: center; padding-right: 10rpx;">
-            <view class="area-label" style="margin-bottom:0; padding-right: 10rpx;">
-               空地 ({{clearing.length || 0}}/10)
+         <view style="display: flex; justify-content: space-between; align-items: center; padding: 0 10rpx;">
+            <view style="display: flex; align-items: center; gap: 16rpx;">
+               <view class="area-label" style="margin-bottom:0; padding-right: 0;">
+                  空地 ({{clearing.length || 0}}/10)
+               </view>
+               <!-- 1. 结束：改为红色文字样式，放在文案右边 -->
+               <view class="end-turn-text" bindtap="onEndTurn" wx:if="{{isMyTurn}}">结束</view>
             </view>
             <view class="action-bar-inline" wx:if="{{isMyTurn}}" style="display:flex; gap:12rpx;">
                <!-- 2. 拿取：从空地拿取一张牌 -->

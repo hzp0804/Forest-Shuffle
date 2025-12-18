@@ -895,6 +895,44 @@ Page({
 
 
 
+
+  // 11. 结束回合
+  async onEndTurn() {
+    const { openId, players, roomId } = this.data;
+    const db = wx.cloud.database();
+
+    // 增加二次确认，防止误触
+    const confirmRes = await wx.showModal({
+      title: '确认结束？',
+      content: '确定要结束当前回合吗？如有抽牌次数将会浪费。',
+      confirmColor: '#e74c3c'
+    });
+
+    if (!confirmRes.confirm) return;
+
+    wx.showLoading({ title: "结束回合..." });
+
+    // 计算下一位玩家
+    const nextPlayer = RoundUtils.getNextPlayer(
+      openId,
+      players,
+      false
+    );
+
+    const updates = {
+      [`gameState.activePlayer`]: nextPlayer,
+      [`gameState.turnAction`]: {
+        drawnCount: 0,
+        takenCount: 0
+      },
+      [`gameState.turnCount`]: db.command.inc(1), // 回合数+1
+      [`gameState.turnReason`]: "normal",
+    };
+
+    // 提交更新并记录日志
+    await this.submitGameUpdate(updates, "回合结束", "手动结束了回合");
+  },
+
   // 12. 展示当前 Buff
   onShowBuffs() {
     const { playerStates, openId } = this.data;
