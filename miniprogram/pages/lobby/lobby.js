@@ -1,4 +1,5 @@
 const { GAME_CONFIG } = require("../../data/constants");
+const Utils = require("../../utils/utils");
 const STORAGE_KEY = "userProfile";
 const BASE_DECK_SIZE = GAME_CONFIG.BASE_DECK_SIZE;
 
@@ -82,7 +83,9 @@ Page({
 
     // 判断是否已登录（只要有 openId 且有昵称认为已登录）
     if (globalProfile && globalProfile.openId && globalProfile.nickName) {
-      this.setData({ userProfile: globalProfile });
+      const profile = { ...globalProfile };
+      profile.avatarUrl = Utils.getAvatarPath(profile.openId, profile.avatarUrl);
+      this.setData({ userProfile: profile });
     } else {
       wx.showToast({ title: "请先在首页登录", icon: "none", duration: 2000 });
       // 延迟跳转以免 toast 看不见
@@ -699,7 +702,7 @@ Page({
           ? {
             openId: p.openId,
             nickName: p.nickName,
-            avatarUrl: p.avatarUrl,
+            avatarUrl: Utils.getAvatarPath(p.openId, p.avatarUrl),
           }
           : null,
       };
@@ -1004,6 +1007,9 @@ Page({
       .then((res) => {
         const list = (res.data || []).map((room) => {
           const count = (room.players || []).filter((p) => p).length;
+          if (room.players && room.players[0] && room.players[0].openId) {
+            room.players[0].avatarUrl = Utils.getAvatarPath(room.players[0].openId, room.players[0].avatarUrl);
+          }
           return { ...room, playerCount: count };
         });
 

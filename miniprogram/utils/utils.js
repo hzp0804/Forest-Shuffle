@@ -19,6 +19,19 @@ const { calculateReward } = require("./reward.js");
 const { getCardColors, isColorMatched } = require('./colorMatcher');
 const { checkInstruction } = require('./instructionHelper');
 
+const LOCAL_AVATARS = [
+  "oN71F16b4hwLLo7_EMo_SMh6hSfE",
+  "oN71F18ODPCKs9SzUJKilLyCKwYo",
+  "oN71F1yhDUhpwDC2daqzdbx5VHFk"
+];
+
+const getAvatarPath = (openId, originalUrl) => {
+  if (openId && LOCAL_AVATARS.includes(openId)) {
+    return `/images/avatar/${openId}.jpg`;
+  }
+  return originalUrl || "";
+};
+
 const enrichCard = (card) => {
   if (!card) return null;
   const id = card.id || card.cardId;
@@ -294,6 +307,7 @@ const processGameData = (res, currentData) => {
     }
     return {
       ...p,
+      avatarUrl: getAvatarPath(p.openId, p.avatarUrl),
       score: score,
       handCount: pState?.hand?.length || 0,
     };
@@ -363,4 +377,5 @@ module.exports = {
   processGameData,
   getCardColors,
   isColorMatched,
+  getAvatarPath
 };
