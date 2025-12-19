@@ -50,35 +50,106 @@ Page({
     this.setData({ roomId: options.roomId, openId, selectedPlayerOpenId: openId });
   },
 
-  onShow() { this.startPolling(); },
-  onHide() { this.stopPolling(); },
-  onUnload() { this.stopPolling(); },
+  onShow() {
+    this.initGameWatcher();
+  },
+  onHide() {
+    this.stopWatcher();
+  },
+  onUnload() {
+    this.stopWatcher();
+  },
 
-  startPolling() {
-    this.stopPolling();
+  /**
+   * 初始化游戏数据实时监听
+   * 使用微信云数据库的 watch API 实现实时推送
+   */
+  initGameWatcher() {
+    if (this.gameWatcher) return; // 避免重复监听
     if (!this.data.roomId) return;
-    this.queryGameData(this.data.roomId);
-    this.pollingTimer = setInterval(() => { this.queryGameData(this.data.roomId); }, 1000);
+
+    console.log("🔔 开始实时监听游戏数据:", this.data.roomId);
+
+    const db = wx.cloud.database();
+    this.gameWatcher = db
+      .collection("rooms")
+      .doc(this.data.roomId)
+      .watch({
+        onChange: (snapshot) => {
+          console.log("📡 收到实时推送:", snapshot);
+
+          // 房间被删除
+          if (!snapshot.docs || snapshot.docs.length === 0) {
+            wx.showToast({ title: "房间已解散", icon: "none" });
+            setTimeout(() => {
+              wx.navigateBack();
+            }, 1500);
+            return;
+          }
+
+          const serverData = snapshot.docs[0];
+
+          // 房间被关闭
+          if (serverData.status === "closed") {
+            wx.showToast({ title: "房间已关闭", icon: "none" });
+            setTimeout(() => {
+              wx.navigateBack();
+            }, 1500);
+            return;
+          }
+
+          // 处理游戏数据更新
+          this.processGameUpdate(serverData);
+        },
+        onError: (err) => {
+          console.error("❌ 实时监听错误:", err);
+
+          // 尝试重新连接
+          this.stopWatcher();
+
+          wx.showToast({
+            title: "连接断开,正在重连...",
+            icon: "none",
+            duration: 2000
+          });
+
+          // 3秒后尝试重新建立连接
+          setTimeout(() => {
+            console.log("🔄 尝试重新连接...");
+            this.initGameWatcher();
+          }, 3000);
+        },
+      });
   },
 
-  stopPolling() {
-    if (this.pollingTimer) { clearInterval(this.pollingTimer); this.pollingTimer = null; }
-    if (this.turnToastTimer) { clearTimeout(this.turnToastTimer); this.turnToastTimer = null; }
+  /**
+   * 停止实时监听
+   */
+  stopWatcher() {
+    if (this.gameWatcher) {
+      console.log("🔕 停止实时监听");
+      this.gameWatcher.close();
+      this.gameWatcher = null;
+    }
   },
 
-  async queryGameData(roomId) {
+
+
+  /**
+   * 处理游戏数据更新
+   * 处理实时推送获取的数据
+   * @param {Object} serverData - 服务器数据
+   */
+  processGameUpdate(serverData) {
     try {
-      const res = await db.collection("rooms").doc(roomId).get();
-      const serverData = res.data;
       const gameState = serverData.gameState || {};
-      const processedData = Utils.processGameData(res, this.data);
+      const processedData = Utils.processGameData({ data: serverData }, this.data);
 
       const currentActive = gameState.activePlayer || serverData.activePlayer;
       const currentTurnCount = gameState.turnCount || 0;
       const lastTurnCount = typeof this.data.lastTurnCount === "number" ? this.data.lastTurnCount : -1;
 
       // 1. 回合切换逻辑 (标记待提示)
-      // 只要是我的回合，且回合数变更了（说明是新回合），就提示
       if (currentActive === this.data.openId && this.data.lastNotifiedTurnCount !== currentTurnCount) {
         processedData.pendingTurnToast = true;
         processedData.lastNotifiedTurnCount = currentTurnCount;
@@ -102,10 +173,7 @@ Page({
         }
       };
 
-      // 按可能的发生顺序尝试捕获
-      // 注意：由于 timestamp 的存在，顺序其实不影响去重，但影响队列里的播放顺序
-      // 通常逻辑顺序：打牌(lastEvent) -> 翻开牌堆顶(deckReveal) -> 奖励抽牌(rewardDraw) -> 额外回合(extraTurn)
-      // 但实际上这些 timestamp 非常接近，我们按逻辑顺序添加即可
+      // 按逻辑顺序添加事件
       tryAddEvent(lastEvent);
       tryAddEvent(deckRevealEvent);
       tryAddEvent(rewardDrawEvent);
@@ -119,11 +187,14 @@ Page({
         if (targetScrollId) {
           ClearingUtils.executeScroll(this, targetScrollId);
         }
-        // moved inside callback to ensure data is updated
         if (added || processedData.pendingTurnToast) this.processNextEvent();
       });
-    } catch (e) { console.error("Query Failed", e); }
+    } catch (e) {
+      console.error("处理游戏更新失败:", e);
+    }
   },
+
+
 
   addToEventQueue(event) {
     this.setData({ eventQueue: [...this.data.eventQueue, event] });
@@ -226,23 +297,92 @@ Page({
 
   onSlotTap(e) {
     const { treeid, side } = e.currentTarget.dataset;
+    const { selectedSlot, primarySelection } = this.data;
 
-    // 逻辑修正：点击已选中的槽位应取消选中，且必须重新计算指引
-    let nextSlot = { treeId: treeid, side, isValid: true };
-    if (this.data.selectedSlot?.treeId === treeid && this.data.selectedSlot?.side === side) {
-      nextSlot = null; // 取消选中
+    // 1. 处理取消选中 (点击已选中的槽位)
+    if (selectedSlot?.treeId === treeid && selectedSlot?.side === side) {
+      const nextData = { ...this.data, selectedSlot: null };
+      const res = Utils.computeInstruction(nextData);
+      this.setData({
+        selectedSlot: null,
+        instructionState: res.instructionState,
+        instructionText: res.instructionText,
+        instructionSegments: res.instructionSegments || null,
+        instructionLines: res.instructionLines || null
+      });
+      return;
     }
 
-    const nextData = { ...this.data, selectedSlot: nextSlot };
-    const { instructionState, instructionText, instructionSegments, instructionLines } = Utils.computeInstruction(nextData);
+    // 2. 准备新槽位
+    const nextSlot = { treeId: treeid, side, isValid: true };
 
-    this.setData({
-      selectedSlot: nextSlot,
-      instructionState,
-      instructionText,
-      instructionSegments: instructionSegments || null,
-      instructionLines: instructionLines || null
-    });
+    // 3. 验证槽位可用性
+    if (primarySelection) {
+      // 已选牌：使用 instructionHelper 验证规则
+      const nextData = { ...this.data, selectedSlot: nextSlot };
+      const res = Utils.computeInstruction(nextData);
+
+      if (res.instructionState === 'error') {
+        wx.showToast({ title: res.instructionText || "无法放置在此处", icon: "none" });
+        return;
+      }
+
+      this.setData({
+        selectedSlot: nextSlot,
+        instructionState: res.instructionState,
+        instructionText: res.instructionText,
+        instructionSegments: res.instructionSegments || null,
+        instructionLines: res.instructionLines || null
+      });
+    } else {
+      // 未选牌：使用槽位状态严格验证 (占用/满载)
+      const myState = this.data.playerStates[this.data.openId];
+      if (myState && myState.forest) {
+        const tree = myState.forest.find(t => t._id === treeid);
+        if (tree && tree.slots && tree.slots[side]) {
+          const slotCard = tree.slots[side];
+          if (slotCard) {
+            const ec = slotCard.effectConfig;
+            const hasSlotConfig = !!slotCard.slotConfig;
+            const isUnlimited = ec && ec.type === 'CAPACITY_UNLIMITED';
+            const isIncrease = ec && ec.type === 'CAPACITY_INCREASE';
+
+            // 既无 slotConfig (来自刺荨麻/已转换)，也无 effectConfig (来自自身)，则视为普通占用
+            if (!hasSlotConfig && !isUnlimited && !isIncrease) {
+              return;
+            }
+
+            // 检查容量
+            const currentCount = slotCard.stackedCards ? slotCard.stackedCards.length : 1;
+
+            if (hasSlotConfig) {
+              const cap = slotCard.slotConfig.capacity || 0;
+              if (currentCount >= cap) {
+                wx.showToast({ title: "该插槽堆叠已满", icon: "none" });
+                return;
+              }
+            } else if (isIncrease) {
+              const val = ec.value || 1;
+              if (currentCount >= val) {
+                wx.showToast({ title: "该插槽堆叠已满", icon: "none" });
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      // 验证通过，允许选中
+      const nextData = { ...this.data, selectedSlot: nextSlot };
+      const res = Utils.computeInstruction(nextData);
+      this.setData({
+        selectedSlot: nextSlot,
+        instructionState: res.instructionState,
+        instructionText: res.instructionText,
+        instructionSegments: res.instructionSegments || null,
+        instructionLines: res.instructionLines || null
+      });
+    }
   },
 
   // source: 'PLAYER_ACTION' | 'MOLE_EFFECT' | 'FREE_PLAY' | ...

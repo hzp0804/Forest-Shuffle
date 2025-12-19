@@ -682,10 +682,10 @@ Page({
     });
 
     this.updateSeatsFromPlayers(roomData.players);
-    // 启动监听
+    // 启动实时监听
     this.initRoomWatcher(roomData._id);
-    // 启动轮询 (每秒更新)
-    this.startRoomPolling(roomData._id);
+    // 注释：已使用实时推送,不再需要轮询
+    // this.startRoomPolling(roomData._id);
   },
 
   updateSeatsFromPlayers(players) {

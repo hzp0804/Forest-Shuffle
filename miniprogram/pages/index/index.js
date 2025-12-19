@@ -268,7 +268,7 @@ Page({
       openId: "guest_test_001",
       nickName: "游客测试员",
       avatarUrl:
-        "https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0",
+        "http://8.134.103.20//admin-api/infra/file/1664470159415881729/get/20251219/2001920904035250176/qq.jpg",
       isGuest: true,
     };
 
