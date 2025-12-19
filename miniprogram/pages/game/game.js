@@ -219,6 +219,7 @@ Page({
     if (this.data.eventQueue.length === 0) {
       // 特殊情况处理：虽然没有事件，但有待显示的 Toast (通常是回合切换)
       if (this.data.pendingTurnToast) {
+        wx.vibrateShort({ type: 'medium' });
         wx.showToast({ title: "轮到你了！", icon: "none", duration: 1500 });
         this.setData({ pendingTurnToast: false, isProcessingEvent: false });
         return;
@@ -229,6 +230,7 @@ Page({
       // 队列结束，如果刚才有待提示的回合切换，现在触发
       // 注意：这里使用 data 中的最新状态，因为 processNextEvent 可能被多次调用
       if (this.data.pendingTurnToast) {
+        wx.vibrateShort({ type: 'medium' });
         wx.showToast({ title: "轮到你了！", icon: "none", duration: 1500 });
         this.setData({ pendingTurnToast: false });
       } else if (this.data.pendingActionToast) {
@@ -330,6 +332,23 @@ Page({
 
     // 3. 验证槽位可用性
     if (primarySelection) {
+      // 预先检查：目标插槽是否已满 (针对大蟾蜍等 CAPACITY_INCREASE)
+      const myState = this.data.playerStates[this.data.openId];
+      if (myState && myState.forest) {
+        const tree = myState.forest.find(t => t._id === treeid);
+        const existingCard = tree?.slots?.[side];
+
+        if (existingCard && existingCard.effectConfig) {
+          const ec = existingCard.effectConfig;
+          // 检查 CAPACITY_INCREASE 的容量限制
+          if (ec.type === 'CAPACITY_INCREASE' && ec.value) {
+            const currentCount = existingCard.stackedCards ? existingCard.stackedCards.length : 1;
+            if (currentCount >= ec.value) {
+              return; // 已满，不允许点击
+            }
+          }
+        }
+      }
       // 检查主牌是否需要插槽（树卡不需要插槽）
       const { playerStates, openId } = this.data;
       const hand = playerStates[openId]?.hand || [];
@@ -344,15 +363,15 @@ Page({
         }
 
         // 检查卡片类型与插槽方向是否匹配
-        if (cardType === 'h_card') {
+        if (cardType === 'hcard' || cardType === 'h_card') {
           // 横向卡只能插入左右插槽
           if (side !== 'left' && side !== 'right') {
-            return; // 不允许点击上下插槽
+            return;
           }
-        } else if (cardType === 'v_card') {
+        } else if (cardType === 'vcard' || cardType === 'v_card') {
           // 纵向卡只能插入上下插槽
           if (side !== 'top' && side !== 'bottom') {
-            return; // 不允许点击左右插槽
+            return;
           }
         }
       }
@@ -467,6 +486,11 @@ Page({
     const newClearing = [...(clearing || [])];
 
     const primaryIdx = hand.findIndex(c => c.uid === primarySelection);
+    if (primaryIdx === -1) {
+      console.error("Selected card not in hand");
+      wx.hideLoading();
+      return;
+    }
     const primaryCardRaw = hand[primaryIdx];
     const isTree = (primaryCardRaw.type || '').toLowerCase() === 'tree';
 
@@ -642,7 +666,8 @@ Page({
       // 需要将同树其他槽位中符合条件的卡片转换为堆叠模式
       if (primaryCard.effectConfig && primaryCard.effectConfig.type === 'CAPACITY_SHARE_SLOT') {
         const targetTag = primaryCard.effectConfig.tag;
-        const slotsToConvert = ['top', 'bottom', 'left', 'right'];
+        // 优化：蝴蝶(BUTTERFLY)只能出现在上方插槽(top)
+        const slotsToConvert = targetTag === 'BUTTERFLY' ? ['top'] : ['top', 'bottom', 'left', 'right'];
 
         slotsToConvert.forEach(side => {
           if (side !== selectedSlot.side && tTree.slots[side]) {
@@ -693,6 +718,7 @@ Page({
       actions: [...(bonus.actions || []), ...(effect.actions || [])]
     };
 
+
     // 如果是处于特殊模式下打的这一张牌
     if (isSpecialPlayMode) {
       // 1. 基础更新：手牌、森林、空地、事件
@@ -724,6 +750,15 @@ Page({
 
       // 将新产生的行动加到末尾（如果有）
       const nextPending = [...currentPending, ...reward.actions];
+
+      // 自动处理不需要交互的行动 (如清空空地)
+      // 这确保了 ACTION_REMOVE_CLEARING 在 Squeaker 之后执行，且不卡住流程
+      while (nextPending.length > 0 && nextPending[0].type === 'ACTION_REMOVE_CLEARING') {
+        newClearing.length = 0;
+        nextPending.shift();
+      }
+      // 如果触发了清空，需要更新 updates 中的 clearing 数据
+      updates[`gameState.clearing`] = DbHelper.cleanClearing(newClearing);
 
       if (nextPending.length > 0) {
         // 还有后续行动，更新状态继续
@@ -758,11 +793,21 @@ Page({
     }
 
     // 检查是否有待处理的特殊行动
-    if (reward.actions && reward.actions.length > 0) {
+    const pendingActions = [...(reward.actions || [])];
+    let isRemoveClearingEffect = false;
+
+    // Auto-Resolve Loop (For actions at start of chain)
+    while (pendingActions.length > 0 && pendingActions[0].type === 'ACTION_REMOVE_CLEARING') {
+      isRemoveClearingEffect = true;
+      newClearing.length = 0;
+      pendingActions.shift();
+    }
+
+    if (pendingActions.length > 0) {
       // 支付费用卡放入空地 (这是前提，因为自动效果可能要吸走这些费用卡)
       paymentCards.forEach(c => newClearing.push({ ...c, selected: false }));
 
-      const firstAction = reward.actions[0];
+      const firstAction = pendingActions[0];
       const actionMode = firstAction ? firstAction.type : 'SPECIAL_ACTION';
       const actionText = bonus.text || effect.text || "特殊行动中...";
 
@@ -774,7 +819,7 @@ Page({
         [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
         [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
         [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
-        [`gameState.pendingActions`]: reward.actions,
+        [`gameState.pendingActions`]: pendingActions,
         [`gameState.actionMode`]: actionMode,
         [`gameState.actionText`]: actionText,
         [`gameState.accumulatedRewards`]: {
@@ -822,8 +867,12 @@ Page({
 
     paymentCards.forEach(c => newClearing.push({ ...c, selected: false }));
 
+    const { TAGS } = require("../../data/constants");
+    const isShrub = primaryCard.tags && primaryCard.tags.includes(TAGS.SHRUB);
+
     let deckRevealEvent = null;
-    if (isTree && newDeck.length > 0) {
+    // 灌木不触发翻牌
+    if (isTree && !isShrub && newDeck.length > 0) {
       const top = newDeck.shift();
       newClearing.push({ ...top, selected: false });
       deckRevealEvent = {
@@ -837,7 +886,7 @@ Page({
     if (newClearing.length >= 10) newClearing.length = 0;
 
     // 雌性野猪效果：清空空地
-    if (effect.actions && effect.actions.some(a => a.type === 'ACTION_REMOVE_CLEARING')) {
+    if (isRemoveClearingEffect) {
       newClearing.length = 0;
     }
 
@@ -989,10 +1038,23 @@ Page({
         content: '确定要跳过吗？',
         success: async (res) => {
           if (res.confirm) {
-            const updates = {};
             const pending = [...(this.data.gameState.pendingActions || [])];
             // 移除当前行动（头部）
             pending.shift();
+
+            // 自动处理清空空地等不需要交互的行动
+            let newClearing = [...(this.data.clearing || [])];
+            let clearingChanged = false;
+            while (pending.length > 0 && pending[0].type === 'ACTION_REMOVE_CLEARING') {
+              newClearing.length = 0;
+              clearingChanged = true;
+              pending.shift();
+            }
+
+            const updates = {};
+            if (clearingChanged) {
+              updates['gameState.clearing'] = DbHelper.cleanClearing(newClearing);
+            }
 
             if (pending.length > 0) {
               // 还有后续行动，更新状态
@@ -1005,7 +1067,7 @@ Page({
               this.submitGameUpdate(updates, "跳过行动", "跳过了当前特殊行动步骤");
             } else {
               // 没有后续，结束特殊行动模式
-              await this.finalizeAction({}, "跳过了行动");
+              await this.finalizeAction(updates, "跳过了行动");
             }
           }
         }
@@ -1456,6 +1518,44 @@ Page({
     };
 
     this.submitGameUpdate(updates, "种植成功", "将一张手牌作为树苗打出");
+  },
+
+  onCheatAddCards() {
+    wx.showModal({
+      title: '金手指',
+      editable: true,
+      placeholderText: '输入Card ID (如 card_1,card_2)',
+      success: (res) => {
+        if (res.confirm && res.content) {
+          const ids = res.content.split(/[,\uff0c]/).map(s => s.trim()).filter(s => s);
+          if (ids.length === 0) return;
+
+          const { openId, playerStates } = this.data;
+          const currentHand = playerStates[openId].hand || [];
+
+          const newCards = ids.map((id, index) => {
+            // Smart prefix
+            let realId = id;
+            if (!realId.startsWith('card_') && /^\d+$/.test(realId)) {
+              realId = realId;
+            }
+            return {
+              id: realId,
+              uid: `cheat_${Date.now()}_${index}`,
+              selected: false
+            };
+          });
+
+          const newHand = [...currentHand, ...newCards];
+
+          const updates = {
+            [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand)
+          };
+
+          this.submitGameUpdate(updates, "金手指", `添加了 ${ids.length} 张牌`);
+        }
+      }
+    });
   },
 
   onClearingCardTap(e) {

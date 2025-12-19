@@ -49,6 +49,9 @@
                <button size="mini" class="game-btn secondary sapling-btn {{gameState.actionMode ? 'disabled' : ''}}" bindtap="onPlaySapling" disabled="{{gameState.actionMode}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
                   🌱树苗
                </button>
+               <button size="mini" class="game-btn secondary" bindtap="onCheatAddCards" style="margin:0; padding:0 12rpx; min-width: 50rpx; font-weight:normal; background-color: #FFD700; color: #333;">
+                  🔑
+               </button>
             </view>
          </view>
          <!-- 牌库与空地 -->
@@ -151,7 +154,7 @@
          </view>
       </view>
       <!-- 全局动作展示层 (Action Event Display) -->
-      <view class="preview-overlay" wx:if="{{currentEvent}}" bindtap="onCloseEvent">
+      <view class="preview-overlay" wx:if="{{currentEvent}}">
          <view class="preview-card-container">
             <!-- 场景1: 玩家出牌 -->
             <block wx:if="{{currentEvent.type === 'PLAY_CARD'}}">

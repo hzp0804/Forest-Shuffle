@@ -238,15 +238,20 @@ const handleHandTap = (uid, currentData) => {
     instructionLines
   } = computeInstruction(nextData);
 
-  return {
+  const updates = {
     [`playerStates.${openId}.hand`]: newHand,
     primarySelection: newPrimary,
-    selectedSlot: primaryChanged ? null : undefined, // 主牌变动时清除插槽
     instructionState,
     instructionText,
     instructionSegments: instructionSegments || null,
     instructionLines: instructionLines || null
   };
+
+  if (primaryChanged) {
+    updates.selectedSlot = null;
+  }
+
+  return updates;
 };
 
 const processGameData = (res, currentData) => {

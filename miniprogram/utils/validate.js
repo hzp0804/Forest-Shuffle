@@ -87,15 +87,23 @@ const validatePlay = (params) => {
     // PLAY_FREE 模式：先检查卡片条件（Tag），不检查费用
     if (gameState.actionMode === 'PLAY_FREE' && primaryCard && currentAction) {
       const tagValidation = validatePlayFreeTag(primaryCard, currentAction);
+
+      // 检查指定名称 (如: 必须打出小野猪)
+      let nameValid = true;
+      if (currentAction.targetName) {
+        nameValid = (primaryCard.name === currentAction.targetName);
+      }
+
       const text = gameState.actionText;
 
-      // 如果不符合 Tag 要求，明确告知
-      const errorMsg = tagValidation.valid ? null : `不符合要求：${text}`;
+      // 如果不符合 Tag 或 名称要求，明确告知
+      const isValid = tagValidation.valid && nameValid;
+      const errorMsg = isValid ? null : `不符合要求：${text}`;
 
       return {
-        valid: tagValidation.valid,
+        valid: isValid,
         error: errorMsg, // Toast 显示明确的错误信息
-        instructionState: tagValidation.valid ? "success" : "error",
+        instructionState: isValid ? "success" : "error",
         instructionText: text
       };
     }
@@ -139,22 +147,47 @@ const validatePlay = (params) => {
   let costs = [];
 
   // 检查附属卡是否需要选择插槽
-  if (type === CARD_TYPES.H_CARD && !selectedSlot) {
-    return {
-      valid: false,
-      error: "请选择左/右插槽",
-      instructionState: "warning",
-      instructionText: "请选择左/右插槽"
-    };
+  // 使用 loose equality 或 toLowerCase 确保类型匹配
+  const typeLower = (type || '').toLowerCase();
+
+  if (typeLower === 'hcard' || typeLower === 'h_card') {
+    if (!selectedSlot) {
+      return {
+        valid: false,
+        error: "请选择左/右插槽",
+        instructionState: "warning",
+        instructionText: "请选择左/右插槽"
+      };
+    }
+    if (selectedSlot.side !== 'left' && selectedSlot.side !== 'right') {
+      console.warn("Validation failed for H_CARD: side is", selectedSlot.side);
+      return {
+        valid: false,
+        error: "左右结构的卡只可插在左右插槽",
+        instructionState: "error",
+        instructionText: "左右结构的卡只可插在左右插槽"
+      };
+    }
   }
 
-  if (type === CARD_TYPES.V_CARD && !selectedSlot) {
-    return {
-      valid: false,
-      error: "请选择上/下插槽",
-      instructionState: "warning",
-      instructionText: "请选择上/下插槽"
-    };
+  if (typeLower === 'vcard' || typeLower === 'v_card') {
+    if (!selectedSlot) {
+      return {
+        valid: false,
+        error: "请选择上/下插槽",
+        instructionState: "warning",
+        instructionText: "请选择上/下插槽"
+      };
+    }
+    if (selectedSlot.side !== 'top' && selectedSlot.side !== 'bottom') {
+      console.warn("Validation failed for V_CARD: side is", selectedSlot.side);
+      return {
+        valid: false,
+        error: "上下结构的卡只可插在上下插槽",
+        instructionState: "error",
+        instructionText: "上下结构的卡只可插在上下插槽"
+      };
+    }
   }
 
   // 计算费用
