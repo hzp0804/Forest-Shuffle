@@ -133,7 +133,7 @@
                   <text class="max-count">/6</text>
                 </view>
                 <view class="action-buttons">
-                  <view wx:if="{{userProfile.openId === item.hostOpenId || userProfile.nickName === '会长胖'}}" class="icon-btn delete-btn" catchtap="onDeleteRoom" data-id="{{item._id}}">
+                  <view wx:if="{{userProfile.openId === item.hostOpenId}}" class="icon-btn delete-btn" catchtap="onDeleteRoom" data-id="{{item._id}}">
                     <text>✕</text>
                   </view>
                   <view class="join-btn" catchtap="onJoinRoom" data-code="{{item.roomCode}}">
