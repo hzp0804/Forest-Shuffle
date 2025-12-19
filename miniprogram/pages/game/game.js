@@ -1157,23 +1157,70 @@ Page({
     } catch (e) { wx.hideLoading(); console.error(e); }
   },
 
+  /**
+   * 显示森林中的常驻效果(Buff)
+   * 只统计带有触发效果的卡片,不包括得分效果
+   */
   onShowBuffs() {
     const { playerStates, openId } = this.data;
     const forest = playerStates[openId]?.forest || [];
-    let triggers = [];
+    const { TRIGGER_TYPES } = require("../../data/enums");
+
+    let buffs = [];
+
     forest.forEach(group => {
+      // 检查所有卡片(中心+四个槽位)
       [group.center, group.slots?.top, group.slots?.bottom, group.slots?.left, group.slots?.right].forEach(card => {
-        if (card && (card.effect || card.points)) {
-          triggers.push(`${card.name}: ${card.effect || card.points}`);
+        if (!card) return;
+
+        // 只统计有 effectConfig 且类型为 TRIGGER 的卡片
+        if (card.effectConfig && card.effectConfig.type) {
+          const effectType = card.effectConfig.type;
+
+          // 检查是否是触发类型的效果
+          const isTriggerEffect = Object.values(TRIGGER_TYPES).includes(effectType);
+
+          if (isTriggerEffect && card.effect) {
+            buffs.push({
+              name: card.name,
+              effect: card.effect,
+              type: effectType
+            });
+          }
         }
       });
     });
 
-    if (triggers.length === 0) {
-      wx.showToast({ title: "当前无生效Buff", icon: "none" });
-    } else {
-      wx.showModal({ title: '森林Buff一览', content: triggers.join('\n'), showCancel: false });
+    if (buffs.length === 0) {
+      wx.showToast({ title: "当前无常驻效果", icon: "none" });
+      return;
     }
+
+    // 合并相同效果,统计数量
+    const buffMap = new Map();
+    buffs.forEach(buff => {
+      // 使用 name + effect 作为唯一标识
+      const key = `${buff.name}|${buff.effect}`;
+      if (buffMap.has(key)) {
+        buffMap.get(key).count++;
+      } else {
+        buffMap.set(key, { ...buff, count: 1 });
+      }
+    });
+
+    // 格式化显示
+    const buffList = Array.from(buffMap.values());
+    const content = buffList.map((buff, index) => {
+      const countStr = buff.count > 1 ? ` x${buff.count}` : '';
+      return `${index + 1}. ${buff.name}${countStr}\n   ${buff.effect}`;
+    }).join('\n\n');
+
+    wx.showModal({
+      title: `森林常驻效果 (${buffs.length}个)`,
+      content: content,
+      showCancel: false,
+      confirmText: '知道了'
+    });
   },
 
   onPlaySapling() {

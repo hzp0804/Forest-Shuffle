@@ -20,11 +20,14 @@ function cleanCard(card) {
   if (card.selected !== undefined) cleaned.selected = card.selected;
   if (card.animationData !== undefined) cleaned.animationData = card.animationData;
 
-  // 保留树苗的特殊属性 (仅保留逻辑标记，视觉信息由前端还原)
+  // 保留树苗的关键属性,确保其他玩家能正确显示"树苗"
   if (card.id === 'sapling') {
+    // 显式保存树苗的核心属性
+    cleaned.name = '树苗';
+    cleaned.type = 'TREE';
     if (card.tags) cleaned.tags = card.tags;
-    // name 和 type 应该是静态定义的，但因为 sapling 是虚拟ID，暂时可以不存，依靠 utils 还原
-    // 如果担心还原失败，只保留最核心的
+    // 保留原始卡片ID用于追溯(可选)
+    if (card.originalId) cleaned.originalId = card.originalId;
   }
 
   // 保留堆叠卡（递归清理）
