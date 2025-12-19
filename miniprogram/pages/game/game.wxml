@@ -251,6 +251,14 @@
                   <text class="event-title">🎉 {{currentEvent.playerNick}} 获得额外回合！</text>
                </view>
             </block>
+            <block wx:if="{{currentEvent.type === 'NOTIFICATION'}}">
+               <view class="event-header">
+                  <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
+                  <text class="event-title">
+                     {{currentEvent.icon || '🔔'}} {{currentEvent.playerNick ? currentEvent.playerNick + ' ' : ''}}{{currentEvent.message}}
+                  </text>
+               </view>
+            </block>
          </view>
       </view>
       <!-- 底部手牌 -->

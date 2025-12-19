@@ -7,6 +7,17 @@ const SpecialActionUtils = require("../../utils/specialAction.js");
 const ClearingUtils = require("../../utils/clearing.js");
 const db = wx.cloud.database();
 
+/**
+ * 构造清空空地的系统通知
+ */
+const createClearingNotification = () => ({
+  type: 'NOTIFICATION',
+  // 无玩家信息 (系统播报)
+  icon: '🧹',
+  message: '清空了空地！',
+  timestamp: Date.now() + 100
+});
+
 Page({
   data: {
     roomId: "", // 房间ID
@@ -172,6 +183,7 @@ Page({
       const deckRevealEvent = gameState.deckRevealEvent;
       const rewardDrawEvent = gameState.rewardDrawEvent;
       const extraTurnEvent = gameState.extraTurnEvent;
+      const notificationEvent = gameState.notificationEvent;
 
       let nextLastEventTime = this.data.lastEventTime || 0;
       let added = false;
@@ -190,6 +202,7 @@ Page({
       tryAddEvent(deckRevealEvent);
       tryAddEvent(rewardDrawEvent);
       tryAddEvent(extraTurnEvent);
+      tryAddEvent(notificationEvent);
 
       processedData.lastEventTime = nextLastEventTime;
 
@@ -753,12 +766,17 @@ Page({
 
       // 自动处理不需要交互的行动 (如清空空地)
       // 这确保了 ACTION_REMOVE_CLEARING 在 Squeaker 之后执行，且不卡住流程
+      let cleared = false;
       while (nextPending.length > 0 && nextPending[0].type === 'ACTION_REMOVE_CLEARING') {
         newClearing.length = 0;
+        cleared = true;
         nextPending.shift();
       }
       // 如果触发了清空，需要更新 updates 中的 clearing 数据
       updates[`gameState.clearing`] = DbHelper.cleanClearing(newClearing);
+      if (cleared) {
+        updates[`gameState.notificationEvent`] = db.command.set(createClearingNotification());
+      }
 
       if (nextPending.length > 0) {
         // 还有后续行动，更新状态继续
@@ -883,11 +901,17 @@ Page({
         timestamp: Date.now() + 100
       };
     }
-    if (newClearing.length >= 10) newClearing.length = 0;
+    // 检查空地是否已满
+    let notificationEvent = null;
+    if (newClearing.length >= 10) {
+      newClearing.length = 0;
+      notificationEvent = createClearingNotification();
+    }
 
     // 雌性野猪效果：清空空地
     if (isRemoveClearingEffect) {
       newClearing.length = 0;
+      notificationEvent = createClearingNotification();
     }
 
     let rewardDrawEvent = null;
@@ -934,7 +958,8 @@ Page({
       },
       [`gameState.deckRevealEvent`]: deckRevealEvent,
       [`gameState.rewardDrawEvent`]: rewardDrawEvent,
-      [`gameState.extraTurnEvent`]: extraTurnEvent
+      [`gameState.extraTurnEvent`]: extraTurnEvent,
+      [`gameState.notificationEvent`]: db.command.set(notificationEvent)
     };
 
     // 清除本地选择状态，提示会在数据更新后自动计算
@@ -1054,6 +1079,7 @@ Page({
             const updates = {};
             if (clearingChanged) {
               updates['gameState.clearing'] = DbHelper.cleanClearing(newClearing);
+              updates[`gameState.notificationEvent`] = db.command.set(createClearingNotification());
             }
 
             if (pending.length > 0) {
@@ -1469,7 +1495,12 @@ Page({
         timestamp: Date.now() + 100
       };
     }
-    if (newClearing.length >= 10) newClearing.length = 0;
+    // 自动清空满的空地
+    let notificationEvent = null;
+    if (newClearing.length >= 10) {
+      newClearing.length = 0;
+      notificationEvent = createClearingNotification();
+    }
 
     // 6. 构造事件
     let rewardDrawEvent = null;
@@ -1514,7 +1545,8 @@ Page({
       },
       [`gameState.deckRevealEvent`]: deckRevealEvent,
       [`gameState.rewardDrawEvent`]: rewardDrawEvent,
-      [`gameState.extraTurnEvent`]: extraTurnEvent
+      [`gameState.extraTurnEvent`]: extraTurnEvent,
+      [`gameState.notificationEvent`]: db.command.set(notificationEvent)
     };
 
     this.submitGameUpdate(updates, "种植成功", "将一张手牌作为树苗打出");
