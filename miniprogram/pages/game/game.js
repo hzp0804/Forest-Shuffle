@@ -1,5 +1,6 @@
 const Utils = require("../../utils/utils");
 const { calculateReward, calculateTriggerEffects } = require("../../utils/reward.js");
+const { validatePlay } = require("../../utils/validate.js");
 const RoundUtils = require("../../utils/round.js");
 const DbHelper = require("../../utils/dbHelper.js");
 const SpecialActionUtils = require("../../utils/specialAction.js");
@@ -149,7 +150,18 @@ Page({
       const currentTurnCount = gameState.turnCount || 0;
       const lastTurnCount = typeof this.data.lastTurnCount === "number" ? this.data.lastTurnCount : -1;
 
-      // 1. 回合切换逻辑 (标记待提示)
+      // 检测回合是否切换（activePlayer 变动或 turnCount 变动）
+      const turnChanged = currentActive !== this.data.lastActivePlayer || currentTurnCount !== lastTurnCount;
+
+      // 1. 回合切换逻辑 (标记待提示 + 重置选择状态)
+      if (turnChanged) {
+        // 回合切换时，重置选择状态
+        processedData.primarySelection = null;
+        processedData.selectedSlot = null;
+        processedData.lastActivePlayer = currentActive;
+        processedData.lastTurnCount = currentTurnCount;
+      }
+
       if (currentActive === this.data.openId && this.data.lastNotifiedTurnCount !== currentTurnCount) {
         processedData.pendingTurnToast = true;
         processedData.lastNotifiedTurnCount = currentTurnCount;
@@ -318,15 +330,39 @@ Page({
 
     // 3. 验证槽位可用性
     if (primarySelection) {
-      // 已选牌：使用 instructionHelper 验证规则
+      // 检查主牌是否需要插槽（树卡不需要插槽）
+      const { playerStates, openId } = this.data;
+      const hand = playerStates[openId]?.hand || [];
+      const primaryCardRaw = hand.find(c => c.uid === primarySelection);
+
+      if (primaryCardRaw) {
+        const cardType = (primaryCardRaw.type || '').toLowerCase();
+
+        // 树卡不需要插槽
+        if (cardType === 'tree') {
+          return;
+        }
+
+        // 检查卡片类型与插槽方向是否匹配
+        if (cardType === 'h_card') {
+          // 横向卡只能插入左右插槽
+          if (side !== 'left' && side !== 'right') {
+            return; // 不允许点击上下插槽
+          }
+        } else if (cardType === 'v_card') {
+          // 纵向卡只能插入上下插槽
+          if (side !== 'top' && side !== 'bottom') {
+            return; // 不允许点击左右插槽
+          }
+        }
+      }
+
+      // 已选牌且需要插槽：使用 instructionHelper 验证规则
       const nextData = { ...this.data, selectedSlot: nextSlot };
       const res = Utils.computeInstruction(nextData);
 
-      if (res.instructionState === 'error') {
-        wx.showToast({ title: res.instructionText || "无法放置在此处", icon: "none" });
-        return;
-      }
-
+      // 允许选择插槽，即使费用未满足（error 状态）
+      // 只在出牌时才真正校验
       this.setData({
         selectedSlot: nextSlot,
         instructionState: res.instructionState,
@@ -335,53 +371,8 @@ Page({
         instructionLines: res.instructionLines || null
       });
     } else {
-      // 未选牌：使用槽位状态严格验证 (占用/满载)
-      const myState = this.data.playerStates[this.data.openId];
-      if (myState && myState.forest) {
-        const tree = myState.forest.find(t => t._id === treeid);
-        if (tree && tree.slots && tree.slots[side]) {
-          const slotCard = tree.slots[side];
-          if (slotCard) {
-            const ec = slotCard.effectConfig;
-            const hasSlotConfig = !!slotCard.slotConfig;
-            const isUnlimited = ec && ec.type === 'CAPACITY_UNLIMITED';
-            const isIncrease = ec && ec.type === 'CAPACITY_INCREASE';
-
-            // 既无 slotConfig (来自刺荨麻/已转换)，也无 effectConfig (来自自身)，则视为普通占用
-            if (!hasSlotConfig && !isUnlimited && !isIncrease) {
-              return;
-            }
-
-            // 检查容量
-            const currentCount = slotCard.stackedCards ? slotCard.stackedCards.length : 1;
-
-            if (hasSlotConfig) {
-              const cap = slotCard.slotConfig.capacity || 0;
-              if (currentCount >= cap) {
-                wx.showToast({ title: "该插槽堆叠已满", icon: "none" });
-                return;
-              }
-            } else if (isIncrease) {
-              const val = ec.value || 1;
-              if (currentCount >= val) {
-                wx.showToast({ title: "该插槽堆叠已满", icon: "none" });
-                return;
-              }
-            }
-          }
-        }
-      }
-
-      // 验证通过，允许选中
-      const nextData = { ...this.data, selectedSlot: nextSlot };
-      const res = Utils.computeInstruction(nextData);
-      this.setData({
-        selectedSlot: nextSlot,
-        instructionState: res.instructionState,
-        instructionText: res.instructionText,
-        instructionSegments: res.instructionSegments || null,
-        instructionLines: res.instructionLines || null
-      });
+      // 未选主牌：不允许选择插槽，直接返回
+      return;
     }
   },
 
@@ -468,14 +459,6 @@ Page({
       wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
       return;
     }
-    if (!primarySelection || instructionState === 'error') {
-      wx.showToast({ title: !primarySelection ? "请先选择主牌" : "费用未满足", icon: "none" });
-      return;
-    }
-    if (this.data.turnAction?.drawnCount > 0) {
-      wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
-      return;
-    }
 
     wx.showLoading({ title: "出牌中..." });
     const myState = playerStates[openId];
@@ -507,6 +490,29 @@ Page({
         isSapling: true
       };
     }
+
+    // 统一校验：调用 validate.validatePlay() 进行完整校验
+    const myHand = hand;
+    const selectedCount = myHand.filter(c => c.selected).length;
+    const validation = validatePlay({
+      openId,
+      playerStates,
+      gameState,
+      turnAction,
+      primarySelection,
+      selectedSlot,
+      primaryCard,
+      myHand,
+      selectedCount
+    });
+
+    // 如果校验失败，阻止出牌并显示错误信息
+    if (!validation.valid) {
+      wx.hideLoading();
+      wx.showToast({ title: validation.error || "无法出牌", icon: "none" });
+      return;
+    }
+
 
     if (!isTree && !selectedSlot) {
       wx.hideLoading();
@@ -556,6 +562,16 @@ Page({
           } else {
             // 如果原本没堆叠数组，把由于是第一张，把它自己算进去
             oldStack = [existingCard];
+          }
+
+          // 检查堆叠数量限制（CAPACITY_INCREASE）
+          if (isCapacityIncrease && ec.value) {
+            const maxCapacity = ec.value;
+            if (oldStack.length >= maxCapacity) {
+              wx.hideLoading();
+              wx.showToast({ title: `该插槽最多容纳${maxCapacity}张卡牌`, icon: "none" });
+              return;
+            }
           }
 
           const newStackedCards = [...oldStack, primaryCard];
@@ -717,11 +733,24 @@ Page({
         updates[`gameState.actionMode`] = nextMode;
         updates[`gameState.actionText`] = null; // 重置文案，让 helper 重新生成
 
+        // 清除本地选择状态
+        this.setData({
+          primarySelection: null,
+          selectedSlot: null
+        });
+
         wx.hideLoading();
         this.submitGameUpdate(updates, "出牌成功", `(特殊模式) 打出了 ${primaryCard.name}`);
       } else {
         // 没有后续行动了，执行最终结算
         // 注意：finalizeAction 会处理 actionMode=null, pending=[], 以及 accumulatedRewards 的结算
+
+        // 清除本地选择状态
+        this.setData({
+          primarySelection: null,
+          selectedSlot: null
+        });
+
         wx.hideLoading();
         await this.finalizeAction(updates, `(特殊模式) 打出了 ${primaryCard.name}`);
       }
@@ -760,6 +789,12 @@ Page({
           timestamp: Date.now()
         }
       };
+
+      // 清除本地选择状态，新行动的提示会自动显示
+      this.setData({
+        primarySelection: null,
+        selectedSlot: null
+      });
 
       wx.hideLoading();
       this.submitGameUpdate(updates, "出牌成功", `触发效果: ${actionText}`);
@@ -852,6 +887,12 @@ Page({
       [`gameState.rewardDrawEvent`]: rewardDrawEvent,
       [`gameState.extraTurnEvent`]: extraTurnEvent
     };
+
+    // 清除本地选择状态，提示会在数据更新后自动计算
+    this.setData({
+      primarySelection: null,
+      selectedSlot: null
+    });
 
     this.submitGameUpdate(updates, "出牌成功", `打出了 ${primaryCard.name}`);
   },

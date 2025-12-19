@@ -20,6 +20,58 @@
   /* Red */
 }
 
+/* Instruction Tip State Colors (手牌区域提示文字) */
+.instruction-tip {
+  font-size: 24rpx;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.instruction-tip.normal {
+  color: #bdc3c7;
+  /* Gray */
+}
+
+.instruction-tip.success {
+  color: #2ecc71;
+  /* Green */
+}
+
+.instruction-tip.warning {
+  color: #f1c40f;
+  /* Yellow */
+}
+
+.instruction-tip.error {
+  color: #e74c3c;
+  /* Red */
+}
+
+/* 通用文本颜色类（用于 instructionLines 内部） */
+.text-success {
+  color: #2ecc71;
+  /* Green */
+}
+
+.text-error {
+  color: #e74c3c;
+  /* Red */
+}
+
+.text-warn {
+  color: #f1c40f;
+  /* Yellow */
+}
+
+.text-gray {
+  color: #95a5a6;
+  /* Gray */
+}
+
+.text-bold {
+  font-weight: bold;
+}
+
 /* 游戏按钮样式 */
 .action-bar-inline {
   display: flex !important;

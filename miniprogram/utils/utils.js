@@ -215,9 +215,13 @@ const handleHandTap = (uid, currentData) => {
     newPrimary
   } = toggleHandSelection(myHand, uid, primarySelection);
 
+  // 检测主牌是否变动
+  const primaryChanged = newPrimary !== primarySelection;
+
   const nextData = {
     ...currentData,
     primarySelection: newPrimary,
+    selectedSlot: primaryChanged ? null : currentData.selectedSlot, // 主牌变动时清除插槽
     playerStates: {
       ...playerStates,
       [openId]: {
@@ -237,6 +241,7 @@ const handleHandTap = (uid, currentData) => {
   return {
     [`playerStates.${openId}.hand`]: newHand,
     primarySelection: newPrimary,
+    selectedSlot: primaryChanged ? null : undefined, // 主牌变动时清除插槽
     instructionState,
     instructionText,
     instructionSegments: instructionSegments || null,

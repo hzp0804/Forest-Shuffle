@@ -38,13 +38,7 @@
                </view>
             </view>
             <view class="action-bar-inline" wx:if="{{isMyTurn}}" style="display:flex; gap:12rpx;">
-               <!-- 动态切换 拿取 与 确认 -->
-               <block wx:if="{{gameState.actionMode}}">
-                  <button size="mini" class="game-btn valid-play-btn" bindtap="onConfirmSpecialAction" style="margin:0; padding:0 12rpx; font-weight:normal;">
-                     ✅确认
-                  </button>
-               </block>
-               <block wx:else>
+               <block wx:if="{{!gameState.actionMode}}">
                   <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" style="margin:0; padding:0 12rpx; font-weight:normal;">
                      ✋拿取
                   </button>
@@ -267,13 +261,13 @@
             </view>
             <view wx:if="{{gameState.activePlayer === openId}}" class="instruction-tip {{instructionState}}" style="display:flex; flex-direction:column; align-items:flex-start; margin-left: 16rpx; padding: 4rpx 12rpx; margin-top: -36rpx;">
                <block wx:if="{{instructionLines}}">
-                  <view class="{{instructionLines.cost.class}}">
+                  <view wx:if="{{instructionLines.cost.text}}" class="{{instructionLines.cost.class}}">
                      {{instructionLines.cost.text}}
                   </view>
-                  <view class="{{instructionLines.bonus.class}}" style="min-height: 32rpx;">
+                  <view wx:if="{{instructionLines.bonus.text}}" class="{{instructionLines.bonus.class}}" style="min-height: 32rpx;">
                      {{instructionLines.bonus.text}}
                   </view>
-                  <view class="{{instructionLines.effect.class}}" style="min-height: 32rpx;">
+                  <view wx:if="{{instructionLines.effect.text}}" class="{{instructionLines.effect.class}}" style="min-height: 32rpx;">
                      {{instructionLines.effect.text}}
                   </view>
                </block>
