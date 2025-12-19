@@ -53,12 +53,21 @@ const enrichCard = (card) => {
     speciesDetails: _,
     ...cardWithoutSpeciesDetails
   } = card;
-  return {
+
+  const enriched = {
     ...info,
     ...cardWithoutSpeciesDetails,
     id,
     stackedCards: card.stackedCards ? card.stackedCards.map(c => enrichCard(c)) : undefined
   };
+
+  // Determine stackability for UI badge
+  const ec = enriched.effectConfig || {};
+  const isStackable = (ec.type === 'CAPACITY_INCREASE' || ec.type === 'CAPACITY_UNLIMITED') || !!enriched.slotConfig || (enriched.stackedCards && enriched.stackedCards.length > 0);
+  enriched.isStackable = isStackable;
+  enriched.stackCount = 1 + (enriched.stackedCards ? enriched.stackedCards.length : 0);
+
+  return enriched;
 };
 
 const enrichCardWithSpecies = (card, side) => {
@@ -67,13 +76,26 @@ const enrichCardWithSpecies = (card, side) => {
   if (!enriched.speciesDetails || enriched.speciesDetails.length === 0) return enriched;
 
   let index = 0;
-  if (enriched.type === CARD_TYPES.H_CARD) {
+  if (enriched.type === 'hCard' || enriched.type === 'h_card') { // Ensure loose type check
     if (side === 'right') index = 1;
-  } else if (enriched.type === CARD_TYPES.V_CARD) {
+  } else if (enriched.type === 'vCard' || enriched.type === 'v_card') {
     if (side === 'bottom') index = 1;
   }
 
-  const speciesData = enriched.speciesDetails[index];
+  let speciesData = enriched.speciesDetails[index];
+
+  // Robustness Fallback: If targeted species data is missing (e.g. data error), 
+  // try using the first species. This handles cases like "Double Hare" where 
+  // maybe only one species entry exists or the second one failed lookup.
+  if (!speciesData && enriched.speciesDetails.length > 0) {
+    speciesData = enriched.speciesDetails[0];
+  }
+
+  // DEBUG LOG
+  if (enriched.name && enriched.name.includes('野兔')) {
+    console.log('EnrichHare:', { side, index, speciesName: speciesData?.name, ecType: speciesData?.effectConfig?.type, len: enriched.speciesDetails.length });
+  }
+
   let specificTreeSymbol = enriched.tree_symbol;
   if (Array.isArray(enriched.tree_symbol) && enriched.tree_symbol.length > index) {
     specificTreeSymbol = [enriched.tree_symbol[index]];
@@ -81,19 +103,28 @@ const enrichCardWithSpecies = (card, side) => {
     specificTreeSymbol = [enriched.tree_symbol];
   }
 
+  let finalCard;
   if (speciesData) {
-    return {
+    finalCard = {
       ...enriched,
       ...speciesData,
       tree_symbol: specificTreeSymbol,
       id: enriched.id,
       uid: enriched.uid
     };
+  } else {
+    finalCard = {
+      ...enriched,
+      tree_symbol: specificTreeSymbol
+    };
   }
-  return {
-    ...enriched,
-    tree_symbol: specificTreeSymbol
-  };
+
+  // Post-process: Add Stackable Props for UI
+  const ec = finalCard.effectConfig || {};
+  finalCard.isStackable = (ec.type === 'CAPACITY_INCREASE' || ec.type === 'CAPACITY_UNLIMITED') || !!finalCard.slotConfig || (finalCard.stackedCards && finalCard.stackedCards.length > 0);
+  finalCard.stackCount = 1 + (finalCard.stackedCards ? finalCard.stackedCards.length : 0);
+
+  return finalCard;
 };
 
 const enrichHand = (hand, myOpenId, currentOpenId, selectedUids = new Set()) => {

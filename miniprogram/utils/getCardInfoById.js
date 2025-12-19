@@ -86,8 +86,7 @@ const getCardInfoById = (id) => {
   if (!cardBasic) return {};
 
   const speciesDetails = (cardBasic.species || [])
-    .map(name => findSpeciesInfo(name))
-    .filter(Boolean);
+    .map(name => findSpeciesInfo(name));
 
   const visualInfo = getCardVisual({ ...cardBasic, id });
 

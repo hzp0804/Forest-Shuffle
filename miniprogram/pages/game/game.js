@@ -324,7 +324,13 @@ Page({
 
   onSlotTap(e) {
     const { treeid, side } = e.currentTarget.dataset;
-    const { selectedSlot, primarySelection } = this.data;
+    const { selectedSlot, primarySelection, gameState } = this.data;
+
+    // 浣熊行动模式下，不需要选择插槽
+    if (gameState?.actionMode === 'ACTION_RACCOON') {
+      wx.showToast({ title: "请选择手牌放入空地", icon: "none" });
+      return;
+    }
 
     // 1. 处理取消选中 (点击已选中的槽位)
     if (selectedSlot?.treeId === treeid && selectedSlot?.side === side) {
@@ -344,46 +350,94 @@ Page({
     const nextSlot = { treeId: treeid, side, isValid: true };
 
     // 3. 验证槽位可用性
+    // 3. 验证槽位可用性
     if (primarySelection) {
-      // 预先检查：目标插槽是否已满 (针对大蟾蜍等 CAPACITY_INCREASE)
-      const myState = this.data.playerStates[this.data.openId];
-      if (myState && myState.forest) {
-        const tree = myState.forest.find(t => t._id === treeid);
-        const existingCard = tree?.slots?.[side];
+      const { playerStates, openId } = this.data;
+      const myState = playerStates[openId];
+      if (!myState) return;
 
-        if (existingCard && existingCard.effectConfig) {
-          const ec = existingCard.effectConfig;
-          // 检查 CAPACITY_INCREASE 的容量限制
-          if (ec.type === 'CAPACITY_INCREASE' && ec.value) {
-            const currentCount = existingCard.stackedCards ? existingCard.stackedCards.length : 1;
-            if (currentCount >= ec.value) {
-              return; // 已满，不允许点击
+      const hand = myState.hand || [];
+      const primaryCardRaw = hand.find(c => c.uid === primarySelection);
+      if (!primaryCardRaw) return;
+
+      const cardType = (primaryCardRaw.type || '').toLowerCase();
+
+      // A. 单物种卡不需要插槽
+      if (cardType === 'tree') return;
+
+      // B. 卡片类型与方向校验
+      const isH = cardType.includes('hcard') || cardType.includes('h_card');
+      const isV = cardType.includes('vcard') || cardType.includes('v_card');
+      if (isH && (side !== 'left' && side !== 'right')) return;
+      if (isV && (side !== 'top' && side !== 'bottom')) return;
+
+      // C. 堆叠校验 (Capacity & Compatibility)
+      // 使用 this.data.myForest (已富化数据) 以获取完整的 effectConfig 和 name
+      const myForest = this.data.myForest;
+      if (myForest) {
+        const tree = myForest.find(t => String(t._id) === String(treeid));
+        if (!tree) return;
+
+        const existingCard = tree.slots?.[side];
+
+        if (existingCard) {
+          let allowStack = false;
+          let capacity = 1;
+
+          let checkName = primaryCardRaw.name;
+
+          // 根据插槽方向获取手牌对应测的物种名称
+          if (primaryCardRaw.speciesDetails && primaryCardRaw.speciesDetails.length > 0) {
+            let idx = 0;
+            if (isH && side === 'right') idx = 1;
+            if (isV && side === 'bottom') idx = 1;
+
+            // Try specific index, fallback to 0 if missing (e.g. Double Hare defined as single species)
+            let targetSpecies = primaryCardRaw.speciesDetails[idx];
+            if (!targetSpecies) {
+              targetSpecies = primaryCardRaw.speciesDetails[0];
+            }
+
+            if (targetSpecies && targetSpecies.name) {
+              checkName = targetSpecies.name;
             }
           }
-        }
-      }
-      // 检查主牌是否需要插槽（树卡不需要插槽）
-      const { playerStates, openId } = this.data;
-      const hand = playerStates[openId]?.hand || [];
-      const primaryCardRaw = hand.find(c => c.uid === primarySelection);
 
-      if (primaryCardRaw) {
-        const cardType = (primaryCardRaw.type || '').toLowerCase();
+          // 处理 "视为" 效果 (e.g. 雪兔视为欧洲野兔)
+          if (primaryCardRaw.effectConfig?.type === 'TREATED_AS' && primaryCardRaw.effectConfig.target) {
+            checkName = primaryCardRaw.effectConfig.target;
+          }
 
-        // 树卡不需要插槽
-        if (cardType === 'tree') {
-          return;
-        }
+          // (1) 同名堆叠
+          if (existingCard.name === checkName) {
+            if (existingCard.effectConfig?.type === 'CAPACITY_INCREASE') {
+              allowStack = true;
+              capacity = existingCard.effectConfig.value;
+            } else if (existingCard.effectConfig?.type === 'CAPACITY_UNLIMITED') {
+              allowStack = true;
+              capacity = 999;
+            }
+          }
 
-        // 检查卡片类型与插槽方向是否匹配
-        if (cardType === 'hcard' || cardType === 'h_card') {
-          // 横向卡只能插入左右插槽
-          if (side !== 'left' && side !== 'right') {
+          // (2) 宿主堆叠 (刺荨麻等)
+          if (existingCard.slotConfig) {
+            const accepts = existingCard.slotConfig.accepts;
+            if (accepts?.tags?.length > 0 && primaryCardRaw.tags) {
+              if (primaryCardRaw.tags.some(t => accepts.tags.includes(t))) {
+                allowStack = true;
+                capacity = existingCard.slotConfig.capacity || 999;
+              }
+            }
+          }
+
+          if (!allowStack) {
+            wx.showToast({ title: "该插槽已有卡片", icon: "none" });
             return;
           }
-        } else if (cardType === 'vcard' || cardType === 'v_card') {
-          // 纵向卡只能插入上下插槽
-          if (side !== 'top' && side !== 'bottom') {
+
+          const currentCount = 1 + (existingCard.stackedCards?.length || 0);
+          if (currentCount >= capacity) {
+            wx.showToast({ title: "插槽已满", icon: "none" });
             return;
           }
         }
