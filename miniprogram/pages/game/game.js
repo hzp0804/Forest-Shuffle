@@ -422,9 +422,6 @@ Page({
             }
           }
 
-          console.log('checkName:', checkName);
-          console.log('checkTags:', checkTags);
-
           // 处理 "视为" 效果 (e.g. 雪兔视为欧洲野兔)
           if (primaryCardRaw.effectConfig?.type === 'TREATED_AS' && primaryCardRaw.effectConfig.target) {
             checkName = primaryCardRaw.effectConfig.target;
@@ -675,13 +672,6 @@ Page({
 
       if (existingCard) {
         // 槽位已有卡片
-        console.log('=== 堆叠调试 ===');
-        console.log('existingCard:', existingCard);
-        console.log('existingCard.max:', existingCard.max);
-        console.log('existingCard.list:', existingCard.list);
-        console.log('isStackMode:', isStackMode);
-        console.log('primaryCard.tags:', primaryCard.tags);
-
         const ec = existingCard.effectConfig;
         // 修复：effectConfig.target 存储的是物种名称（如"大蟾蜍"），需要与 name 比较
         const targetName = primaryCard.name;

@@ -122,7 +122,7 @@ const SPECIES_DATA = {
       type: SCORING_TYPES.SCALE_BY_COUNT,
       target: SPECIES_NAMES.FIRE_SALAMANDER,
       scale: {
-        1: 1, 2: 5, 3: 10, 4: 15, 5: 21, 6: 28, 7: 36, 8: 45, 9: 55, 10: 66
+        1: 5, 2: 15, 3: 25
       }
     },
   },
@@ -972,7 +972,7 @@ const SPECIES_DATA = {
       type: SCORING_TYPES.SCALE_BY_COUNT,
       target: SPECIES_NAMES.HORSE_CHESTNUT,
       scale: {
-        1: 1, 2: 4, 3: 9, 4: 16, 5: 25, 6: 36, 7: 49, 8: 49, 9: 49, 10: 49, 11: 49
+        1: 1, 2: 4, 3: 9, 4: 16, 5: 25, 6: 36, 7: 49
       }
     },
   },
@@ -1575,7 +1575,7 @@ const SPECIES_DATA = {
       type: SCORING_TYPES.SCALE_BY_COUNT,
       target: SPECIES_NAMES.FIREFLIES,
       scale: {
-        1: 1, 2: 3, 3: 6, 4: 10
+        1: 0, 2: 10, 3: 15, 4: 20
       }
     },
   },

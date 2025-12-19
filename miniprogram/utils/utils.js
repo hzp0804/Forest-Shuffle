@@ -37,15 +37,12 @@ const enrichCard = (card) => {
   const id = card.id || card.cardId;
   const info = getCardInfoById(id);
 
+  // 树苗的特殊处理已经在 getCardInfoById 中完成，这里直接使用
   if (id === 'sapling') {
-    const saplingVisual = getSaplingVisual ? getSaplingVisual() : {};
-    const saplingStatic = SAPLING_DATA;
     return {
       ...card,
-      id,
-      ...saplingStatic,
-      ...saplingVisual,
-      tags: card.tags || saplingStatic.tags,
+      ...info, // info 已经包含了所有树苗的信息（包括视觉）
+      id
     };
   }
 

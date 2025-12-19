@@ -35,7 +35,7 @@ page {
 .card-7,
 .card-8,
 .card-9 {
-  background-position: 0 0;
+  background-position: 0 0 !important;
 }
 
 .card-10,
@@ -45,7 +45,7 @@ page {
 .card-14,
 .card-15,
 .card-16 {
-  background-position: 25% 0;
+  background-position: 25% 0 !important;
 }
 
 .card-17,
@@ -54,7 +54,7 @@ page {
 .card-20,
 .card-21,
 .card-22 {
-  background-position: 50% 0;
+  background-position: 50% 0 !important;
 }
 
 .card-23,
@@ -67,7 +67,7 @@ page {
 .card-30,
 .card-31,
 .card-32 {
-  background-position: 75% 0;
+  background-position: 75% 0 !important;
 }
 
 .card-33,
@@ -80,7 +80,7 @@ page {
 .card-40,
 .card-41,
 .card-42 {
-  background-position: 100% 0;
+  background-position: 100% 0 !important;
 }
 
 .card-43,
@@ -89,7 +89,7 @@ page {
 .card-46,
 .card-47,
 .card-48 {
-  background-position: 0 25%;
+  background-position: 0 25% !important;
 }
 
 .card-49,
@@ -99,7 +99,7 @@ page {
 .card-53,
 .card-54,
 .card-55 {
-  background-position: 25% 25%;
+  background-position: 25% 25% !important;
 }
 
 .card-56,
@@ -113,385 +113,384 @@ page {
 .card-64,
 .card-65,
 .card-66 {
-  background-position: 50% 25%;
+  background-position: 50% 25% !important;
 }
 
 .card-67,
 .card-68,
 .card-69 {
-  background-position: 75% 25%;
+  background-position: 75% 25% !important;
 }
 
 /* 栖息地卡片 - H_CARD */
 .card-70 {
-  background-position: 0 0;
+  background-position: 0 0 !important;
 }
 
 .card-71 {
-  background-position: 16.6666666667% 0;
+  background-position: 16.6666666667% 0 !important;
 }
 
 .card-72 {
-  background-position: 33.3333333333% 0;
+  background-position: 33.3333333333% 0 !important;
 }
 
 .card-73 {
-  background-position: 50% 0;
+  background-position: 50% 0 !important;
 }
 
 .card-74 {
-  background-position: 66.6666666667% 0;
+  background-position: 66.6666666667% 0 !important;
 }
 
 .card-75 {
-  background-position: 83.3333333333% 0;
+  background-position: 83.3333333333% 0 !important;
 }
 
 .card-76 {
-  background-position: 100% 0;
+  background-position: 100% 0 !important;
 }
 
 .card-77 {
-  background-position: 0 16.6666666667%;
+  background-position: 0 16.6666666667% !important;
 }
 
 .card-78 {
-  background-position: 16.6666666667% 16.6666666667%;
+  background-position: 16.6666666667% 16.6666666667% !important;
 }
 
 .card-79 {
-  background-position: 33.3333333333% 16.6666666667%;
+  background-position: 33.3333333333% 16.6666666667% !important;
 }
 
 .card-80 {
-  background-position: 50% 16.6666666667%;
+  background-position: 50% 16.6666666667% !important;
 }
 
 .card-81 {
-  background-position: 66.6666666667% 16.6666666667%;
+  background-position: 66.6666666667% 16.6666666667% !important;
 }
 
 .card-82 {
-  background-position: 83.3333333333% 16.6666666667%;
+  background-position: 83.3333333333% 16.6666666667% !important;
 }
 
 .card-83 {
-  background-position: 100% 16.6666666667%;
+  background-position: 100% 16.6666666667% !important;
 }
 
 .card-84 {
-  background-position: 0 33.3333333333%;
+  background-position: 0 33.3333333333% !important;
 }
 
 .card-85 {
-  background-position: 16.6666666667% 33.3333333333%;
+  background-position: 16.6666666667% 33.3333333333% !important;
 }
 
 .card-86 {
-  background-position: 33.3333333333% 33.3333333333%;
+  background-position: 33.3333333333% 33.3333333333% !important;
 }
 
 .card-87 {
-  background-position: 50% 33.3333333333%;
+  background-position: 50% 33.3333333333% !important;
 }
 
 .card-88 {
-  background-position: 66.6666666667% 33.3333333333%;
+  background-position: 66.6666666667% 33.3333333333% !important;
 }
 
 .card-89 {
-  background-position: 83.3333333333% 33.3333333333%;
+  background-position: 83.3333333333% 33.3333333333% !important;
 }
 
 .card-90 {
-  background-position: 100% 33.3333333333%;
+  background-position: 100% 33.3333333333% !important;
 }
 
 .card-91 {
-  background-position: 0 50%;
+  background-position: 0 50% !important;
 }
 
 .card-92 {
-  background-position: 16.6666666667% 50%;
+  background-position: 16.6666666667% 50% !important;
 }
 
 .card-93 {
-  background-position: 33.3333333333% 50%;
+  background-position: 33.3333333333% 50% !important;
 }
 
 .card-94 {
-  background-position: 50% 50%;
+  background-position: 50% 50% !important;
 }
 
 .card-95 {
-  background-position: 66.6666666667% 50%;
+  background-position: 66.6666666667% 50% !important;
 }
 
 .card-96 {
-  background-position: 83.3333333333% 50%;
+  background-position: 83.3333333333% 50% !important;
 }
 
 .card-97 {
-  background-position: 100% 50%;
+  background-position: 100% 50% !important;
 }
 
 .card-98 {
-  background-position: 0 66.6666666667%;
+  background-position: 0 66.6666666667% !important;
 }
 
 .card-99 {
-  background-position: 16.6666666667% 66.6666666667%;
+  background-position: 16.6666666667% 66.6666666667% !important;
 }
 
 .card-100 {
-  background-position: 33.3333333333% 66.6666666667%;
+  background-position: 33.3333333333% 66.6666666667% !important;
 }
 
 .card-101 {
-  background-position: 50% 66.6666666667%;
+  background-position: 50% 66.6666666667% !important;
 }
 
 .card-102 {
-  background-position: 66.6666666667% 66.6666666667%;
+  background-position: 66.6666666667% 66.6666666667% !important;
 }
 
 .card-103 {
-  background-position: 83.3333333333% 66.6666666667%;
+  background-position: 83.3333333333% 66.6666666667% !important;
 }
 
 .card-104 {
-  background-position: 100% 66.6666666667%;
+  background-position: 100% 66.6666666667% !important;
 }
 
 .card-105 {
-  background-position: 0 83.3333333333%;
+  background-position: 0 83.3333333333% !important;
 }
 
 .card-106 {
-  background-position: 16.6666666667% 83.3333333333%;
+  background-position: 16.6666666667% 83.3333333333% !important;
 }
 
 .card-107 {
-  background-position: 33.3333333333% 83.3333333333%;
+  background-position: 33.3333333333% 83.3333333333% !important;
 }
 
 .card-108 {
-  background-position: 50% 83.3333333333%;
+  background-position: 50% 83.3333333333% !important;
 }
 
 .card-109 {
-  background-position: 66.6666666667% 83.3333333333%;
+  background-position: 66.6666666667% 83.3333333333% !important;
 }
 
 .card-110 {
-  background-position: 83.3333333333% 83.3333333333%;
+  background-position: 83.3333333333% 83.3333333333% !important;
 }
 
 .card-111 {
-  background-position: 100% 83.3333333333%;
+  background-position: 100% 83.3333333333% !important;
 }
 
 .card-112 {
-  background-position: 0 100%;
+  background-position: 0 100% !important;
 }
 
 .card-113 {
-  background-position: 16.6666666667% 100%;
+  background-position: 16.6666666667% 100% !important;
 }
 
 /* 植物卡片 - V_CARD */
 .card-114 {
-  background-position: 83.3333333333% 100%;
+  background-position: 83.3333333333% 100% !important;
 }
 
 .card-115 {
-  background-position: 66.6666666667% 100%;
+  background-position: 66.6666666667% 100% !important;
 }
 
 .card-116 {
-  background-position: 50% 100%;
+  background-position: 50% 100% !important;
 }
 
 .card-117 {
-  background-position: 33.3333333333% 100%;
+  background-position: 33.3333333333% 100% !important;
 }
 
 .card-118 {
-  background-position: 16.6666666667% 100%;
+  background-position: 16.6666666667% 100% !important;
 }
 
 .card-119 {
-  background-position: 0 100%;
+  background-position: 0 100% !important;
 }
 
 .card-120 {
-  background-position: 100% 83.3333333333%;
+  background-position: 100% 83.3333333333% !important;
 }
 
 .card-121 {
-  background-position: 83.3333333333% 83.3333333333%;
+  background-position: 83.3333333333% 83.3333333333% !important;
 }
 
 .card-122 {
-  background-position: 66.6666666667% 83.3333333333%;
+  background-position: 66.6666666667% 83.3333333333% !important;
 }
 
 .card-123 {
-  background-position: 50% 83.3333333333%;
+  background-position: 50% 83.3333333333% !important;
 }
 
 .card-124 {
-  background-position: 33.3333333333% 83.3333333333%;
+  background-position: 33.3333333333% 83.3333333333% !important;
 }
 
 .card-125 {
-  background-position: 16.6666666667% 83.3333333333%;
+  background-position: 16.6666666667% 83.3333333333% !important;
 }
 
 .card-126 {
-  background-position: 0 83.3333333333%;
+  background-position: 0 83.3333333333% !important;
 }
 
 .card-127 {
-  background-position: 100% 66.6666666667%;
+  background-position: 100% 66.6666666667% !important;
 }
 
 .card-128 {
-  background-position: 83.3333333333% 66.6666666667%;
+  background-position: 83.3333333333% 66.6666666667% !important;
 }
 
 .card-129 {
-  background-position: 66.6666666667% 66.6666666667%;
+  background-position: 66.6666666667% 66.6666666667% !important;
 }
 
 .card-130 {
-  background-position: 50% 66.6666666667%;
+  background-position: 50% 66.6666666667% !important;
 }
 
 .card-131 {
-  background-position: 33.3333333333% 66.6666666667%;
+  background-position: 33.3333333333% 66.6666666667% !important;
 }
 
 .card-132 {
-  background-position: 16.6666666667% 66.6666666667%;
+  background-position: 16.6666666667% 66.6666666667% !important;
 }
 
 .card-133 {
-  background-position: 0 66.6666666667%;
+  background-position: 0 66.6666666667% !important;
 }
 
 .card-134 {
-  background-position: 100% 50%;
+  background-position: 100% 50% !important;
 }
 
 .card-135 {
-  background-position: 83.3333333333% 50%;
+  background-position: 83.3333333333% 50% !important;
 }
 
 .card-136 {
-  background-position: 66.6666666667% 50%;
+  background-position: 66.6666666667% 50% !important;
 }
 
 .card-137 {
-  background-position: 50% 50%;
+  background-position: 50% 50% !important;
 }
 
 .card-138 {
-  background-position: 33.3333333333% 50%;
+  background-position: 33.3333333333% 50% !important;
 }
 
 .card-139 {
-  background-position: 16.6666666667% 50%;
+  background-position: 16.6666666667% 50% !important;
 }
 
 .card-140 {
-  background-position: 0 50%;
+  background-position: 0 50% !important;
 }
 
 .card-141 {
-  background-position: 100% 33.3333333333%;
+  background-position: 100% 33.3333333333% !important;
 }
 
 .card-142 {
-  background-position: 83.3333333333% 33.3333333333%;
+  background-position: 83.3333333333% 33.3333333333% !important;
 }
 
 .card-143 {
-  background-position: 66.6666666667% 33.3333333333%;
+  background-position: 66.6666666667% 33.3333333333% !important;
 }
 
 .card-144 {
-  background-position: 50% 33.3333333333%;
+  background-position: 50% 33.3333333333% !important;
 }
 
 .card-145 {
-  background-position: 33.3333333333% 33.3333333333%;
+  background-position: 33.3333333333% 33.3333333333% !important;
 }
 
 .card-146 {
-  background-position: 16.6666666667% 33.3333333333%;
+  background-position: 16.6666666667% 33.3333333333% !important;
 }
 
 .card-147 {
-  background-position: 0 33.3333333333%;
+  background-position: 0 33.3333333333% !important;
 }
 
 .card-148 {
-  background-position: 100% 16.6666666667%;
+  background-position: 100% 16.6666666667% !important;
 }
 
 .card-149 {
-  background-position: 83.3333333333% 16.6666666667%;
+  background-position: 83.3333333333% 16.6666666667% !important;
 }
 
 .card-150 {
-  background-position: 66.6666666667% 16.6666666667%;
+  background-position: 66.6666666667% 16.6666666667% !important;
 }
 
 .card-151 {
-  background-position: 50% 16.6666666667%;
+  background-position: 50% 16.6666666667% !important;
 }
 
 .card-152 {
-  background-position: 33.3333333333% 16.6666666667%;
+  background-position: 33.3333333333% 16.6666666667% !important;
 }
 
 .card-153 {
-  background-position: 16.6666666667% 16.6666666667%;
+  background-position: 16.6666666667% 16.6666666667% !important;
 }
 
 .card-154 {
-  background-position: 0 16.6666666667%;
+  background-position: 0 16.6666666667% !important;
 }
 
 .card-155 {
-  background-position: 100% 0;
+  background-position: 100% 0 !important;
 }
 
 .card-156 {
-  background-position: 83.3333333333% 0;
+  background-position: 83.3333333333% 0 !important;
 }
 
 .card-157 {
-  background-position: 66.6666666667% 0;
+  background-position: 66.6666666667% 0 !important;
 }
 
 .card-158 {
-  background-position: 50% 0;
+  background-position: 50% 0 !important;
 }
 
 .card-159 {
-  background-position: 33.3333333333% 0;
+  background-position: 33.3333333333% 0 !important;
 }
 
 .card-160 {
-  background-position: 16.6666666667% 0;
+  background-position: 16.6666666667% 0 !important;
 }
 
 .card-161 {
-  background-position: 0 0;
+  background-position: 0 0 !important;
 }
-
 
 /* 山地卡片 - mountain.jpg */
 .card-162,
@@ -501,7 +500,7 @@ page {
 .card-166,
 .card-167,
 .card-168 {
-  background-position: 0 0;
+  background-position: 0 0 !important;
 }
 
 .card-169,
@@ -511,241 +510,240 @@ page {
 .card-173,
 .card-174,
 .card-175 {
-  background-position: 16.6666666667% 0;
+  background-position: 16.6666666667% 0 !important;
 }
 
 .card-176 {
-  background-position: 33.3333333333% 0;
+  background-position: 33.3333333333% 0 !important;
 }
 
 .card-177 {
-  background-position: 50% 0;
+  background-position: 50% 0 !important;
 }
 
 .card-178 {
-  background-position: 66.6666666667% 0;
+  background-position: 66.6666666667% 0 !important;
 }
 
 .card-179 {
-  background-position: 83.3333333333% 0;
+  background-position: 83.3333333333% 0 !important;
 }
 
 .card-180 {
-  background-position: 100% 0;
+  background-position: 100% 0 !important;
 }
 
 .card-181 {
-  background-position: 0 33.3333333333%;
+  background-position: 0 33.3333333333% !important;
 }
 
 .card-182 {
-  background-position: 16.6666666667% 33.3333333333%;
+  background-position: 16.6666666667% 33.3333333333% !important;
 }
 
 .card-183 {
-  background-position: 33.3333333333% 33.3333333333%;
+  background-position: 33.3333333333% 33.3333333333% !important;
 }
 
 .card-184 {
-  background-position: 50% 33.3333333333%;
+  background-position: 50% 33.3333333333% !important;
 }
 
 .card-185 {
-  background-position: 66.6666666667% 33.3333333333%;
+  background-position: 66.6666666667% 33.3333333333% !important;
 }
 
 .card-186 {
-  background-position: 83.3333333333% 33.3333333333%;
+  background-position: 83.3333333333% 33.3333333333% !important;
 }
 
 .card-187 {
-  background-position: 100% 33.3333333333%;
+  background-position: 100% 33.3333333333% !important;
 }
 
 .card-188 {
-  background-position: 0 66.6666666667%;
+  background-position: 0 66.6666666667% !important;
 }
 
 .card-189 {
-  background-position: 16.6666666667% 66.6666666667%;
+  background-position: 16.6666666667% 66.6666666667% !important;
 }
 
 .card-190 {
-  background-position: 33.3333333333% 66.6666666667%;
+  background-position: 33.3333333333% 66.6666666667% !important;
 }
 
 .card-191 {
-  background-position: 50% 66.6666666667%;
+  background-position: 50% 66.6666666667% !important;
 }
 
 .card-192 {
-  background-position: 66.6666666667% 66.6666666667%;
+  background-position: 66.6666666667% 66.6666666667% !important;
 }
 
 .card-193 {
-  background-position: 83.3333333333% 66.6666666667%;
+  background-position: 83.3333333333% 66.6666666667% !important;
 }
 
 .card-194 {
-  background-position: 100% 66.6666666667%;
+  background-position: 100% 66.6666666667% !important;
 }
 
 .card-195 {
-  background-position: 0 100%;
+  background-position: 0 100% !important;
 }
 
 .card-196 {
-  background-position: 16.6666666667% 100%;
+  background-position: 16.6666666667% 100% !important;
 }
 
 .card-197 {
-  background-position: 33.3333333333% 100%;
+  background-position: 33.3333333333% 100% !important;
 }
 
 /* 林地卡片 - woodlands.jpg */
 .card-198 {
-  background-position: 0 0;
+  background-position: 0 0 !important;
 }
 
 .card-199 {
-  background-position: 20% 0;
+  background-position: 20% 0 !important;
 }
 
 .card-200 {
-  background-position: 40% 0;
+  background-position: 40% 0 !important;
 }
 
 .card-201 {
-  background-position: 60% 0;
+  background-position: 60% 0 !important;
 }
 
 .card-202 {
-  background-position: 80% 0;
+  background-position: 80% 0 !important;
 }
 
 .card-203 {
-  background-position: 100% 0;
+  background-position: 100% 0 !important;
 }
 
 .card-204 {
-  background-position: 0 20%;
+  background-position: 0 20% !important;
 }
 
 .card-205 {
-  background-position: 20% 20%;
+  background-position: 20% 20% !important;
 }
 
 .card-206 {
-  background-position: 40% 20%;
+  background-position: 40% 20% !important;
 }
 
 .card-207 {
-  background-position: 60% 20%;
+  background-position: 60% 20% !important;
 }
 
 .card-208 {
-  background-position: 80% 20%;
+  background-position: 80% 20% !important;
 }
 
 .card-209 {
-  background-position: 100% 20%;
+  background-position: 100% 20% !important;
 }
 
 .card-210 {
-  background-position: 0 40%;
+  background-position: 0 40% !important;
 }
 
 .card-211 {
-  background-position: 20% 40%;
+  background-position: 20% 40% !important;
 }
 
 .card-212 {
-  background-position: 40% 40%;
+  background-position: 40% 40% !important;
 }
 
 .card-213 {
-  background-position: 60% 40%;
+  background-position: 60% 40% !important;
 }
 
 .card-214 {
-  background-position: 80% 40%;
+  background-position: 80% 40% !important;
 }
 
 .card-215 {
-  background-position: 100% 40%;
+  background-position: 100% 40% !important;
 }
 
 .card-216 {
-  background-position: 0 60%;
+  background-position: 0 60% !important;
 }
 
 .card-217 {
-  background-position: 20% 60%;
+  background-position: 20% 60% !important;
 }
 
 .card-218 {
-  background-position: 40% 60%;
+  background-position: 40% 60% !important;
 }
 
 .card-219 {
-  background-position: 60% 60%;
+  background-position: 60% 60% !important;
 }
 
 .card-220 {
-  background-position: 80% 60%;
+  background-position: 80% 60% !important;
 }
 
 .card-221 {
-  background-position: 100% 60%;
+  background-position: 100% 60% !important;
 }
 
 .card-222 {
-  background-position: 0 80%;
+  background-position: 0 80% !important;
 }
 
 .card-223 {
-  background-position: 20% 80%;
+  background-position: 20% 80% !important;
 }
 
 .card-224 {
-  background-position: 40% 80%;
+  background-position: 40% 80% !important;
 }
 
 .card-225 {
-  background-position: 60% 80%;
+  background-position: 60% 80% !important;
 }
 
 .card-226 {
-  background-position: 80% 80%;
+  background-position: 80% 80% !important;
 }
 
 .card-227 {
-  background-position: 100% 80%;
+  background-position: 100% 80% !important;
 }
 
 .card-228 {
-  background-position: 0 100%;
+  background-position: 0 100% !important;
 }
 
 .card-229 {
-  background-position: 20% 100%;
+  background-position: 20% 100% !important;
 }
 
 .card-230 {
-  background-position: 40% 100%;
+  background-position: 40% 100% !important;
 }
 
 .card-231 {
-  background-position: 60% 100%;
+  background-position: 60% 100% !important;
 }
 
 .card-232 {
-  background-position: 80% 100%;
+  background-position: 80% 100% !important;
 }
 
-
 .card-233 {
-  background-position: 100% 100%;
+  background-position: 100% 100% !important;
 }
 
 .card-sprite-native {
@@ -759,9 +757,28 @@ page {
 }
 
 /* 文本工具类 */
-.text-bold { font-weight: bold; }
-.text-gray { color: #888; }
-.text-gray-light { color: #ccc; }
-.text-success { color: #2e7d32; font-weight: bold; }
-.text-highlight { color: #e3b448; font-weight: bold; }
-.text-warn { color: #d32f2f; }
+.text-bold {
+  font-weight: bold;
+}
+
+.text-gray {
+  color: #888;
+}
+
+.text-gray-light {
+  color: #ccc;
+}
+
+.text-success {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.text-highlight {
+  color: #e3b448;
+  font-weight: bold;
+}
+
+.text-warn {
+  color: #d32f2f;
+}

@@ -164,7 +164,7 @@
                </view>
                <view class="main-card-display">
                   <view class="primary-flag">主牌</view>
-                  <view class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
+                  <view class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}; background-position: {{currentEvent.mainCard.bgPosition || '0 0'}}"></view>
                </view>
                <view class="sub-cards-label" wx:if="{{currentEvent.subCards.length > 0}}">
                   支付费用：
@@ -200,7 +200,7 @@
                               <!-- 翻转面: 只有自己能看到正面 -->
                               <view class="flip-back">
                                  <block wx:if="{{currentEvent.playerOpenId === openId}}">
-                                    <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
+                                    <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}; {{item.id === 'sapling' ? 'background-position: ' + (item.bgPosition || '0 0') : ''}}"></view>
                                  </block>
                                  <block wx:else>
                                     <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>

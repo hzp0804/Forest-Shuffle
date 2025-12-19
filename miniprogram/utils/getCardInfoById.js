@@ -82,6 +82,17 @@ const getSaplingVisual = () => {
 
 // 根据卡片id获取卡片具体数据
 const getCardInfoById = (id) => {
+  // 特殊处理：树苗
+  if (id === 'sapling') {
+    const { SAPLING_DATA } = require("../data/speciesData");
+    return {
+      ...SAPLING_DATA,
+      ...getSaplingVisual(),
+      id: 'sapling',
+      cssClass: 'card-sapling'
+    };
+  }
+
   const cardBasic = CARDS_DATA[id];
   if (!cardBasic) return {};
 
