@@ -57,15 +57,13 @@ const enrichCard = (card) => {
   const enriched = {
     ...info,
     ...cardWithoutSpeciesDetails,
-    id,
-    stackedCards: card.stackedCards ? card.stackedCards.map(c => enrichCard(c)) : undefined
+    id
   };
 
-  // Determine stackability for UI badge
-  const ec = enriched.effectConfig || {};
-  const isStackable = (ec.type === 'CAPACITY_INCREASE' || ec.type === 'CAPACITY_UNLIMITED') || !!enriched.slotConfig || (enriched.stackedCards && enriched.stackedCards.length > 0);
-  enriched.isStackable = isStackable;
-  enriched.stackCount = 1 + (enriched.stackedCards ? enriched.stackedCards.length : 0);
+  // 只有当 list 存在时才递归富化
+  if (card.list && Array.isArray(card.list)) {
+    enriched.list = card.list.map(c => enrichCard(c));
+  }
 
   return enriched;
 };
@@ -118,11 +116,6 @@ const enrichCardWithSpecies = (card, side) => {
       tree_symbol: specificTreeSymbol
     };
   }
-
-  // Post-process: Add Stackable Props for UI
-  const ec = finalCard.effectConfig || {};
-  finalCard.isStackable = (ec.type === 'CAPACITY_INCREASE' || ec.type === 'CAPACITY_UNLIMITED') || !!finalCard.slotConfig || (finalCard.stackedCards && finalCard.stackedCards.length > 0);
-  finalCard.stackCount = 1 + (finalCard.stackedCards ? finalCard.stackedCards.length : 0);
 
   return finalCard;
 };
@@ -319,8 +312,8 @@ const processGameData = (res, currentData) => {
       if (group.slots) {
         ['top', 'bottom', 'left', 'right'].forEach(side => {
           if (group.slots[side]) {
-            count++;
-            if (group.slots[side].stackedCards) count += group.slots[side].stackedCards.length;
+            // list 包含所有卡片（包括显示的），所以直接用 list.length
+            count += group.slots[side].list ? group.slots[side].list.length : 1;
           }
         });
       }

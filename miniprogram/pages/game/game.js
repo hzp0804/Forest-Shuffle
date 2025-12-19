@@ -311,10 +311,14 @@ Page({
 
     const slotCard = tree.slots[side];
     if (!slotCard) return;
-    console.log(slotCard.stackedCards);
+
+    // 显示 list 中的所有卡片
+    const cardsToShow = slotCard.list || [];
+    console.log('堆叠卡片列表:', cardsToShow);
+
     this.setData({
       stackModalVisible: true,
-      stackModalCards: slotCard.stackedCards
+      stackModalCards: cardsToShow
     });
   },
 
@@ -357,8 +361,15 @@ Page({
       if (!myState) return;
 
       const hand = myState.hand || [];
-      const primaryCardRaw = hand.find(c => c.uid === primarySelection);
+      let primaryCardRaw = hand.find(c => c.uid === primarySelection);
       if (!primaryCardRaw) return;
+
+      // 富化卡片数据以获取完整信息（包括 tags）
+      const { enrichCard } = require('../../utils/utils');
+      primaryCardRaw = enrichCard(primaryCardRaw);
+
+      console.log('富化后的 primaryCardRaw:', primaryCardRaw);
+      console.log('primaryCardRaw.tags:', primaryCardRaw.tags);
 
       const cardType = (primaryCardRaw.type || '').toLowerCase();
 
@@ -381,12 +392,19 @@ Page({
         const existingCard = tree.slots?.[side];
 
         if (existingCard) {
+          console.log('=== onSlotTap 堆叠调试 ===');
+          console.log('existingCard:', existingCard);
+          console.log('existingCard.max:', existingCard.max);
+          console.log('existingCard.slotConfig:', existingCard.slotConfig);
+          console.log('primaryCardRaw.tags:', primaryCardRaw.tags);
+
           let allowStack = false;
           let capacity = 1;
 
           let checkName = primaryCardRaw.name;
+          let checkTags = primaryCardRaw.tags; // 单面卡的 tags
 
-          // 根据插槽方向获取手牌对应测的物种名称
+          // 根据插槽方向获取手牌对应侧的物种名称和 tags
           if (primaryCardRaw.speciesDetails && primaryCardRaw.speciesDetails.length > 0) {
             let idx = 0;
             if (isH && side === 'right') idx = 1;
@@ -400,8 +418,12 @@ Page({
 
             if (targetSpecies && targetSpecies.name) {
               checkName = targetSpecies.name;
+              checkTags = targetSpecies.tags; // 双面卡的 tags
             }
           }
+
+          console.log('checkName:', checkName);
+          console.log('checkTags:', checkTags);
 
           // 处理 "视为" 效果 (e.g. 雪兔视为欧洲野兔)
           if (primaryCardRaw.effectConfig?.type === 'TREATED_AS' && primaryCardRaw.effectConfig.target) {
@@ -419,13 +441,30 @@ Page({
             }
           }
 
-          // (2) 宿主堆叠 (刺荨麻等)
-          if (existingCard.slotConfig) {
-            const accepts = existingCard.slotConfig.accepts;
-            if (accepts?.tags?.length > 0 && primaryCardRaw.tags) {
-              if (primaryCardRaw.tags.some(t => accepts.tags.includes(t))) {
-                allowStack = true;
-                capacity = existingCard.slotConfig.capacity || 999;
+          // (2) 宿主堆叠 (刺荨麻等) 或有 max 字段的堆叠槽位
+          if (existingCard.slotConfig || existingCard.max) {
+            // 如果有 slotConfig，检查 tag 匹配
+            if (existingCard.slotConfig) {
+              const accepts = existingCard.slotConfig.accepts;
+              if (accepts?.tags?.length > 0 && checkTags) {
+                if (checkTags.some(t => accepts.tags.includes(t))) {
+                  allowStack = true;
+                  capacity = existingCard.slotConfig.capacity || existingCard.max || 999;
+                }
+              }
+            } else if (existingCard.max) {
+              // 如果只有 max 字段（没有 slotConfig），也允许堆叠
+              // 这种情况下需要检查是否是同类型的卡片
+              // 通过检查树上是否有 CAPACITY_SHARE_SLOT 效果来判断
+              const myForestRaw = this.data.playerStates[this.data.openId].forest;
+              const treeRaw = myForestRaw.find(t => String(t._id) === String(treeid));
+              if (treeRaw && treeRaw.slots) {
+                const allSlots = Object.values(treeRaw.slots);
+                const enabler = allSlots.find(c => c && c.effectConfig && c.effectConfig.type === 'CAPACITY_SHARE_SLOT');
+                if (enabler && enabler.effectConfig.tag && checkTags && checkTags.includes(enabler.effectConfig.tag)) {
+                  allowStack = true;
+                  capacity = existingCard.max;
+                }
               }
             }
           }
@@ -435,7 +474,7 @@ Page({
             return;
           }
 
-          const currentCount = 1 + (existingCard.stackedCards?.length || 0);
+          const currentCount = existingCard.list ? existingCard.list.length : 1;
           if (currentCount >= capacity) {
             wx.showToast({ title: "插槽已满", icon: "none" });
             return;
@@ -485,7 +524,7 @@ Page({
 
       // Find the Toad (should be the last played card, or passed via context)
       // Relying on lastEvent might be risky if multiple events happened.
-      // Better: Find the Toad that has empty stackedCards?
+      // Better: Find the Toad that has list initialized
       // Or check lastEvent.
       let toadUid = gameState.lastEvent?.mainCard?.uid;
       // Search in forest
@@ -503,8 +542,9 @@ Page({
             // We need to modify the group deeply
             const newGroup = { ...group, slots: { ...group.slots } };
             const newToad = { ...newGroup.slots[key] };
-            newToad.stackedCards = newToad.stackedCards || [];
-            newToad.stackedCards.push(cardToTuck);
+            // 使用 list 替代 stackedCards
+            newToad.list = newToad.list || [];
+            newToad.list.push(cardToTuck);
             newGroup.slots[key] = newToad;
             forest[i] = newGroup;
             foundToad = true;
@@ -635,41 +675,39 @@ Page({
 
       if (existingCard) {
         // 槽位已有卡片
+        console.log('=== 堆叠调试 ===');
+        console.log('existingCard:', existingCard);
+        console.log('existingCard.max:', existingCard.max);
+        console.log('existingCard.list:', existingCard.list);
+        console.log('isStackMode:', isStackMode);
+        console.log('primaryCard.tags:', primaryCard.tags);
+
         const ec = existingCard.effectConfig;
-        // key matching
-        const targetId = primaryCard.id || primaryCard.cardId;
-        const isCapacityIncrease = ec && ec.type === 'CAPACITY_INCREASE' && ec.target === targetId;
-        const isCapacityUnlimited = ec && ec.type === 'CAPACITY_UNLIMITED' && ec.target === targetId;
+        // 修复：effectConfig.target 存储的是物种名称（如"大蟾蜍"），需要与 name 比较
+        const targetName = primaryCard.name;
+        const isCapacityIncrease = ec && ec.type === 'CAPACITY_INCREASE' && ec.target === targetName;
+        const isCapacityUnlimited = ec && ec.type === 'CAPACITY_UNLIMITED' && ec.target === targetName;
         const isSelfStacking = isCapacityIncrease || isCapacityUnlimited;
 
-        if (isStackMode || existingCard.slotConfig || isSelfStacking) {
-          // 堆叠模式: 所有卡片都在stackedCards中,插槽显示最后一张(新打出的牌)
-          // 注意：如果之前是用非标准方式堆叠的(如旧逻辑)，stackedCards可能还没初始化，或者在existingCard里
-          // 这里要做一个健壮的合并
+        // 判断是否允许堆叠：有 max 字段、或处于堆叠模式、或自我堆叠
+        if (existingCard.max || isStackMode || isSelfStacking) {
+          // 堆叠模式：使用 list 和 max 字段管理堆叠
 
-          let oldStack = [];
-          if (existingCard.stackedCards) {
-            oldStack = [...existingCard.stackedCards];
-          } else {
-            // 如果原本没堆叠数组，把由于是第一张，把它自己算进去
-            oldStack = [existingCard];
+          // 获取当前堆叠列表和最大容量
+          const currentList = existingCard.list || [];
+          const currentMax = existingCard.max || 1;
+
+          // 检查堆叠数量限制
+          if (currentList.length >= currentMax) {
+            wx.hideLoading();
+            wx.showToast({ title: `该插槽最多容纳${currentMax}张卡牌`, icon: "none" });
+            return;
           }
 
-          // 检查堆叠数量限制（CAPACITY_INCREASE）
-          if (isCapacityIncrease && ec.value) {
-            const maxCapacity = ec.value;
-            if (oldStack.length >= maxCapacity) {
-              wx.hideLoading();
-              wx.showToast({ title: `该插槽最多容纳${maxCapacity}张卡牌`, icon: "none" });
-              return;
-            }
-          }
+          // 将新卡片推入 list
+          const newList = [...currentList, primaryCard];
 
-          const newStackedCards = [...oldStack, primaryCard];
-
-          // 插槽展示的主卡片应该是新打出的这张 (primaryCard)
-          // 并且要继承 slotConfig (如果有的话) 或者根据效果初始化一个新的
-
+          // 继承或初始化 slotConfig
           let newSlotConfig = null;
           if (existingCard.slotConfig) {
             newSlotConfig = existingCard.slotConfig;
@@ -678,49 +716,46 @@ Page({
               accepts: { tags: [enabler.effectConfig.tag] },
               capacity: 99
             };
-          } else if (isSelfStacking) {
-            // 自我堆叠模式（大蟾蜍/欧洲野兔）：
-            // 效果自带验证，不需要额外 slotConfig
-            newSlotConfig = null;
           }
 
+          // 用新卡片数据覆盖槽位（显示最新的卡片）
           tTree.slots[selectedSlot.side] = {
             ...primaryCard,
-            stackedCards: newStackedCards, // 包含历史所有卡片 + 新卡
+            list: newList,           // 所有堆叠的卡片（包括当前显示的）
+            max: currentMax,         // 继承最大容量
             slotConfig: newSlotConfig
           };
         } else {
-          // 非堆叠模式,正常堆叠(如大蟾蜍) - 这种情况现在应该被 isSelfStacking 覆盖了，但为了兼容性保留
-          // 实际上，如果走到这里，说明 existingCard 既没有 slotConfig，也不是共享槽位，也不是自我堆叠
-          // 这意味着它是一个普通的卡片，不应该允许堆叠。
-          // 但为了避免破坏现有逻辑，这里暂时保持原样，但理论上应该不允许堆叠。
-          const newExistingCard = { ...existingCard };
-          newExistingCard.stackedCards = [...(existingCard.stackedCards || [])];
-          newExistingCard.stackedCards.push(primaryCard);
-          tTree.slots[selectedSlot.side] = newExistingCard;
+          // 非堆叠模式：不允许在已有卡片的槽位上打牌
+          wx.hideLoading();
+          wx.showToast({ title: "该插槽已有卡片", icon: "none" });
+          return;
         }
       } else {
         // 槽位为空
         // 预先判断当前打出的牌是否自带堆叠属性(大蟾蜍/野兔)
         const pec = primaryCard.effectConfig;
-        const pTargetId = primaryCard.id || primaryCard.cardId;
-        const isPrimarySelfStacking = pec && (pec.type === 'CAPACITY_INCREASE' || pec.type === 'CAPACITY_UNLIMITED') && pec.target === pTargetId;
+        const pTargetName = primaryCard.name;
+        const isPrimarySelfStacking = pec && (pec.type === 'CAPACITY_INCREASE' || pec.type === 'CAPACITY_UNLIMITED') && pec.target === pTargetName;
 
         if (isStackMode) {
           // 第一张卡片,处于堆叠模式环境 (如刺荨麻下的蝴蝶)
           tTree.slots[selectedSlot.side] = {
             ...primaryCard,
-            stackedCards: [primaryCard], // 第一张卡片也要放进堆里，以便显示角标 "1"
+            list: [primaryCard],  // 初始化 list，包含当前卡片
+            max: 99,              // 共享槽位默认无限堆叠
             slotConfig: {
               accepts: { tags: [enabler.effectConfig.tag] },
               capacity: 99
             }
           };
         } else if (isPrimarySelfStacking) {
-          // 大蟾蜍/野兔的第一张：初始化堆叠数组，确保显示角标
+          // 大蟾蜍/野兔的第一张：初始化堆叠属性
+          const maxCapacity = pec.type === 'CAPACITY_UNLIMITED' ? 99 : (pec.value || 1);
           tTree.slots[selectedSlot.side] = {
             ...primaryCard,
-            stackedCards: [primaryCard],
+            list: [primaryCard],  // 初始化 list，包含当前卡片
+            max: maxCapacity,     // 根据效果配置设置最大容量
             slotConfig: null
           };
         } else {
@@ -739,12 +774,13 @@ Page({
         slotsToConvert.forEach(side => {
           if (side !== selectedSlot.side && tTree.slots[side]) {
             const card = tTree.slots[side];
-            // 检查该卡片是否符合标签要求,且还没有堆叠配置
-            if (card.tags && card.tags.includes(targetTag) && !card.slotConfig) {
-              // 转换为堆叠模式:将原卡片放入堆叠数组
+            // 检查该卡片是否符合标签要求,且还没有堆叠配置（没有 max 字段）
+            if (card.tags && card.tags.includes(targetTag) && !card.max) {
+              // 转换为堆叠模式：赋予堆叠效果
               tTree.slots[side] = {
                 ...card,
-                stackedCards: [card], // 原卡片也要放进堆里
+                list: [card],  // 初始化 list，包含原卡片
+                max: 99,       // 共享槽位默认无限堆叠
                 slotConfig: {
                   accepts: { tags: [targetTag] },
                   capacity: 99

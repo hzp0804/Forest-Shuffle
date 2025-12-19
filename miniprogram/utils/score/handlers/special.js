@@ -69,14 +69,18 @@ const handleScaleByCount = (card, context, allPlayerStates, myOpenId, stats) => 
         // 检查 Slots (通常 Slot 卡不受 Tree Multiplier 影响)
         if (group.slots) {
           Object.values(group.slots).forEach(slotCard => {
-            if (slotCard && slotCard.name === targetName) {
-              targetCount += 1;
-            }
-            // 检查堆叠卡
-            if (slotCard && slotCard.stackedCards) {
-              slotCard.stackedCards.forEach(sc => {
-                if (sc.name === targetName) targetCount += 1;
-              });
+            if (slotCard) {
+              // 如果有 list，遍历 list 中的所有卡片
+              if (slotCard.list && slotCard.list.length > 0) {
+                slotCard.list.forEach(sc => {
+                  if (sc.name === targetName) targetCount += 1;
+                });
+              } else {
+                // 没有 list，说明是普通卡片
+                if (slotCard.name === targetName) {
+                  targetCount += 1;
+                }
+              }
             }
           });
         }

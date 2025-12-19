@@ -66,7 +66,7 @@ const handleConditionWithBat = (card, context, allPlayerStates, myOpenId, stats)
       let cardInThisGroup = false;
       if (group.slots) {
         Object.values(group.slots).forEach(s => {
-          if (s && (s.uid === card.uid || (s.stackedCards && s.stackedCards.some(sc => sc.uid === card.uid)))) {
+          if (s && (s.uid === card.uid || (s.list && s.list.some(sc => sc.uid === card.uid)))) {
             cardInThisGroup = true;
           }
         });
@@ -122,7 +122,7 @@ const handleConditionOnTag = (card, context, allPlayerStates, myOpenId, stats) =
     for (const group of context.forest) {
       if (group.slots) {
         const slots = Object.values(group.slots);
-        if (slots.some(s => s && (s.uid === card.uid || (s.stackedCards && s.stackedCards.some(sc => sc.uid === card.uid))))) {
+        if (slots.some(s => s && (s.uid === card.uid || (s.list && s.list.some(sc => sc.uid === card.uid))))) {
           parentForTag = group.center;
           break;
         }

@@ -88,9 +88,9 @@ const handleConditionAttached = (card, context, allPlayerStates, myOpenId, stats
     let attachedCount = 0;
     Object.values(myGroup.slots).forEach(s => {
       if (s) {
-        // 如果有stackedCards,说明是堆叠模式,stackedCards包含所有卡片
-        // 如果没有stackedCards,说明只有一张卡片
-        attachedCount += (s.stackedCards && s.stackedCards.length > 0) ? s.stackedCards.length : 1;
+        // 如果有list,说明是堆叠模式,list包含所有卡片
+        // 如果没有list,说明只有一张卡片
+        attachedCount += (s.list && s.list.length > 0) ? s.list.length : 1;
       }
     });
     return attachedCount * (conf.value || 0);
@@ -109,8 +109,8 @@ const handleConditionBelow = (card, context, allPlayerStates, myOpenId, stats) =
   if (context.forest) {
     context.forest.forEach(g => {
       if (g.slots && g.slots.bottom) {
-        // 如果有stackedCards,说明是堆叠模式,stackedCards包含所有卡片
-        belowCount += (g.slots.bottom.stackedCards && g.slots.bottom.stackedCards.length > 0) ? g.slots.bottom.stackedCards.length : 1;
+        // 如果有list,说明是堆叠模式,list包含所有卡片
+        belowCount += (g.slots.bottom.list && g.slots.bottom.list.length > 0) ? g.slots.bottom.list.length : 1;
       }
     });
   }
@@ -181,7 +181,7 @@ const handlePositionShareSlot = (card, context, allPlayerStates, myOpenId, stats
         }
         if (!foundSlot) {
           for (const s of slots) {
-            if (s && s.stackedCards && s.stackedCards.some(sc => sc.uid === card.uid)) {
+            if (s && s.list && s.list.some(sc => sc.uid === card.uid)) {
               foundSlot = s;
               break;
             }
@@ -193,8 +193,8 @@ const handlePositionShareSlot = (card, context, allPlayerStates, myOpenId, stats
   }
 
   if (foundSlot) {
-    // 如果有stackedCards,说明是堆叠模式,stackedCards包含所有卡片
-    let stackCount = (foundSlot.stackedCards && foundSlot.stackedCards.length > 0) ? foundSlot.stackedCards.length : 1;
+    // 如果有list,说明是堆叠模式,list包含所有卡片
+    let stackCount = (foundSlot.list && foundSlot.list.length > 0) ? foundSlot.list.length : 1;
     if (conf.target && foundSlot.name === conf.target) {
       if (conf.count && stackCount >= conf.count) {
         return (conf.value || 0);
@@ -216,8 +216,9 @@ const handlePerStackedCard = (card, context, allPlayerStates, myOpenId, stats) =
     for (const group of context.forest) {
       if (group.slots) {
         const mySlot = Object.values(group.slots).find(s => s && s.uid === card.uid);
-        if (mySlot && mySlot.stackedCards) {
-          stackedCount = mySlot.stackedCards.length;
+        if (mySlot && mySlot.list) {
+          // list 包含所有卡片（包括自己），所以要减1
+          stackedCount = mySlot.list.length - 1;
           break;
         }
       }

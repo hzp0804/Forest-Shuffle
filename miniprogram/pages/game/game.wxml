@@ -114,32 +114,32 @@
                         <view class="slot-card {{!item.slots.top ? 'empty' : ''}}">
                            <view wx:if="{{item.slots.top}}" class="card-sprite-native slot-crop {{item.slots.top.cssClass}}" style="background-image: url('{{item.slots.top.bgImg}}'); background-size: {{item.slots.top.bgSize}}"></view>
                         </view>
-                        <view class="stack-badge" wx:if="{{item.slots.top.isStackable}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="top">
-                           {{item.slots.top.stackCount}}
+                        <view class="stack-badge" wx:if="{{item.slots.top.max}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="top">
+                           {{item.slots.top.list.length}}
                         </view>
                      </view>
                      <view class="slot-pos slot-bottom {{selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' ? 'selected' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="bottom" data-cardid="{{item.slots.bottom.id}}">
                         <view class="slot-card {{!item.slots.bottom ? 'empty' : ''}}">
                            <view wx:if="{{item.slots.bottom}}" class="card-sprite-native slot-crop {{item.slots.bottom.cssClass}}" style="background-image: url('{{item.slots.bottom.bgImg}}'); background-size: {{item.slots.bottom.bgSize}}"></view>
                         </view>
-                        <view class="stack-badge" wx:if="{{item.slots.bottom.isStackable}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="bottom">
-                           {{item.slots.bottom.stackCount}}
+                        <view class="stack-badge" wx:if="{{item.slots.bottom.max}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="bottom">
+                           {{item.slots.bottom.list.length}}
                         </view>
                      </view>
                      <view class="slot-pos slot-left {{selectedSlot.treeId === item._id && selectedSlot.side === 'left' ? 'selected' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="left" data-cardid="{{item.slots.left.id}}">
                         <view class="slot-card h-crop {{!item.slots.left ? 'empty' : ''}}">
                            <view wx:if="{{item.slots.left}}" class="card-sprite-native slot-crop {{item.slots.left.cssClass}}" style="background-image: url('{{item.slots.left.bgImg}}'); background-size: {{item.slots.left.bgSize}}"></view>
                         </view>
-                        <view class="stack-badge" wx:if="{{item.slots.left.isStackable}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="left">
-                           {{item.slots.left.stackCount}}
+                        <view class="stack-badge" wx:if="{{item.slots.left.max}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="left">
+                           {{item.slots.left.list.length}}
                         </view>
                      </view>
                      <view class="slot-pos slot-right {{selectedSlot.treeId === item._id && selectedSlot.side === 'right' ? 'selected' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="right" data-cardid="{{item.slots.right.id}}">
                         <view class="slot-card h-crop {{!item.slots.right ? 'empty' : ''}}">
                            <view wx:if="{{item.slots.right}}" class="card-sprite-native slot-crop {{item.slots.right.cssClass}}" style="background-image: url('{{item.slots.right.bgImg}}'); background-size: {{item.slots.right.bgSize}}"></view>
                         </view>
-                        <view class="stack-badge" wx:if="{{item.slots.right.isStackable}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="right">
-                           {{item.slots.right.stackCount}}
+                        <view class="stack-badge" wx:if="{{item.slots.right.max}}" catchtap="onStackTap" data-treeid="{{item._id}}" data-side="right">
+                           {{item.slots.right.list.length}}
                         </view>
                      </view>
                   </view>

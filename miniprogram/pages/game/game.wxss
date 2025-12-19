@@ -1605,7 +1605,7 @@
   animation: pulse 3s infinite;
 }
 
-/* 堆叠数量标记 - 仿照用户提供的样式 (左上角黑底白字) */
+/* 堆叠数量标记 - 默认左上角 */
 .stack-badge {
   position: absolute;
   top: 4rpx;
@@ -1624,6 +1624,20 @@
   box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.5);
   z-index: 100;
   border: 1rpx solid rgba(255, 255, 255, 0.3);
+}
+
+/* bottom 槽位的角标：左下角 */
+.slot-bottom .stack-badge {
+  top: auto;
+  bottom: 4rpx;
+  left: 4rpx;
+}
+
+/* right 槽位的角标：右上角 */
+.slot-right .stack-badge {
+  top: 4rpx;
+  left: auto;
+  right: 4rpx;
 }
 
 /* 堆叠卡牌详情弹窗 */

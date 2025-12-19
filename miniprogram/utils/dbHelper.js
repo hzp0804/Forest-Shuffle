@@ -5,7 +5,7 @@
 
 /**
  * 清理单张卡牌的静态数据
- * 只保留必要的动态字段：id, uid, selected, animationData, stackedCards
+ * 只保留必要的动态字段：id, uid, selected, animationData, list, max, slotConfig
  * @param {Object} card - 卡牌对象
  * @returns {Object} 清理后的卡牌对象
  */
@@ -30,10 +30,12 @@ function cleanCard(card) {
     if (card.originalId) cleaned.originalId = card.originalId;
   }
 
-  // 保留堆叠卡（递归清理）
-  if (card.stackedCards && Array.isArray(card.stackedCards)) {
-    cleaned.stackedCards = card.stackedCards.map(cleanCard).filter(Boolean);
+  // 保留堆叠相关字段
+  if (card.list && Array.isArray(card.list)) {
+    cleaned.list = card.list.map(cleanCard).filter(Boolean);
   }
+  if (card.max !== undefined) cleaned.max = card.max;
+  if (card.slotConfig !== undefined) cleaned.slotConfig = card.slotConfig;
 
   return cleaned;
 }
