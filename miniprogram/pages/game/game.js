@@ -578,6 +578,51 @@ Page({
       return;
     }
 
+    // Handle Raccoon Action
+    if (gameState && gameState.actionMode === 'ACTION_RACCOON') {
+      const { playerStates, openId, clearing, selectedSlot, gameState } = this.data;
+      const myState = playerStates[openId];
+
+      const context = {
+        gameState,
+        playerStates, // handleAction internally might access it via context or just use passed playerState
+        playerState: myState,
+        clearing,
+        selectedClearingIdx: -1, // Not used for Raccoon
+        openId,
+        actionConfig: gameState.actionConfig // if any
+      };
+
+      const result = SpecialActionUtils.handleAction('ACTION_RACCOON', context);
+
+      if (!result.success) {
+        wx.showToast({ title: result.errorMsg || "操作失败", icon: "none" });
+        return;
+      }
+
+      // 构造更新
+      // handleAction 返回的 updates 键名为 `gameState.playerStates.${openId}.hand` 等
+      // 我们需要通过 submitGameUpdate 提交
+      const updates = { ...result.updates };
+
+      // 更新状态机
+      // 浣熊行动是单次行动，完成后清理 pendingActions
+      const remaining = (gameState.pendingActions || []).slice(1);
+      if (remaining.length > 0) {
+        updates[`gameState.pendingActions`] = remaining;
+        updates[`gameState.actionMode`] = remaining[0].type; // 进入下一个行动
+        this.submitGameUpdate(updates, "特殊行动", result.logMsg);
+      } else {
+        updates[`gameState.pendingActions`] = [];
+        updates[`gameState.actionMode`] = null;
+        updates[`gameState.actionText`] = null;
+        // 如果有摸牌行为，可能需要设置 turnAction? 
+        // 浣熊摸牌是效果的一部分，不需要消耗 turnAction 的 drawnCount
+        await this.finalizeAction(updates, result.logMsg);
+      }
+      return;
+    }
+
     if (turnAction?.drawnCount > 0 || turnAction?.takenCount > 0) {
       wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
       return;

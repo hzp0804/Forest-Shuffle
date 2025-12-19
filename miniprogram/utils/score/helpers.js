@@ -40,11 +40,9 @@ function getAllCardsFromContext(context) {
       if (group.slots) {
         Object.values(group.slots).forEach(card => {
           if (card) {
-            // 如果有 list，遍历 list 中的所有卡片
             if (card.list && card.list.length > 0) {
               card.list.forEach(sc => cards.push(sc));
             } else {
-              // 没有 list，说明是普通卡片
               cards.push(card);
             }
           }
@@ -98,7 +96,6 @@ function getCountByTag(paramContext, tag) {
       if (g.slots) {
         Object.values(g.slots).forEach(s => {
           if (s) {
-            // 如果有 list，遍历 list 中的所有卡片
             if (s.list && s.list.length > 0) {
               s.list.forEach(sc => {
                 if (sc.tags && sc.tags.includes(tag)) {
@@ -106,10 +103,7 @@ function getCountByTag(paramContext, tag) {
                 }
               });
             } else {
-              // 没有 list，说明是普通卡片
-              if (s.tags && s.tags.includes(tag)) {
-                count++;
-              }
+              if (s.tags && s.tags.includes(tag)) count++;
             }
           }
         });
@@ -132,13 +126,11 @@ function getCountByName(paramContext, name) {
       if (g.slots) {
         Object.values(g.slots).forEach(s => {
           if (s) {
-            // 如果有 list，遍历 list 中的所有卡片
             if (s.list && s.list.length > 0) {
               s.list.forEach(sc => {
                 if (sc.name === name) count++;
               });
             } else {
-              // 没有 list，说明是普通卡片
               if (s.name === name) count++;
             }
           }
@@ -198,11 +190,9 @@ function precalculateStats(context) {
     if (group.slots) {
       Object.values(group.slots).forEach(s => {
         if (s) {
-          // 如果有 list，遍历 list 中的所有卡片
           if (s.list && s.list.length > 0) {
             s.list.forEach(processCard);
           } else {
-            // 没有 list，说明是普通卡片
             processCard(s);
           }
         }

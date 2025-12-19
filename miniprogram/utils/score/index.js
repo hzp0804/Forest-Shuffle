@@ -198,6 +198,11 @@ function calculateCardScore(card, context, allPlayerStates, myOpenId, stats) {
     case SCORING_TYPES.CAVE_COUNT:
       return Special.handleCaveCount(card, context, allPlayerStates, myOpenId, currentStats);
 
+    // 典型应用：蝴蝶集合
+    case SCORING_TYPES.BUTTERFLY_SET:
+      return Special.handleButterflySet(card, context, allPlayerStates, myOpenId, currentStats);
+
+
     default:
       return 0;
   }

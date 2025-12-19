@@ -47,7 +47,7 @@ const SPECIES_DATA = {
     bonus: "",
     points: "每张不同的蝴蝶牌得1分",
     scoreConfig: {
-      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
       value: 1
     },
@@ -212,7 +212,7 @@ const SPECIES_DATA = {
     bonus: "",
     points: "每张不同的蝴蝶牌得1分",
     scoreConfig: {
-      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
       value: 1
     },
@@ -276,7 +276,7 @@ const SPECIES_DATA = {
     bonus: "",
     points: "每张不同的蝴蝶牌得1分",
     scoreConfig: {
-      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
       value: 1
     },
@@ -327,7 +327,7 @@ const SPECIES_DATA = {
     bonus: "",
     points: "每张不同的蝴蝶牌得1分",
     scoreConfig: {
-      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
       value: 1
     },
@@ -359,7 +359,7 @@ const SPECIES_DATA = {
     bonus: "",
     points: "每张不同的蝴蝶牌得1分",
     scoreConfig: {
-      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
       value: 1
     },
@@ -1057,7 +1057,7 @@ const SPECIES_DATA = {
     bonus: "",
     points: "每张不同的蝴蝶牌得1分",
     scoreConfig: {
-      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
       value: 1
     },
@@ -1515,7 +1515,7 @@ const SPECIES_DATA = {
     bonus: "",
     points: "每张不同的蝴蝶牌得1分",
     scoreConfig: {
-      type: SCORING_TYPES.PER_DIFFERENT_TAG,
+      type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
       value: 1
     },
