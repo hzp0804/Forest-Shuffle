@@ -492,6 +492,10 @@ page {
   background-position: 0 0 !important;
 }
 
+.card-sapling {
+  background-position: 100% 100% !important;
+}
+
 /* 山地卡片 - mountain.jpg */
 .card-162,
 .card-163,

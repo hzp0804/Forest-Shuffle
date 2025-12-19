@@ -59,7 +59,7 @@
             <view id="deck-card" style="display:flex; align-items:flex-end; padding: 40rpx 0 12rpx 0rpx; flex-shrink:0;">
                <view class="hand-card {{selectedClearingIdx === -2 ? 'selected' : ''}}" bindtap="onDrawCard" style="background:#8e44ad; color:white; border:none; position: relative; overflow: hidden; margin:0;">
                   <block wx:if="{{deckVisual && deckVisual.bgImg}}">
-                     <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}}; pointer-events: none;"></view>
+                     <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; pointer-events: none;"></view>
                      <view class="card-body" style="background:transparent; color:white; z-index:1; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
                         <view style="font-size:32rpx; font-weight:bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
                            牌库
@@ -195,15 +195,15 @@
                            <view class="flip-inner {{isCardFlipped ? 'is-flipped' : ''}}">
                               <!-- 初始面: 背面 -->
                               <view class="flip-front">
-                                 <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                                 <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
                               </view>
                               <!-- 翻转面: 只有自己能看到正面 -->
                               <view class="flip-back">
                                  <block wx:if="{{currentEvent.playerOpenId === openId}}">
-                                    <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}; {{item.id === 'sapling' ? 'background-position: ' + (item.bgPosition || '0 0') : ''}}"></view>
+                                    <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}};"></view>
                                  </block>
                                  <block wx:else>
-                                    <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                                    <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
                                  </block>
                               </view>
                            </view>
@@ -217,17 +217,17 @@
                      <view class="flip-inner {{isCardFlipped ? 'is-flipped' : ''}}">
                         <!-- 初始面 (0deg): 背面 (Sapling) -->
                         <view class="flip-front">
-                           <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                           <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
                         </view>
                         <!-- 翻转面 (180deg): 内容 -->
                         <view class="flip-back">
                            <!-- 只有玩家自己或公开翻牌时才看得到正面内容 -->
                            <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.playerOpenId === openId}}">
                               <view wx:if="{{currentEvent.mainCard}}" class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
-                              <view wx:else class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                              <view wx:else class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
                            </block>
                            <block wx:else>
-                              <view class="card-sprite-native" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; background-position: {{deckVisual.bgPosition}};"></view>
+                              <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
                            </block>
                         </view>
                      </view>

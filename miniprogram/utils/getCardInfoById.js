@@ -70,24 +70,18 @@ const getCardVisual = (card) => {
   };
 };
 
-// 获取树苗卡片图案
-const getSaplingVisual = () => {
-  const img = IMG_URLS[CARD_TYPES.V_CARD];
-  return {
-    bgImg: img,
-    bgSize: "700% 700%",
-    bgPosition: "100% 100%",
-  };
-};
+
 
 // 根据卡片id获取卡片具体数据
 const getCardInfoById = (id) => {
   // 特殊处理：树苗
   if (id === 'sapling') {
     const { SAPLING_DATA } = require("../data/speciesData");
+    const img = IMG_URLS[CARD_TYPES.V_CARD];
     return {
       ...SAPLING_DATA,
-      ...getSaplingVisual(),
+      bgImg: img,
+      bgSize: "700% 700%",
       id: 'sapling',
       cssClass: 'card-sapling'
     };
@@ -111,6 +105,5 @@ const getCardInfoById = (id) => {
 
 module.exports = {
   getCardInfoById,
-  getCardVisual,
-  getSaplingVisual
+  getCardVisual
 };

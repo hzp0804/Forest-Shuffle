@@ -1,6 +1,5 @@
 const {
-  getCardInfoById,
-  getSaplingVisual
+  getCardInfoById
 } = require("./getCardInfoById");
 const {
   getCardCost
@@ -9,7 +8,8 @@ const {
   calculateTotalScore
 } = require("./score/index");
 const {
-  CARD_TYPES
+  CARD_TYPES,
+  IMG_URLS
 } = require("../data/constants");
 const {
   SAPLING_DATA
@@ -375,7 +375,11 @@ const processGameData = (res, currentData) => {
   return {
     players: enrichedPlayers,
     deck: gameState.deck,
-    deckVisual: getSaplingVisual(),
+    deckVisual: {
+      bgImg: IMG_URLS[CARD_TYPES.V_CARD],
+      bgSize: "700% 700%",
+      cssClass: "card-sapling"
+    },
     clearing: (gameState.clearing || []).map(enrichCard),
     playerStates,
     myForest: displayForest,
