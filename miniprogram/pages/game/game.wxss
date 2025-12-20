@@ -559,11 +559,34 @@
   border-color: #e74c3c !important;
 }
 
+/* 选中插槽 - 满足打出条件时显示绿色 */
+.slot-pos.selected.can-play .slot-card {
+  border-color: #2ecc71 !important;
+  background: rgba(46, 204, 113, 0.4) !important;
+  box-shadow: 0 0 16rpx #2ecc71;
+  animation: pulseSlotGreen 1.5s infinite;
+}
+
+/* 选中插槽 - 不满足打出条件时显示黄色 */
 .slot-pos.selected .slot-card {
   border-color: #f1c40f !important;
   background: rgba(241, 196, 15, 0.3) !important;
   box-shadow: 0 0 16rpx #f1c40f;
   animation: pulseSlot 1.5s infinite;
+}
+
+@keyframes pulseSlotGreen {
+  0% {
+    box-shadow: 0 0 8rpx #2ecc71;
+  }
+
+  50% {
+    box-shadow: 0 0 20rpx #2ecc71;
+  }
+
+  100% {
+    box-shadow: 0 0 8rpx #2ecc71;
+  }
 }
 
 @keyframes pulseSlot {
