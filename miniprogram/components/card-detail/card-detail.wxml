@@ -31,34 +31,36 @@
             </view>
           </view>
           <!-- Key Stats Grid -->
-          <view class="stats-section">
-            <!-- Cost -->
-            <view class="stat-item cost-item">
-              <view class="stat-label">
-                <text class="icon">💰</text>
-                费用
+          <view wx:if="{{ item.cost || item.count}}">
+            <view class="stats-section">
+              <!-- Cost -->
+              <view class="stat-item cost-item">
+                <view class="stat-label">
+                  <text class="icon">💰</text>
+                  费用
+                </view>
+                <view class="stat-value cost-value">{{item.cost}}</view>
               </view>
-              <view class="stat-value cost-value">{{item.cost}}</view>
-            </view>
-            <!-- Count -->
-            <view class="stat-item">
-              <view class="stat-label">
-                <text class="icon">🔢</text>
-                数量
+              <!-- Count -->
+              <view class="stat-item">
+                <view class="stat-label">
+                  <text class="icon">🔢</text>
+                  数量
+                </view>
+                <view class="stat-value">{{item.count}}</view>
               </view>
-              <view class="stat-value">{{item.count}}</view>
             </view>
-          </view>
-          <!-- Tags Row -->
-          <view class="tags-section">
-            <view class="section-label">
-              <text class="icon">🏷️</text>
-              标签
-            </view>
-            <view class="tags-list">
-              <text class="tag-pill" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">
-                {{tag}}
-              </text>
+            <!-- Tags Row -->
+            <view class="tags-section">
+              <view class="section-label">
+                <text class="icon">🏷️</text>
+                标签
+              </view>
+              <view class="tags-list">
+                <text class="tag-pill" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">
+                  {{tag}}
+                </text>
+              </view>
             </view>
           </view>
           <!-- Mechanics -->

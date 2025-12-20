@@ -60,7 +60,7 @@ Page({
     roomCode: "",
     joinRoomCode: "",
     createForm: {
-      cardCount: 236,
+      cardCount: 233, // 默认一套牌:230张普通卡 + 3张冬季卡
       winterStartOffset: 30,
     },
     seats: [
@@ -150,6 +150,20 @@ Page({
 
   onCardCountInput(e) {
     const val = parseInt(e.detail.value, 10);
+    const MAX_DECK_SIZE = GAME_CONFIG.MAX_DECK_SIZE || 693; // 最大牌库数量
+
+    if (!isNaN(val) && val > MAX_DECK_SIZE) {
+      wx.showToast({
+        title: `最多${MAX_DECK_SIZE}张`,
+        icon: 'none',
+        duration: 2000
+      });
+      this.setData({
+        "createForm.cardCount": MAX_DECK_SIZE,
+      });
+      return;
+    }
+
     this.setData({
       "createForm.cardCount": isNaN(val) ? "" : val,
     });
@@ -785,8 +799,12 @@ Page({
     const sourceData = cardData.CARDS_DATA || {};
     const sourceKeys = Object.keys(sourceData);
 
-    // 1. 计算单套牌总数 (即 CARDS_DATA 的条目数)
-    const oneSetCount = sourceKeys.length;
+    // 1. 计算单套牌中普通卡的数量(排除冬季卡)
+    const normalCards = sourceKeys.filter(key => {
+      const cardDef = sourceData[key];
+      return cardDef && cardDef.type !== require("../../data/constants").CARD_TYPES.W_CARD;
+    });
+    const oneSetCount = normalCards.length; // 应该是 230 张
 
     if (oneSetCount === 0) {
       console.error("Fatal: No cards found in CARDS_DATA");
@@ -814,29 +832,19 @@ Page({
     const fullSets = Math.floor(baseCardTarget / oneSetCount);
     const remainder = baseCardTarget % oneSetCount;
 
-    // 3. 构建完整套牌
+    // 3. 构建完整套牌(使用预过滤的普通卡列表)
     for (let s = 0; s < fullSets; s++) {
-      sourceKeys.forEach((key) => {
-        const cardDef = sourceData[key];
-        // 排除 W_CARD (冬季卡)，它们会在后续步骤手动加入到底部
-        if (cardDef && cardDef.type !== require("../../data/constants").CARD_TYPES.W_CARD) {
-          rawDeck.push({
-            id: key,
-            uid: `${key}_set${s}_${Math.random().toString(36).slice(2)}`,
-          });
-        }
+      normalCards.forEach((key) => {
+        rawDeck.push({
+          id: key,
+          uid: `${key}_set${s}_${Math.random().toString(36).slice(2)}`,
+        });
       });
     }
 
-    // 4. 构建剩余散牌
+    // 4. 构建剩余散牌(使用预过滤的普通卡列表)
     if (remainder > 0) {
-      let extraSet = [];
-      sourceKeys.forEach((key) => {
-        const cardDef = sourceData[key];
-        if (cardDef && cardDef.type !== require("../../data/constants").CARD_TYPES.W_CARD) {
-          extraSet.push({ id: key });
-        }
-      });
+      let extraSet = normalCards.map(key => ({ id: key }));
 
       // Fisher-Yates shuffle
       for (let i = extraSet.length - 1; i > 0; i--) {

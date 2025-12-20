@@ -275,7 +275,14 @@
                         <view class="flip-back">
                            <!-- 只有玩家自己或公开翻牌时才看得到正面内容 -->
                            <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.playerOpenId === openId}}">
-                              <view wx:if="{{currentEvent.mainCard}}" class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
+                              <view wx:if="{{currentEvent.mainCard}}" class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}">
+                                 <!-- 冬季卡提示遮罩 -->
+                                 <view class="winter-overlay" wx:if="{{currentEvent.isWinterReveal}}">
+                                    <view class="winter-count-badge">
+                                       冬季卡 {{currentEvent.winterCount}}/3
+                                    </view>
+                                 </view>
+                              </view>
                               <view wx:else class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
                            </block>
                            <block wx:else>
@@ -329,7 +336,7 @@
                   <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
                   <view class="p-avatar-small default-avatar" wx:else></view>
                   <text class="event-title" style="{{currentEvent.isMyTurn ? 'color: #90EE90; font-weight: bold;' : ''}}">
-                     {{currentEvent.isMyTurn ? '🎯 轮到你了！' : currentEvent.playerNick + ' 的回合'}}
+                     {{currentEvent.isMyTurn ? '🎯 轮到你了!' : currentEvent.playerNick + ' 的回合'}}
                   </text>
                </view>
             </block>

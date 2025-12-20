@@ -87,6 +87,19 @@ const getCardInfoById = (id) => {
     };
   }
 
+  // 特殊处理：冬季卡
+  if (id === 'Winter') {
+    const img = IMG_URLS[CARD_TYPES.TREE];
+    return {
+      name: '冬季卡',
+      type: CARD_TYPES.W_CARD,
+      bgImg: img,
+      bgSize: "500% 500%",
+      id: 'Winter',
+      cssClass: 'card-Winter'
+    };
+  }
+
   const cardBasic = CARDS_DATA[id];
   if (!cardBasic) return {};
 

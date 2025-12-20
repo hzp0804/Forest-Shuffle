@@ -86,9 +86,9 @@
         <view class="form-item">
           <view class="label-row">
             <text class="label">牌库数量</text>
-            <text class="tip">不含冬季卡</text>
+            <text class="tip">含冬季卡,最多693张</text>
           </view>
-          <input class="input" type="number" placeholder="请输入卡牌总数 (如 500)" value="{{createForm.cardCount}}" bindinput="onCardCountInput" />
+          <input class="input" type="number" placeholder="请输入卡牌总数 (1-693张)" value="{{createForm.cardCount}}" bindinput="onCardCountInput" />
         </view>
         <view class="form-item">
           <text class="label">冬季卡放置</text>

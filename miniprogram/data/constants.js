@@ -144,8 +144,9 @@ const IMG_URLS = {
 };
 
 const GAME_CONFIG = {
-  BASE_DECK_SIZE: 236,
-  WINTER_CARD_COUNT: 3,
+  BASE_DECK_SIZE: 233, // 一套牌:230张普通卡 + 3张冬季卡
+  WINTER_CARD_COUNT: 3, // 冬季卡数量
+  MAX_DECK_SIZE: 693, // 最大牌库:230*3 + 3 = 693张
 };
 
 module.exports = {

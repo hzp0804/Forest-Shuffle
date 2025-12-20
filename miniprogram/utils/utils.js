@@ -128,7 +128,9 @@ const enrichHand = (hand, myOpenId, currentOpenId, selectedUids = new Set()) => 
 
 const enrichForest = (forest) => {
   if (!Array.isArray(forest)) return [];
-  return forest.map((node) => {
+
+  // 先富化数据
+  const enrichedForest = forest.map((node) => {
     if (node.id && !node.center) {
       return {
         _id: node.uid || Math.random().toString(36),
@@ -152,6 +154,15 @@ const enrichForest = (forest) => {
       },
     };
   });
+
+  // 按树木名称排序,相同的树木排在一起
+  enrichedForest.sort((a, b) => {
+    const nameA = a.center?.name || '';
+    const nameB = b.center?.name || '';
+    return nameA.localeCompare(nameB, 'zh-CN');
+  });
+
+  return enrichedForest;
 };
 
 const toggleHandSelection = (hand, uid, currentPrimary) => {

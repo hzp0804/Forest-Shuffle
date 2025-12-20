@@ -70,6 +70,11 @@ page {
   background-position: 75% 0 !important;
 }
 
+.card-Winter {
+  background-position: 75% 25% !important;
+}
+
+
 .card-33,
 .card-34,
 .card-35,

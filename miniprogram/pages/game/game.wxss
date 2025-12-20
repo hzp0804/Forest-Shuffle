@@ -164,8 +164,8 @@
 }
 
 .player-slot {
-  width: 165rpx;
-  /* 略微缩小宽度以让出间距 */
+  width: 180rpx;
+  /* 增加宽度以容纳更大的分数 */
   flex-shrink: 0;
   height: 90rpx;
   background: rgba(255, 255, 255, 0.05);

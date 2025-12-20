@@ -139,18 +139,22 @@ Component({
         const { calculateCardScore } = require('../../utils/score/index');
         const { precalculateStats, getAllCardsFromContext } = require('../../utils/score/helpers');
         const { TAGS } = require('../../data/constants');
+        const { SCORING_TYPES } = require('../../data/enums');
 
         // 预统计数据
         const stats = precalculateStats(gameContext);
 
         // 特殊处理：蝴蝶 - 直接显示所有蝴蝶的总得分
-        // 只要卡片带有 BUTTERFLY 标签，就计算并显示蝴蝶总分
+        // 只要卡片带有 BUTTERFLY 标签,就计算并显示蝴蝶总分
         const isButterfly = cardData.tags && cardData.tags.includes(TAGS.BUTTERFLY);
+
+        // 特殊处理：SCALE_BY_COUNT (如欧洲七叶树) - 显示平均每张的得分
+        const isScaleByCount = cardData.scoreConfig && cardData.scoreConfig.type === SCORING_TYPES.SCALE_BY_COUNT;
 
         let score = 0;
 
         if (isButterfly) {
-          // 蝴蝶卡：直接计算所有蝴蝶的总得分
+          // 蝴蝶卡:直接计算所有蝴蝶的总得分
           const { handleButterflySet } = require('../../utils/score/handlers/special');
           const allCards = getAllCardsFromContext(gameContext);
           const butterflies = allCards.filter(c => c.tags && c.tags.includes(TAGS.BUTTERFLY));
@@ -160,6 +164,26 @@ Component({
             butterflies.sort((a, b) => (a.uid > b.uid ? 1 : -1));
             // 直接用 Leader 计算蝴蝶总分
             score = handleButterflySet(butterflies[0], gameContext, null, null, stats);
+          } else {
+            score = 0;
+          }
+        } else if (isScaleByCount) {
+          // SCALE_BY_COUNT 类型(如欧洲七叶树):显示平均每张的得分
+          const { handleScaleByCount } = require('../../utils/score/handlers/special');
+          const allCards = getAllCardsFromContext(gameContext);
+          const targetName = cardData.scoreConfig.target || cardData.name;
+          const matchingCards = allCards.filter(c => c.name === targetName);
+
+          if (matchingCards.length > 0) {
+            // 找到 Leader (UID 最小)
+            matchingCards.sort((a, b) => (a.uid > b.uid ? 1 : -1));
+            const leader = matchingCards[0];
+
+            // 用 Leader 计算总分
+            const totalScore = handleScaleByCount(leader, gameContext, null, null, stats);
+
+            // 显示平均每张的得分
+            score = Math.floor(totalScore / matchingCards.length);
           } else {
             score = 0;
           }

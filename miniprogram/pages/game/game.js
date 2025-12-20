@@ -194,9 +194,11 @@ Page({
 
       // 1. 回合切换逻辑 (标记待提示 + 重置选择状态 + 初始化翻牌计数器)
       if (turnChanged) {
-        // 回合切换时，重置选择状态
+        // 回合切换时,重置所有选择状态和待处理提示
         processedData.primarySelection = null;
         processedData.selectedSlot = null;
+        processedData.selectedClearingIdx = -1; // 清除空地/牌库选中状态
+        processedData.pendingActionToast = null; // 清除上一回合的操作提示
         processedData.lastActivePlayer = currentActive;
         // 初始化翻牌计数器为 0（新回合开始）
         this.pendingRevealCount = 0;
@@ -212,7 +214,7 @@ Page({
             playerNick: activePlayer.nickName || '玩家',
             playerAvatar: activePlayer.avatarUrl || '',
             isMyTurn: currentActive === this.data.openId,
-            timestamp: Date.now()
+            timestamp: Date.now() + 1000 // 添加偏移,确保回合切换事件在上一回合的所有事件之后显示
           };
           this.addToEventQueue(turnChangeEvent);
         }
@@ -243,7 +245,11 @@ Page({
       };
 
       // 按逻辑顺序添加事件
-      tryAddEvent(lastEvent);
+      // Handle lastEvent which can be an array
+      if (lastEvent) {
+        const events = Array.isArray(lastEvent) ? lastEvent : [lastEvent];
+        events.forEach(evt => tryAddEvent(evt));
+      }
       tryAddEvent(deckRevealEvent);
       tryAddEvent(rewardDrawEvent);
       tryAddEvent(extraTurnEvent);
@@ -324,13 +330,27 @@ Page({
 
   onPlayerTap(e) {
     const opid = e.currentTarget.dataset.openid;
-    if (opid) {
-      this.setData({ selectedPlayerOpenId: opid });
-      this.queryGameData(this.data.roomId);
-    }
+    if (!opid) return;
+
+    // 纯本地操作:只更新查看的玩家ID,重新计算显示的森林
+    const viewingPlayerState = this.data.playerStates?.[opid];
+    const displayForest = viewingPlayerState?.forest || [];
+    const viewingPlayer = this.data.players.find(p => p && p.openId === opid);
+
+    this.setData({
+      selectedPlayerOpenId: opid,
+      myForest: displayForest,
+      viewingPlayerNick: viewingPlayer?.nickName || '玩家',
+      isViewingSelf: opid === this.data.openId
+    });
   },
 
   onHandTap(e) {
+    // 只有在自己的回合才能点击手牌
+    if (!this.data.isMyTurn) {
+      wx.showToast({ title: "不是你的回合", icon: "none", duration: 1000 });
+      return;
+    }
     const updates = Utils.handleHandTap(e.currentTarget.dataset.uid, this.data);
     if (updates) this.setData(updates);
   },
@@ -1077,9 +1097,9 @@ Page({
           playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
           mainCard: primaryCard,
           subCards: paymentCards.map(c => Utils.enrichCard(c)),
-          // 添加奖励和效果信息 - 使用物种数据中的原始文本
-          bonusText: primaryCard.bonus || null,
-          effectText: primaryCard.effect || null,
+          // 只有在奖励真正触发时才显示文本
+          bonusText: (bonus.drawCount > 0 || bonus.extraTurn || bonus.actions.length > 0) ? (primaryCard.bonus || null) : null,
+          effectText: (effect.drawCount > 0 || effect.extraTurn || effect.actions.length > 0) ? (primaryCard.effect || null) : null,
           triggers: triggers.triggers || [],
           timestamp: Date.now()
         },
@@ -1269,9 +1289,9 @@ Page({
           playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
           mainCard: primaryCard,
           subCards: paymentCards.map(c => Utils.enrichCard(c)),
-          // 添加奖励和效果信息 - 使用物种数据中的原始文本
-          bonusText: primaryCard.bonus || null,
-          effectText: primaryCard.effect || null,
+          // 只有在奖励真正触发时才显示文本
+          bonusText: (bonus.drawCount > 0 || bonus.extraTurn || bonus.actions.length > 0) ? (primaryCard.bonus || null) : null,
+          effectText: (effect.drawCount > 0 || effect.extraTurn || effect.actions.length > 0) ? (primaryCard.effect || null) : null,
           triggers: triggers.triggers || [],
           timestamp: Date.now()
         };
@@ -1404,9 +1424,9 @@ Page({
         playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
         mainCard: primaryCard,
         subCards: paymentCards.map(c => Utils.enrichCard(c)),
-        // 添加奖励和效果信息 - 使用物种数据中的原始文本
-        bonusText: primaryCard.bonus || null,
-        effectText: primaryCard.effect || null,
+        // 只有在奖励真正触发时才显示文本
+        bonusText: (bonus.drawCount > 0 || bonus.extraTurn || bonus.actions.length > 0) ? (primaryCard.bonus || null) : null,
+        effectText: (effect.drawCount > 0 || effect.extraTurn || effect.actions.length > 0) ? (primaryCard.effect || null) : null,
         triggers: triggers.triggers || [],
         timestamp: Date.now()
       },
@@ -1430,6 +1450,11 @@ Page({
   },
 
   onClearingCardTap(e) {
+    // 只有在自己的回合才能点击空地卡牌
+    if (!this.data.isMyTurn) {
+      wx.showToast({ title: "不是你的回合", icon: "none", duration: 1000 });
+      return;
+    }
     const idx = e.currentTarget.dataset.idx;
     // Toggle selection
     this.setData({
@@ -1438,6 +1463,11 @@ Page({
   },
 
   onDrawCard() {
+    // 只有在自己的回合才能点击牌库
+    if (!this.data.isMyTurn) {
+      wx.showToast({ title: "不是你的回合", icon: "none", duration: 1000 });
+      return;
+    }
     const nextIdx = this.data.selectedClearingIdx === -2 ? -1 : -2;
     this.setData({
       selectedClearingIdx: nextIdx
@@ -1478,14 +1508,63 @@ Page({
     } else {
       this.setData({ pendingActionToast: "还可以再拿一张牌" });
     }
+
+    // 拿牌后取消选中状态
+    this.setData({ selectedClearingIdx: -1 });
+
     this.submitGameUpdate(updates, null, `从空地拿了 ${card.name}`);
+  },
+  /**
+   * 辅助方法：处理抽牌逻辑，包含冬季卡检测
+   * 自动处理冬季卡的计数、移出和补抽
+   * @param {Array} deck - 当前牌堆
+   * @param {Number} count - 需要抽取的数量
+   * @param {Number} [startWinterCount] - 初始冬季卡计数(可选)，若不传则读取当前gameState
+   */
+  processDrawWithWinter(deck, count, startWinterCount) {
+    const { openId, players, gameState } = this.data;
+    const newDeck = [...deck];
+    const drawnCards = [];
+    const events = [];
+    let winterCount = (startWinterCount !== undefined) ? startWinterCount : (gameState.winterCardCount || 0);
+    let gameOver = false;
+    const { CARD_TYPES } = require("../../data/constants");
+
+    while (drawnCards.length < count && newDeck.length > 0) {
+      const card = newDeck.shift();
+      const isWinter = card.type === "Winter" || card.type === CARD_TYPES.W_CARD || card.id === "Winter";
+
+      if (isWinter) {
+        winterCount++;
+
+        // 冬季卡展示事件
+        events.push({
+          type: 'DRAW_CARD',
+          playerOpenId: openId,
+          playerNick: players.find(p => p.openId === openId)?.nickName || '玩家',
+          playerAvatar: players.find(p => p.openId === openId)?.avatarUrl || '',
+          mainCard: Utils.enrichCard(card),
+          isWinterReveal: true,
+          winterCount,
+          timestamp: Date.now() + events.length * 100
+        });
+
+        if (winterCount >= 3) {
+          gameOver = true;
+          break;
+        }
+      } else {
+        drawnCards.push(card);
+      }
+    }
+
+    return { newDeck, drawnCards, events, winterCount, gameOver };
   },
 
   executeDrawFromDeck() {
     const { deck, playerStates, openId, turnAction } = this.data;
     const curTotal = (turnAction?.drawnCount || 0) + (turnAction?.takenCount || 0);
 
-    // Check hand limit first and show toast if full
     if (playerStates[openId].hand.length >= 10) {
       wx.showToast({ title: "手牌已满", icon: "none" });
       return;
@@ -1493,24 +1572,53 @@ Page({
 
     if (curTotal >= 2 || deck.length === 0) return;
 
-    const newDeck = [...deck];
-    const newHand = [...playerStates[openId].hand];
-    const card = newDeck.shift();
-    newHand.push(card);
+    // 使用新的抽牌逻辑
+    const drawResult = this.processDrawWithWinter(deck, 1);
+    const { newDeck, drawnCards, events, winterCount, gameOver } = drawResult;
+
+    // 如果游戏结束（抽到第3张冬季卡）
+    if (gameOver) {
+      const updates = {
+        [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
+        [`gameState.winterCardCount`]: winterCount,
+        [`gameState.isGameOver`]: true,
+        [`gameState.gameEndReason`]: 'WINTER_CARD',
+        [`gameState.gameEndTime`]: Date.now(),
+        [`gameState.lastEvent`]: events // 包含冬季卡展示事件（数组）
+      };
+      this.submitGameUpdate(updates, null, `抽到第3张冬季卡，游戏结束`);
+
+      setTimeout(() => {
+        wx.navigateTo({ url: `/pages/game-over/game-over?roomId=${this.data.roomId}` });
+      }, 2500);
+      return;
+    }
+
+    // 正常流程
+    const newHand = [...playerStates[openId].hand, ...drawnCards];
+    // 创建最终抽到的卡牌事件
+    if (drawnCards.length > 0) {
+      const card = drawnCards[0];
+      events.push({
+        type: 'DRAW_CARD', playerOpenId: openId,
+        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+        mainCard: Utils.enrichCard(card),
+        timestamp: Date.now() + events.length * 100
+      });
+    }
 
     const isEnd = (curTotal + 1) >= 2 || newHand.length >= 10;
     const nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, false);
+
     const updates = {
       [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
       [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
       [`gameState.turnAction`]: { ...turnAction, drawnCount: (turnAction.drawnCount || 0) + 1 },
-      [`gameState.lastEvent`]: {
-        type: 'DRAW_CARD', playerOpenId: openId,
-        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
-        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-        mainCard: Utils.enrichCard(card), timestamp: Date.now()
-      }
+      [`gameState.winterCardCount`]: winterCount,
+      [`gameState.lastEvent`]: events // 这里的events可能包含冬季卡展示+最终抽牌
     };
+
     if (isEnd) {
       updates[`gameState.activePlayer`] = nextPlayer;
       updates[`gameState.turnAction`] = { drawnCount: 0, takenCount: 0 };
@@ -1518,7 +1626,14 @@ Page({
     } else {
       this.setData({ pendingActionToast: "还可以再摸一张牌" });
     }
-    this.submitGameUpdate(updates, null, `从牌堆摸了一张牌`);
+
+    this.setData({ selectedClearingIdx: -1 });
+
+    const logMsg = events.some(e => e.isWinterReveal)
+      ? `触发冬季卡(第${winterCount}张)，并补抽一张`
+      : `从牌堆摸了一张牌`;
+
+    this.submitGameUpdate(updates, null, logMsg);
   },
 
   onEndTurn() {
@@ -1676,42 +1791,52 @@ Page({
     const maxCanDraw = 10 - currentSize;
     const actualDraw = Math.min(totalDraw, maxCanDraw);
 
-    for (let i = 0; i < actualDraw; i++) {
-      if (newDeck.length > 0) newHand.push(newDeck.shift());
+    let currentWinterCount = gameState.winterCardCount || 0;
+    let allEvents = [];
+
+    // 2.1 执行奖励摸牌 (使用带冬季卡检测的逻辑)
+    const drawRes = this.processDrawWithWinter(newDeck, actualDraw, currentWinterCount);
+    newDeck = drawRes.newDeck;
+    currentWinterCount = drawRes.winterCount;
+    allEvents.push(...drawRes.events);
+
+
+    // 将摸到的牌加入手牌
+    newHand.push(...drawRes.drawnCards);
+
+    // 检查游戏结束
+    if (drawRes.gameOver) {
+      this.handleGameOver(newDeck, currentWinterCount, allEvents);
+      return;
     }
 
     console.log(`✅ 实际摸牌: ${actualDraw} 张 (手牌: ${currentSize} -> ${newHand.length})`);
 
     updates[`gameState.playerStates.${openId}.hand`] = DbHelper.cleanHand(newHand);
-    updates[`gameState.deck`] = newDeck;
+    updates[`gameState.deck`] = DbHelper.cleanDeck(newDeck);
+    updates[`gameState.winterCardCount`] = currentWinterCount;
 
-    // 创建奖励抽牌事件
-    let rewardDrawEvent = null;
-    if (actualDraw > 0) {
-      // 获取实际摸到的卡牌（newHand 的最后 actualDraw 张）
-      const drawnCards = newHand.slice(-actualDraw);
-
-      rewardDrawEvent = {
+    // 创建奖励抽牌事件（仅包含实际摸到的普通牌）
+    if (drawRes.drawnCards.length > 0) {
+      const rewardDrawEvent = {
         type: 'REWARD_DRAW',
         playerOpenId: openId,
         playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
         playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-        count: actualDraw,
-        drawnCards: drawnCards.map(c => Utils.enrichCard(c)), // 添加具体摸到的卡牌
+        count: drawRes.drawnCards.length,
+        drawnCards: drawRes.drawnCards.map(c => Utils.enrichCard(c)),
         timestamp: Date.now()
       };
+      // 添加到事件列表
+      allEvents.push(rewardDrawEvent);
     }
-    updates['gameState.rewardDrawEvent'] = rewardDrawEvent;
 
     // === 处理累积的翻牌 (回合结束时统一翻牌) ===
-    // 使用本地计数器 pendingRevealCount，该计数器在回合开始时初始化为 0
-    // 每次打出树木时累加，包括奖励行动中打出的树木
     console.log('📊 回合结束翻牌统计:', {
       本回合打出树木数: this.pendingRevealCount || 0,
       数据库累积计数: rewards.revealCount || 0
     });
 
-    // 优先使用本地计数器（更准确），数据库计数作为备份（断线重连场景）
     const pendingReveal = Math.max(this.pendingRevealCount || 0, rewards.revealCount || 0);
 
     if (pendingReveal > 0) {
@@ -1722,42 +1847,58 @@ Page({
         [...actionUpdates[`gameState.clearing`]] :
         [...(this.data.clearing || [])];
 
-      let revealedCards = [];
-      for (let i = 0; i < pendingReveal; i++) {
-        if (newDeck.length > 0) {
-          const top = newDeck.shift();
-          revealedCards.push(top);
-          // 确保ID存在，cleanClearing能处理
-          newClearing.push({ ...top, selected: false });
-        }
+      // 2.2 执行翻牌 (使用带冬季卡检测的逻辑)
+      const revealRes = this.processDrawWithWinter(newDeck, pendingReveal, currentWinterCount);
+      newDeck = revealRes.newDeck; // 更新牌堆
+      currentWinterCount = revealRes.winterCount;
+      allEvents.push(...revealRes.events);
+
+      // 检查游戏结束
+      if (revealRes.gameOver) {
+        this.handleGameOver(newDeck, currentWinterCount, allEvents);
+        return;
       }
 
+      const revealedCards = revealRes.drawnCards;
+
       if (revealedCards.length > 0) {
+        revealedCards.forEach(c => newClearing.push({ ...c, selected: false }));
+
         if (isFreshUpdate) {
-          // 如果当前Action已经全量更新了clearing（例如包含支付卡或已清空），则追加到该状态
           updates[`gameState.clearing`] = DbHelper.cleanClearing(newClearing);
         } else {
-          // 否则，使用原子操作 push，防止覆盖其他并发更新（Race Condition修复核心）
           updates[`gameState.clearing`] = db.command.push({
             each: DbHelper.cleanClearing(revealedCards)
           });
         }
 
-        updates[`gameState.deck`] = newDeck; // 更新牌堆
+        updates[`gameState.deck`] = DbHelper.cleanDeck(newDeck);
+        updates[`gameState.winterCardCount`] = currentWinterCount;
 
-        const mainCard = revealedCards[revealedCards.length - 1]; // 事件展示最后一张
-        updates['gameState.deckRevealEvent'] = {
+        const mainCard = revealedCards[revealedCards.length - 1];
+        const deckRevealEvent = {
           type: 'DECK_TO_CLEARING',
           playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
           playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
           mainCard: Utils.enrichCard(mainCard),
-          revealedCards: revealedCards.map(c => Utils.enrichCard(c)), // 添加所有翻出的卡片
+          revealedCards: revealedCards.map(c => Utils.enrichCard(c)),
           count: revealedCards.length,
           timestamp: Date.now() + 100
         };
+        allEvents.push(deckRevealEvent);
         console.log(`✅ 翻牌完成: ${revealedCards.length} 张卡牌已放入空地`);
       }
     }
+
+    // 统一处理事件列表，并清空旧的独立事件字段
+    updates['gameState.lastEvent'] = allEvents;
+    updates['gameState.rewardDrawEvent'] = null;
+    updates['gameState.deckRevealEvent'] = null;
+
+    // 统一处理事件列表，清空旧的独立事件字段以避免重复
+    updates['gameState.lastEvent'] = allEvents;
+    updates['gameState.rewardDrawEvent'] = null;
+    updates['gameState.deckRevealEvent'] = null;
 
     // 重置翻牌计数器（回合结束后清零，等待下一回合开始时重新初始化）
     // 注意：实际的初始化在回合切换时进行（processGameUpdate 中的 turnChanged 逻辑）
@@ -1833,44 +1974,14 @@ Page({
   async submitGameUpdate(updates, successMsg, logMsg) {
     if (logMsg) updates["gameState.logs"] = db.command.push({ operator: this.data.openId, action: logMsg, timestamp: Date.now() });
 
-    // [Optimistic Update] 提前捕获 nextTurnAction，用于本地立即更新指引
+    // [Optimistic Update] 提前捕获 nextTurnAction,用于本地立即更新指引
     const nextTurnAction = updates['gameState.turnAction'];
 
-    // --- 性能优化：本地立即触发动画，不再等待轮询 ---
+    // 保存事件数据,等待数据库更新成功后再触发
     const localLastEvent = updates['gameState.lastEvent'];
     const localDeckReveal = updates['gameState.deckRevealEvent'];
     const localRewardDraw = updates['gameState.rewardDrawEvent'];
     const localExtraTurn = updates['gameState.extraTurnEvent'];
-    let nextLastEventTime = this.data.lastEventTime || 0;
-    let added = false;
-
-    // 顺序决定显示的先后：打出卡片 -> 奖励抽牌 -> 空地翻牌
-    if (localLastEvent) {
-      this.addToEventQueue(localLastEvent);
-      nextLastEventTime = Math.max(nextLastEventTime, localLastEvent.timestamp);
-      added = true;
-    }
-    if (localRewardDraw) {
-      this.addToEventQueue(localRewardDraw);
-      nextLastEventTime = Math.max(nextLastEventTime, localRewardDraw.timestamp);
-      added = true;
-    }
-    if (localDeckReveal) {
-      this.addToEventQueue(localDeckReveal);
-      nextLastEventTime = Math.max(nextLastEventTime, localDeckReveal.timestamp);
-      added = true;
-    }
-    if (localExtraTurn) {
-      this.addToEventQueue(localExtraTurn);
-      nextLastEventTime = Math.max(nextLastEventTime, localExtraTurn.timestamp);
-      added = true;
-    }
-
-    if (added) {
-      this.setData({ lastEventTime: nextLastEventTime });
-      this.processNextEvent();
-    }
-    // ------------------------------------------
 
     // Fix: 使用 db.command.set 避免对象更新时的自动扁平化导致的 "Cannot create field ... in element null" 错误
     const _ = db.command;
@@ -1881,8 +1992,35 @@ Page({
     });
 
     try {
+      // 先执行数据库更新
       await db.collection("rooms").doc(this.data.roomId).update({ data: updates });
       wx.hideLoading();
+
+      // 数据库更新成功后,才触发动画和事件
+      let nextLastEventTime = this.data.lastEventTime || 0;
+      let added = false;
+
+      // 辅助函数：处理单个或数组事件
+      const handleEvent = (evtOrArr) => {
+        if (!evtOrArr) return;
+        const arr = Array.isArray(evtOrArr) ? evtOrArr : [evtOrArr];
+        arr.forEach(evt => {
+          this.addToEventQueue(evt);
+          nextLastEventTime = Math.max(nextLastEventTime, evt.timestamp);
+          added = true;
+        });
+      };
+
+      // 顺序决定显示的先后:打出卡片 -> 奖励抽牌 -> 空地翻牌
+      handleEvent(localLastEvent);
+      handleEvent(localRewardDraw);
+      handleEvent(localDeckReveal);
+      handleEvent(localExtraTurn);
+
+      if (added) {
+        this.setData({ lastEventTime: nextLastEventTime });
+        this.processNextEvent();
+      }
 
       // 彻底清空手牌的选择状态
       const { openId, playerStates } = this.data;
@@ -1893,7 +2031,7 @@ Page({
       // 判断是否回合结束 (activePlayer 或 turnCount 发生变化)
       const isTurnEnding = updates['gameState.activePlayer'] !== undefined || updates['gameState.turnCount'] !== undefined;
 
-      // 只有选中牌堆(-2)且回合未结束时才保留，否则重置
+      // 只有选中牌堆(-2)且回合未结束时才保留,否则重置
       // 空地牌(-1 或 >=0)拿走后不再保留选中
       const shouldKeepSelection = !isTurnEnding && this.data.selectedClearingIdx === -2;
 
@@ -1905,7 +2043,7 @@ Page({
         [`playerStates.${openId}.hand`]: playerStates[openId].hand || []
       };
 
-      // 如果有 TurnAction 更新，立即应用到本地，并重算指引
+      // 如果有 TurnAction 更新,立即应用到本地,并重算指引
       if (nextTurnAction) {
         nextLocalData.turnAction = nextTurnAction;
       }
@@ -1920,7 +2058,11 @@ Page({
         instructionText
       });
 
-    } catch (e) { wx.hideLoading(); console.error(e); }
+    } catch (e) {
+      wx.hideLoading();
+      console.error('数据库更新失败:', e);
+      wx.showToast({ title: '操作失败,请重试', icon: 'none', duration: 2000 });
+    }
   },
 
   /**
@@ -2208,6 +2350,25 @@ Page({
   onCheatCardPreview(e) {
     const cardId = e.detail.cardId;
     this.setData({ detailCardId: cardId });
+  },
+
+  /**
+   * 辅助方法：处理游戏结束
+   */
+  handleGameOver(newDeck, winterCount, events) {
+    const updates = {
+      [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
+      [`gameState.winterCardCount`]: winterCount,
+      [`gameState.isGameOver`]: true,
+      [`gameState.gameEndReason`]: 'WINTER_CARD',
+      [`gameState.gameEndTime`]: Date.now(),
+      [`gameState.lastEvent`]: events
+    };
+    this.submitGameUpdate(updates, null, `抽到第3张冬季卡，游戏结束`);
+
+    setTimeout(() => {
+      wx.navigateTo({ url: `/pages/game-over/game-over?roomId=${this.data.roomId}` });
+    }, 3000);
   },
 
   onClearingCardTap(e) {
