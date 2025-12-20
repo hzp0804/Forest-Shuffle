@@ -69,6 +69,13 @@ Page({
     const openId = profile.openId || profile.uid;
     this.setData({ roomId: options.roomId, openId, selectedPlayerOpenId: openId });
 
+    // 初始化本地同步状态，用于解决 setData 异步导致的事件重复和状态判断滞后问题
+    this.localState = {
+      lastEventTime: 0,
+      activePlayer: '', // 初始为空，第一次接收数据时会同步
+      turnCount: -1
+    };
+
     // 清空得分缓存,确保进入新房间时数据是干净的
     const { scoreCache } = require("../../utils/score/helpers");
     scoreCache.clear();
@@ -187,10 +194,29 @@ Page({
 
       const currentActive = gameState.activePlayer || serverData.activePlayer;
       const currentTurnCount = gameState.turnCount || 0;
-      const lastTurnCount = typeof this.data.lastTurnCount === "number" ? this.data.lastTurnCount : -1;
+
+      // 使用同步的 localState 进行对比，避免 this.data 异步更新导致的重复判断
+      // 如果 localState 尚未初始化(第一次运行)，则视为没有上一次状态
+      const lastActive = this.localState ? this.localState.activePlayer : '';
+      const lastTurn = this.localState ? this.localState.turnCount : -1;
 
       // 检测回合是否切换（activePlayer 变动或 turnCount 变动）
-      const turnChanged = currentActive !== this.data.lastActivePlayer || currentTurnCount !== lastTurnCount;
+      // 特殊处理：如果 lastActive 为空(首次加载)，我们通常不希望触发"回合切换"动画，
+      // 除非这确实是一个新的回合变更。但在重连恢复场景下，我们先简单处理：
+      // 只有当 lastActive 有值且不等于 currentActive 时，才视为切换。
+      // 或者保持简单：只要不相等就切换。为了避免首次进入疯狂弹窗，可以加个初始化标记。
+      // 这里采用策略：如果是首次同步(lastActive为空)，不触发 TurnChange 事件。
+      const isFirstSync = (lastActive === '');
+      const turnChanged = !isFirstSync && (currentActive !== lastActive || currentTurnCount !== lastTurn);
+
+      // 暂存回合切换事件，确保它被添加到事件队列的末尾（在上回合行动播报之后）
+      let turnChangeEvent = null;
+
+      // 如果有变更，立即同步更新 localState
+      if (this.localState) {
+        this.localState.activePlayer = currentActive;
+        this.localState.turnCount = currentTurnCount;
+      }
 
       // 1. 回合切换逻辑 (标记待提示 + 重置选择状态 + 初始化翻牌计数器)
       if (turnChanged) {
@@ -208,7 +234,7 @@ Page({
         // 创建回合切换事件
         const activePlayer = this.data.players.find(p => p.openId === currentActive);
         if (activePlayer) {
-          const turnChangeEvent = {
+          turnChangeEvent = {
             type: 'TURN_CHANGE',
             playerOpenId: currentActive,
             playerNick: activePlayer.nickName || '玩家',
@@ -216,8 +242,13 @@ Page({
             isMyTurn: currentActive === this.data.openId,
             timestamp: Date.now() + 1000 // 添加偏移,确保回合切换事件在上一回合的所有事件之后显示
           };
-          this.addToEventQueue(turnChangeEvent);
         }
+      }
+
+      // 首次加载也需要设置 lastActivePlayer 数据，但不触发事件
+      if (isFirstSync) {
+        processedData.lastActivePlayer = currentActive;
+        processedData.lastTurnCount = currentTurnCount;
       }
 
       // 不再使用 pendingTurnToast,改用事件播报
@@ -232,7 +263,8 @@ Page({
       const extraTurnEvent = gameState.extraTurnEvent;
       const notificationEvent = gameState.notificationEvent;
 
-      let nextLastEventTime = this.data.lastEventTime || 0;
+      // 使用 localState 中的时间戳进行去重
+      let nextLastEventTime = this.localState ? this.localState.lastEventTime : (this.data.lastEventTime || 0);
       let added = false;
 
       // 辅助函数：尝试添加事件
@@ -240,6 +272,8 @@ Page({
         if (evt && evt.timestamp > nextLastEventTime) {
           this.addToEventQueue(evt);
           nextLastEventTime = Math.max(nextLastEventTime, evt.timestamp);
+          // 立即更新同步状态
+          if (this.localState) this.localState.lastEventTime = nextLastEventTime;
           added = true;
         }
       };
@@ -254,6 +288,12 @@ Page({
       tryAddEvent(rewardDrawEvent);
       tryAddEvent(extraTurnEvent);
       tryAddEvent(notificationEvent);
+
+      // 最后添加回合切换事件，确保顺序正确
+      if (turnChangeEvent) {
+        this.addToEventQueue(turnChangeEvent);
+        added = true;
+      }
 
       processedData.lastEventTime = nextLastEventTime;
 
@@ -1977,12 +2017,6 @@ Page({
     // [Optimistic Update] 提前捕获 nextTurnAction,用于本地立即更新指引
     const nextTurnAction = updates['gameState.turnAction'];
 
-    // 保存事件数据,等待数据库更新成功后再触发
-    const localLastEvent = updates['gameState.lastEvent'];
-    const localDeckReveal = updates['gameState.deckRevealEvent'];
-    const localRewardDraw = updates['gameState.rewardDrawEvent'];
-    const localExtraTurn = updates['gameState.extraTurnEvent'];
-
     // Fix: 使用 db.command.set 避免对象更新时的自动扁平化导致的 "Cannot create field ... in element null" 错误
     const _ = db.command;
     ['gameState.lastEvent', 'gameState.deckRevealEvent', 'gameState.rewardDrawEvent', 'gameState.extraTurnEvent', 'gameState.turnAction'].forEach(key => {
@@ -1996,35 +2030,18 @@ Page({
       await db.collection("rooms").doc(this.data.roomId).update({ data: updates });
       wx.hideLoading();
 
-      // 数据库更新成功后,才触发动画和事件
-      let nextLastEventTime = this.data.lastEventTime || 0;
-      let added = false;
-
-      // 辅助函数：处理单个或数组事件
-      const handleEvent = (evtOrArr) => {
-        if (!evtOrArr) return;
-        const arr = Array.isArray(evtOrArr) ? evtOrArr : [evtOrArr];
-        arr.forEach(evt => {
-          this.addToEventQueue(evt);
-          nextLastEventTime = Math.max(nextLastEventTime, evt.timestamp);
-          added = true;
-        });
-      };
-
-      // 顺序决定显示的先后:打出卡片 -> 奖励抽牌 -> 空地翻牌
-      handleEvent(localLastEvent);
-      handleEvent(localRewardDraw);
-      handleEvent(localDeckReveal);
-      handleEvent(localExtraTurn);
-
-      if (added) {
-        this.setData({ lastEventTime: nextLastEventTime });
-        this.processNextEvent();
+      if (successMsg) {
+        // 可选：如果是重要操作，给个轻提示
+        // wx.showToast({ title: successMsg, icon: "none" });
       }
 
-      // 彻底清空手牌的选择状态
+      // 注意：不再手动添加 eventQueue，完全依赖 watch 推送，避免重复动画。
+
+      // === 本地状态清理与乐观更新 ===
+
+      // 彻底清空手牌的选择状态 (本地临时修改，等待推送覆盖)
       const { openId, playerStates } = this.data;
-      if (playerStates[openId] && playerStates[openId].hand) {
+      if (playerStates && playerStates[openId] && playerStates[openId].hand) {
         playerStates[openId].hand.forEach(c => c.selected = false);
       }
 
@@ -2059,9 +2076,9 @@ Page({
       });
 
     } catch (e) {
+      console.error("更新游戏数据失败:", e);
       wx.hideLoading();
-      console.error('数据库更新失败:', e);
-      wx.showToast({ title: '操作失败,请重试', icon: 'none', duration: 2000 });
+      wx.showToast({ title: "操作失败,请重试", icon: "none" });
     }
   },
 
