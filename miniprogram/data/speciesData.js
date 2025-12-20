@@ -1251,22 +1251,22 @@ const SPECIES_DATA = {
   },
 
   [SPECIES_NAMES.MARMOTA_MARMOTA]: {
-    name: "高山旱獭",
+    name: "阿尔卑斯旱獭",
     nb: 4,
     tags: [TAGS.PAW, TAGS.MOUNTAIN],
     cost: 1,
     type: CARD_TYPES.H_CARD,
-    effect: "该槽位可以容纳任意数量的高山旱獭",
+    effect: "该槽位可以容纳任意数量的阿尔卑斯旱獭",
     effectConfig: {
       type: MODIFIER_TYPES.CAPACITY_UNLIMITED,
       target: SPECIES_NAMES.MARMOTA_MARMOTA
     },
     bonus: "",
-    points: "每有一只高山旱獭获得2分",
+    points: "每张带有植物符号的牌得3分",
     scoreConfig: {
-      type: SCORING_TYPES.PER_NAME,
-      target: SPECIES_NAMES.MARMOTA_MARMOTA,
-      value: 2
+      type: SCORING_TYPES.PER_TAG,
+      tag: TAGS.PLANT,
+      value: 3
     },
   },
 
@@ -1278,10 +1278,9 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "",
     bonus: "",
-    points: "每张不同的植物牌得3分",
+    points: "每张带有匹配树木符号的牌得3分",
     scoreConfig: {
-      type: SCORING_TYPES.PER_DIFFERENT_TAG,
-      tag: TAGS.PLANT,
+      type: SCORING_TYPES.GET_POINTS_BY_COLOR,
       value: 3
     },
   },

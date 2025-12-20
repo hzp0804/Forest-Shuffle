@@ -202,10 +202,24 @@ Page({
         this.pendingRevealCount = 0;
         console.log('🔄 回合切换，翻牌计数器已重置为 0');
         processedData.lastTurnCount = currentTurnCount;
+
+        // 创建回合切换事件
+        const activePlayer = this.data.players.find(p => p.openId === currentActive);
+        if (activePlayer) {
+          const turnChangeEvent = {
+            type: 'TURN_CHANGE',
+            playerOpenId: currentActive,
+            playerNick: activePlayer.nickName || '玩家',
+            playerAvatar: activePlayer.avatarUrl || '',
+            isMyTurn: currentActive === this.data.openId,
+            timestamp: Date.now()
+          };
+          this.addToEventQueue(turnChangeEvent);
+        }
       }
 
+      // 不再使用 pendingTurnToast,改用事件播报
       if (currentActive === this.data.openId && this.data.lastNotifiedTurnCount !== currentTurnCount) {
-        processedData.pendingTurnToast = true;
         processedData.lastNotifiedTurnCount = currentTurnCount;
       }
 
@@ -267,24 +281,10 @@ Page({
     if (this.data.isProcessingEvent) return;
 
     if (this.data.eventQueue.length === 0) {
-      // 特殊情况处理：虽然没有事件，但有待显示的 Toast (通常是回合切换)
-      if (this.data.pendingTurnToast) {
-        wx.vibrateShort({ type: 'medium' });
-        wx.showToast({ title: "轮到你了！", icon: "none", duration: 1500 });
-        this.setData({ pendingTurnToast: false, isProcessingEvent: false });
-        return;
-      }
-
       this.setData({ isProcessingEvent: false });
 
-      // 队列结束，如果刚才有待提示的回合切换，现在触发
-      // 注意：这里使用 data 中的最新状态，因为 processNextEvent 可能被多次调用
-      if (this.data.pendingTurnToast) {
-        wx.vibrateShort({ type: 'medium' });
-        wx.showToast({ title: "轮到你了！", icon: "none", duration: 1500 });
-        this.setData({ pendingTurnToast: false });
-      } else if (this.data.pendingActionToast) {
-        // action toast 优先级较低，只有没有 turn toast 时才显示
+      // 只处理 action toast
+      if (this.data.pendingActionToast) {
         wx.showToast({ title: this.data.pendingActionToast, icon: "none", duration: 1500 });
         this.setData({ pendingActionToast: null });
       }
@@ -296,6 +296,11 @@ Page({
     const remaining = this.data.eventQueue.slice(1);
 
     this.setData({ currentEvent: event, eventQueue: remaining, isCardFlipped: false });
+
+    // 如果是回合切换且轮到自己,震动提示
+    if (event.type === 'TURN_CHANGE' && event.isMyTurn) {
+      wx.vibrateShort({ type: 'medium' });
+    }
 
     // 如果是带翻页效果的事件，延迟触发翻转
     const needsFlip = event.type === 'DRAW_CARD' || event.type === 'DECK_TO_CLEARING' || event.type === 'REWARD_DRAW';
@@ -511,10 +516,10 @@ Page({
 
           // (1) 同名堆叠
           if (existingCard.name === checkName) {
-            if (existingCard.effectConfig?.type === 'CAPACITY_INCREASE') {
+            if (existingCard.effectConfig?.type === 'CAPACITY_INCREASE' && existingCard.effectConfig.target === checkName) {
               allowStack = true;
               capacity = existingCard.effectConfig.value;
-            } else if (existingCard.effectConfig?.type === 'CAPACITY_UNLIMITED') {
+            } else if (existingCard.effectConfig?.type === 'CAPACITY_UNLIMITED' && existingCard.effectConfig.target === checkName) {
               allowStack = true;
               capacity = 999;
             }

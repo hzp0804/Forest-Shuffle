@@ -208,7 +208,8 @@
             <!-- 场景2: 牌库翻开/摸牌/奖励抽牌 (3D Flip) -->
             <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.type === 'DRAW_CARD' || currentEvent.type === 'REWARD_DRAW'}}">
                <view class="event-header">
-                  <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
+                  <!-- 翻牌到空地不显示玩家头像 -->
+                  <image class="p-avatar-small" wx:if="{{currentEvent.type !== 'DECK_TO_CLEARING' && currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
                   <text class="event-title">
                      <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING'}}">
                         翻牌 ({{currentEvent.count}}张)
@@ -322,6 +323,17 @@
                   </view>
                </view>
             </block>
+            <!-- 场景6: 回合切换 -->
+            <block wx:if="{{currentEvent.type === 'TURN_CHANGE'}}">
+               <view class="event-header">
+                  <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
+                  <view class="p-avatar-small default-avatar" wx:else></view>
+                  <text class="event-title" style="{{currentEvent.isMyTurn ? 'color: #90EE90; font-weight: bold;' : ''}}">
+                     {{currentEvent.isMyTurn ? '🎯 轮到你了！' : currentEvent.playerNick + ' 的回合'}}
+                  </text>
+               </view>
+            </block>
+            <!-- 场景7: 通知 -->
             <block wx:if="{{currentEvent.type === 'NOTIFICATION'}}">
                <view class="event-header">
                   <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
