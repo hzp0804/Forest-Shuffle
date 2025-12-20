@@ -105,15 +105,17 @@ const handlePerTagOr = (card, context, allPlayerStates, myOpenId, stats) => {
 
 /**
  * 处理 PER_NAME_OR 类型的计分
- * 逻辑：每张带有指定多个名称之一的卡牌得分
- * 典型应用：欧洲野牛 (每张橡木或山毛榉得X分)
+ * 逻辑：每张带有指定多个树木符号之一的卡牌得分
+ * 典型应用：欧洲野牛 (每张橡木或山毛榉得2分)
+ * 注意：targets 中的值是树木符号（如"橡树"、"山毛榉"），应该从 colorCounts 中获取
  */
 const handlePerNameOr = (card, context, allPlayerStates, myOpenId, stats) => {
   const conf = card.scoreConfig;
   let count = 0;
   if (conf.targets && Array.isArray(conf.targets)) {
     conf.targets.forEach(targetName => {
-      count += (stats.nameCounts[targetName] || 0);
+      // 使用 colorCounts（树木符号统计）而不是 nameCounts
+      count += (stats.colorCounts[targetName] || 0);
     });
   }
   return count * (conf.value || 0);

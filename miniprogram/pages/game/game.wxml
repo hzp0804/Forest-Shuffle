@@ -103,7 +103,7 @@
             <scroll-view class="forest-scroll" scroll-x enable-flex>
                <block wx:for="{{myForest}}" wx:key="_id">
                   <view class="tree-group">
-                     <view class="tree-center" bindlongpress="onShowDetail" data-cardid="{{item.center.id}}">
+                     <view class="tree-center" bindlongpress="onShowDetail" data-cardid="{{item.center.id}}" data-treeid="{{item._id}}">
                         <view wx:if="{{item.center.bgImg}}" class="card-sprite-native {{item.center.cssClass}}" style="background-image: url('{{item.center.bgImg}}'); background-size: {{item.center.bgSize}}; {{item.center.bgPosition ? 'background-position:' + item.center.bgPosition : ''}}"></view>
                         <view wx:else class="small-card forest-fallback">
                            {{item.center.name || 'Tree'}}

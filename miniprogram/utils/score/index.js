@@ -64,7 +64,7 @@ function calculateTotalScore(playerState, openId, allPlayerStates, nickName) {
  * 计算单张卡牌得分
  */
 function calculateCardScore(card, context, allPlayerStates, myOpenId, stats) {
-  console.log('计算单张卡牌得分:', card, context, allPlayerStates, myOpenId, stats)
+  // console.log('计算单张卡牌得分:', card, context, allPlayerStates, myOpenId, stats)
   if (!card.scoreConfig) return 0;
 
   const config = card.scoreConfig;

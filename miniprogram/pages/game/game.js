@@ -346,7 +346,7 @@ Page({
       cardData = handCard;
       isInForest = false;
     } else if (treeid && side) {
-      // 森林中的卡片（通过 treeid 和 side 定位）
+      // 森林中的槽位卡片（通过 treeid 和 side 定位）
       const myForest = this.data.myForest;
       const tree = myForest?.find(t => t._id === treeid);
       const slotCard = tree?.slots?.[side];
@@ -354,6 +354,15 @@ Page({
       cardData = slotCard;
       isInForest = true;
       activeSide = side; // 记录生效的物种侧
+    } else if (treeid && !side) {
+      // 森林中的树木中心（只有 treeid，没有 side）
+      const myForest = this.data.myForest;
+      const tree = myForest?.find(t => t._id === treeid);
+      const centerCard = tree?.center;
+      cardId = centerCard?.id;
+      cardData = centerCard;
+      isInForest = true;
+      activeSide = 'center'; // 树木中心
     }
 
     if (cardId) {
