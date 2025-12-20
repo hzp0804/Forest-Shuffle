@@ -58,6 +58,7 @@ const SpecialActionUtils = {
         const newCave = [...(playerState.cave || []), ...selectedCards.map(c => ({ ...c, selected: false }))];
 
         result.drawCount = selectedCards.length;
+        result.cavedCards = selectedCards; // 添加放入洞穴的卡牌信息
         result.updates = {
           [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
           [`gameState.playerStates.${openId}.cave`]: DbHelper.cleanHand(newCave),

@@ -422,7 +422,7 @@ Page({
 
     // 浣熊行动模式下，不需要选择插槽
     if (gameState?.actionMode === 'ACTION_RACCOON') {
-      wx.showToast({ title: "请选择手牌放入空地", icon: "none" });
+      wx.showToast({ title: "请选择手牌放入洞穴", icon: "none" });
       return;
     }
 
@@ -681,12 +681,43 @@ Page({
         return;
       }
 
+      console.log('🦝 浣熊行动完成:', {
+        放入洞穴: result.drawCount,
+        将摸牌: result.drawCount
+      });
+
       // 构造更新
-      // handleAction 返回的 updates 键名为 `gameState.playerStates.${openId}.hand` 等
-      // 我们需要通过 submitGameUpdate 提交
       const updates = { ...result.updates };
 
-      // 更新状态机
+      // 创建放入洞穴的动画事件
+      if (result.cavedCards && result.cavedCards.length > 0) {
+        updates['gameState.lastEvent'] = {
+          type: 'CAVE_CARDS',
+          playerOpenId: openId,
+          playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+          playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+          cavedCards: result.cavedCards.map(c => Utils.enrichCard(c)),
+          count: result.cavedCards.length,
+          timestamp: Date.now()
+        };
+      }
+
+      // 将浣熊的摸牌数量保存到本地变量和数据库
+      if (result.drawCount > 0) {
+        // 保存到本地变量，供 finalizeAction 使用
+        this.pendingDrawCount = (this.pendingDrawCount || 0) + result.drawCount;
+
+        // 计算新的累积值
+        const currentAccumulated = gameState.accumulatedRewards || { drawCount: 0, extraTurn: false };
+        const newDrawCount = (currentAccumulated.drawCount || 0) + result.drawCount;
+
+        // 直接设置新值
+        updates[`gameState.accumulatedRewards.drawCount`] = newDrawCount;
+
+        console.log(`🦝 累积摸牌数量: ${currentAccumulated.drawCount} + ${result.drawCount} = ${newDrawCount}`);
+        console.log(`🦝 本地待处理摸牌: ${this.pendingDrawCount}`);
+      }
+
       // 浣熊行动是单次行动，完成后清理 pendingActions
       const remaining = (gameState.pendingActions || []).slice(1);
       if (remaining.length > 0) {
@@ -697,8 +728,7 @@ Page({
         updates[`gameState.pendingActions`] = [];
         updates[`gameState.actionMode`] = null;
         updates[`gameState.actionText`] = null;
-        // 如果有摸牌行为，可能需要设置 turnAction? 
-        // 浣熊摸牌是效果的一部分，不需要消耗 turnAction 的 drawnCount
+        console.log('🦝 浣熊行动结束，准备摸牌');
         await this.finalizeAction(updates, result.logMsg);
       }
       return;
@@ -1506,6 +1536,12 @@ Page({
     const totalDraw = baseDraw + pendingDraw;
     this.pendingDrawCount = 0; // 重置
 
+    console.log('📊 finalizeAction 摸牌统计:', {
+      累积奖励摸牌: baseDraw,
+      待处理摸牌: pendingDraw,
+      总计摸牌: totalDraw
+    });
+
     let newHand = actionUpdates[`gameState.playerStates.${openId}.hand`] ?
       [...actionUpdates[`gameState.playerStates.${openId}.hand`]] :
       [...(myState.hand || [])];
@@ -1519,18 +1555,24 @@ Page({
       if (newDeck.length > 0) newHand.push(newDeck.shift());
     }
 
+    console.log(`✅ 实际摸牌: ${actualDraw} 张 (手牌: ${currentSize} -> ${newHand.length})`);
+
     updates[`gameState.playerStates.${openId}.hand`] = DbHelper.cleanHand(newHand);
     updates[`gameState.deck`] = newDeck;
 
     // 创建奖励抽牌事件
     let rewardDrawEvent = null;
     if (actualDraw > 0) {
+      // 获取实际摸到的卡牌（newHand 的最后 actualDraw 张）
+      const drawnCards = newHand.slice(-actualDraw);
+
       rewardDrawEvent = {
         type: 'REWARD_DRAW',
         playerOpenId: openId,
         playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
         playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
         count: actualDraw,
+        drawnCards: drawnCards.map(c => Utils.enrichCard(c)), // 添加具体摸到的卡牌
         timestamp: Date.now()
       };
     }
@@ -1596,6 +1638,19 @@ Page({
     // 注意：实际的初始化在回合切换时进行（processGameUpdate 中的 turnChanged 逻辑）
     this.pendingRevealCount = 0;
     console.log('🔄 翻牌计数器已重置为 0');
+
+    // 2.5. 检查空地是否需要清空（达到10张时清空）
+    const currentClearing = updates['gameState.clearing'] || this.data.clearing || [];
+    if (currentClearing.length >= 10) {
+      console.log(`🧹 空地达到 ${currentClearing.length} 张，触发清空`);
+      updates['gameState.clearing'] = [];
+      updates['gameState.notificationEvent'] = db.command.set({
+        type: 'NOTIFICATION',
+        icon: '🧹',
+        message: `空地达到 ${currentClearing.length} 张，已清空！`,
+        timestamp: Date.now() + 200
+      });
+    }
 
     // 3. 决定是否结束回合
     // 如果没有额外回合奖励，则切换玩家

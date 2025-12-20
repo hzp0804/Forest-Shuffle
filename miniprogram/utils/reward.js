@@ -107,8 +107,11 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
       break;
 
     case REWARD_TYPES.ACTION_RACCOON:
-      result.text = "浣熊特殊行动";
-      result.actions.push(config);
+      result.text = isBonus ? (card.bonus || '浣熊特殊行动') : (card.effect || '浣熊特殊行动');
+      result.actions.push({
+        ...config,
+        actionText: result.text
+      });
       break;
 
     case REWARD_TYPES.ACTION_BEAR:

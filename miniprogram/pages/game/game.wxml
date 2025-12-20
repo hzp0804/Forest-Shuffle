@@ -272,6 +272,22 @@
                   <text class="event-title">🎉 {{currentEvent.playerNick}} 获得额外回合！</text>
                </view>
             </block>
+            <!-- 场景5: 放入洞穴 (浣熊行动) -->
+            <block wx:if="{{currentEvent.type === 'CAVE_CARDS'}}">
+               <view class="event-header">
+                  <image class="p-avatar-small" src="{{currentEvent.playerAvatar || '/images/default_avatar.png'}}" />
+                  <text class="event-title">
+                     {{currentEvent.playerNick}} 将 {{currentEvent.count}} 张牌放入洞穴
+                  </text>
+               </view>
+               <view class="reward-cards-display">
+                  <view wx:for="{{currentEvent.cavedCards}}" wx:key="uid" class="reward-card-item">
+                     <view class="hand-card" style="margin: 0;">
+                        <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
+                     </view>
+                  </view>
+               </view>
+            </block>
             <block wx:if="{{currentEvent.type === 'NOTIFICATION'}}">
                <view class="event-header">
                   <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
