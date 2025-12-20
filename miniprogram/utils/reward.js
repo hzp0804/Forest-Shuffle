@@ -129,19 +129,64 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
       result.actions.push(config);
       break;
 
-    // 动态收益
+    // 动态收益：根据场上特定卡牌数量获得奖励（如赤狐根据欧洲野兔数量摸牌）
     case REWARD_TYPES.DRAW_PER_EXISTING:
       if (config.tag || config.target) {
         let count = 0;
         if (context && context.forest) {
-          const all = [];
+          // 辅助函数：检查卡牌是否匹配目标
+          const matchesTarget = (card) => {
+            if (!card) return false;
+
+            // 检查 tag 匹配
+            if (config.tag && card.tags && card.tags.includes(config.tag)) {
+              return true;
+            }
+
+            // 检查 name 匹配
+            if (config.target) {
+              // 直接名称匹配
+              if (card.name === config.target) {
+                return true;
+              }
+              // 检查 SPECIES_ALIAS 效果（如雪兔被视为欧洲野兔）
+              if (card.effectConfig &&
+                card.effectConfig.type === 'SPECIES_ALIAS' &&
+                card.effectConfig.target === config.target) {
+                return true;
+              }
+            }
+
+            return false;
+          };
+
+          // 遍历森林中的所有卡牌组
           context.forest.forEach(g => {
-            if (g.center) all.push(g.center);
-            if (g.slots) Object.values(g.slots).forEach(s => s && all.push(s));
-          });
-          all.forEach(c => {
-            if (config.tag && c.tags && c.tags.includes(config.tag)) count++;
-            else if (config.target && c.name === config.target) count++;
+            // 统计中心树木
+            if (g.center && matchesTarget(g.center)) {
+              count++;
+            }
+
+            // 统计槽位卡牌（需要处理堆叠情况）
+            if (g.slots) {
+              Object.values(g.slots).forEach(s => {
+                if (s) {
+                  // 如果是堆叠卡牌，需要统计 list 中的所有卡牌
+                  if (s.list && s.list.length > 0) {
+                    s.list.forEach(sc => {
+                      if (matchesTarget(sc)) {
+                        count++;
+                      }
+                    });
+                  } else {
+                    // 非堆叠卡牌，直接统计
+                    if (matchesTarget(s)) {
+                      count++;
+                    }
+                  }
+                }
+              });
+            }
           });
         }
         const divisor = config.perCount || 1;
