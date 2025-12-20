@@ -104,8 +104,13 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
 
     // 特殊行动
     case REWARD_TYPES.ACTION_MOLE:
-      result.text = "鼹鼠特殊行动";
-      result.actions.push(config);
+      // 使用卡牌上的描述文案，如果没有则使用默认文案
+      const moleText = isBonus ? (card.bonus || '') : (card.effect || '');
+      result.text = moleText || "鼹鼠特殊行动";
+      result.actions.push({
+        ...config,
+        actionText: moleText || "立即支付费用打出任意数量的牌"
+      });
       break;
 
     case REWARD_TYPES.ACTION_RACCOON:
