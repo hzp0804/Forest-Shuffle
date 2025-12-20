@@ -289,6 +289,12 @@ const processGameData = (res, currentData) => {
   if (playerStates) {
     Object.keys(playerStates).forEach((openId) => {
       const playerState = playerStates[openId];
+
+      // 确保 cave 字段存在（兼容旧数据）
+      if (!playerState.cave) {
+        playerState.cave = [];
+      }
+
       if (playerState?.hand) {
         playerState.hand = enrichHand(playerState.hand, myOpenId, playerState._openid || openId, selectedUids);
       }

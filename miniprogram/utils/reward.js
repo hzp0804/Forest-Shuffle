@@ -137,6 +137,17 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
       result.actions.push(config);
       break;
 
+    case REWARD_TYPES.ACTION_PICK_FROM_CLEARING_TO_CAVE:
+      const count = config.count || 1;
+      result.text = isBonus ? (card.bonus || '捡空地牌进洞穴') : (card.effect || '捡空地牌进洞穴');
+      for (let i = 0; i < count; i++) {
+        result.actions.push({
+          type: REWARD_TYPES.ACTION_PICK_FROM_CLEARING_TO_CAVE,
+          actionText: `请选择一张空地牌放入洞穴 (${i + 1}/${count})`
+        });
+      }
+      break;
+
     // 动态收益：根据场上特定卡牌数量获得奖励（如赤狐根据欧洲野兔数量摸牌）
     case REWARD_TYPES.DRAW_PER_EXISTING:
       if (config.tag || config.target) {

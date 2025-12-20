@@ -43,8 +43,8 @@
                      ✋拿取
                   </button>
                </block>
-               <button size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}} {{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'ACTION_RACCOON' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND') ? 'disabled' : ''}}" bindtap="onConfirmPlay" disabled="{{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'ACTION_RACCOON' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND')}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
-                  {{(gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND') ? '✅确定' : '✅打出'}}
+               <button size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}} {{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'ACTION_RACCOON' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING_TO_CAVE') ? 'disabled' : ''}}" bindtap="onConfirmPlay" disabled="{{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'ACTION_RACCOON' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING_TO_CAVE')}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
+                  {{(gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING_TO_CAVE') ? '✅确定' : '✅打出'}}
                </button>
                <button size="mini" class="game-btn secondary sapling-btn {{gameState.actionMode ? 'disabled' : ''}}" bindtap="onPlaySapling" disabled="{{gameState.actionMode}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
                   🌱树苗
@@ -98,7 +98,14 @@
          <view class="forest-area">
             <view class="area-label" style="display:flex; justify-content:space-between; width:100%; padding-right:20rpx; box-sizing:border-box;">
                <text>{{viewingPlayerNick}}的森林 {{!isViewingSelf ? '(仅查看)' : ''}}</text>
-               <view class="buff-btn" bindtap="onShowBuffs" wx:if="{{isViewingSelf}}">✨Buff</view>
+               <view style="display: flex; align-items: center;">
+                  <view class="cave-info" style="margin-right: 16rpx; display: flex; align-items: center; color: #f0e6d2; font-size: 24rpx; background: rgba(80, 60, 40, 0.6); padding: 6rpx 16rpx; border-radius: 20rpx; border: 1rpx solid rgba(255,255,255,0.2);">
+                     ⛰️ 洞穴: {{playerStates[selectedPlayerOpenId || openId].cave.length || 0}}
+                  </view>
+                  <view class="buff-btn" bindtap="onShowBuffs" wx:if="{{isViewingSelf}}">
+                     ✨Buff
+                  </view>
+               </view>
             </view>
             <scroll-view class="forest-scroll" scroll-x enable-flex>
                <block wx:for="{{myForest}}" wx:key="_id">

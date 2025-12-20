@@ -12,18 +12,25 @@ function generateGameStateHash(allPlayerStates) {
   // 确保顺序固定，以便生成稳定的Hash
   Object.keys(allPlayerStates).sort().forEach(pid => {
     const pState = allPlayerStates[pid];
-    if (pState && pState.forest) {
-      pState.forest.forEach(g => {
-        if (g.center) parts.push(g.center.uid);
-        if (g.slots) {
-          Object.values(g.slots).forEach(s => {
-            if (s) {
-              parts.push(s.uid);
-              if (s.list) s.list.forEach(sc => parts.push(sc.uid));
-            }
-          })
-        }
-      });
+    if (pState) {
+      // Forest
+      if (pState.forest) {
+        pState.forest.forEach(g => {
+          if (g.center) parts.push(g.center.uid);
+          if (g.slots) {
+            Object.values(g.slots).forEach(s => {
+              if (s) {
+                parts.push(s.uid);
+                if (s.list) s.list.forEach(sc => parts.push(sc.uid));
+              }
+            })
+          }
+        });
+      }
+      // Cave
+      if (pState.cave && Array.isArray(pState.cave)) {
+        pState.cave.forEach(c => parts.push(c.uid));
+      }
     }
   });
   return parts.join('|');

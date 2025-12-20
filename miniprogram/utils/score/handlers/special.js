@@ -1,16 +1,20 @@
 const { TAGS } = require('../../../data/constants');
 const { getCountByName, getCountByTag, getAllCardsFromContext } = require('../helpers');
 
-/**
- * 处理 CAVE_COUNT 类型的计分
- * 逻辑：基于洞穴中的卡牌数量得分
- * 典型应用：胡兀鹫 (每张洞穴卡得1分)
- */
 const handleCaveCount = (card, context, allPlayerStates, myOpenId, stats) => {
   const conf = card.scoreConfig;
-  if (context.cave) {
-    return context.cave.length * (conf.value || 0);
+
+  // context 可能只包含 forest，需要从 playerStates 或传入完整的 playerState 获取 cave
+  // 通常 calculateTotalScore 传入的是 playerState (包含 hand, forest, cave)
+  // 如果 context 只有 forest，需要检查是否可以访问 cave
+  if (context.cave && Array.isArray(context.cave)) {
+    const score = context.cave.length * (conf.value || 0);
+    console.log(`🦅 [${card.name}] 洞穴卡牌数量: ${context.cave.length}, 得分: ${score}`);
+    return score;
   }
+
+  // 如果 cave 字段不存在，这通常是旧数据的问题，应该在 processGameData 中被修复
+  console.warn(`⚠️ [${card.name}] cave 字段不存在或无效 (cave=${JSON.stringify(context.cave)}), 返回 0 分`);
   return 0;
 };
 

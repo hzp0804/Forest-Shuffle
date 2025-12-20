@@ -179,6 +179,30 @@ const SpecialActionUtils = {
         break;
       }
 
+      case 'ACTION_PICK_FROM_CLEARING_TO_CAVE': {
+        // 胡兀鹫效果：从空地选一张牌进洞穴
+        if (selectedClearingIdx === undefined || selectedClearingIdx < 0) {
+          result.success = false;
+          result.errorMsg = "请选择空地牌";
+          return result;
+        }
+
+        const card = clearing[selectedClearingIdx];
+        const newClearing = clearing.filter((_, idx) => idx !== selectedClearingIdx);
+        // Add to cave
+        const newCave = [...(playerState.cave || []), { ...card, selected: false }];
+
+        // 返回进洞的卡片信息用于产生动画
+        result.cavedCards = [card];
+
+        result.updates = {
+          [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
+          [`gameState.playerStates.${openId}.cave`]: DbHelper.cleanHand(newCave),
+        };
+        result.logMsg = `特殊行动：将空地的 ${card.name} 放入洞穴`;
+        break;
+      }
+
       default:
         result.logMsg = `完成了特殊行动: ${mode}`;
         break;

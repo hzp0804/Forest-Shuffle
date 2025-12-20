@@ -1,23 +1,25 @@
-Implementation Plan - Fix Elderberry Trigger in Special Play Mode
+Implementation Plan - Fix Score Updating
 
 1.  **Analyze the Issue**:
 
-    - **Symptom**: Playing a plant card via a reward (e.g., Free Play) does not trigger Elderberry's passive effect (Draw 1 card).
-    - **Root Cause**: In `miniprogram/pages/game/game.js`, within `onConfirmPlay`, when `isSpecialPlayMode` is active (e.g., during Free Play), the calculated rewards (including Trigger Effects like Elderberry's) are added to `gameState.accumulatedRewards.drawCount` using a database increment operator (`db.command.inc`). However, the subsequent call to `finalizeAction` reads the _previous_ state of `gameState.accumulatedRewards` (local data), missing the pending increment that hasn't been confirmed by the server yet.
-    - **Verification**: Reviewed `onConfirmPlay` logic lines 1035-1130. Confirmed that `pendingDrawCount` was not being updated locally for special play modes, causing `finalizeAction` to see 0 draws if the previous accumulated count was 0.
+    - **User Feedback**: "The score is still wrong."
+    - **Root Cause**: The caching mechanism (`scoreCache`) uses `generateGameStateHash` to decide if the score needs re-calculation. Previously, this hash generation ONLY considered cards in the **Forest**. It ignored changes in the **Cave**.
+    - **Scenario**:
+      - Player has Bearded Vulture (pays attention to cave).
+      - Score is calculated (Hash A).
+      - Player adds 2 cards to Cave. Forest is unchanged.
+      - Next calc: `generateGameStateHash` sees unchanged forest -> Generates Hash A.
+      - Returns cached score (invalid).
+    - **Solution**: Update `generateGameStateHash` to include UIDs of cards in the `Cave`.
 
-2.  **Proposed Solution**:
+2.  **Implementation Steps (Completed)**:
 
-    - **Modify `miniprogram/pages/game/game.js`**:
-    - In the `if (isSpecialPlayMode)` block in `onConfirmPlay`.
-    - After calculating `reward` (which correctly includes `triggers.drawCount`), explicitly add `reward.drawCount` to `this.pendingDrawCount`.
-    - This ensures `finalizeAction` (which reads `pendingDrawCount`) will execute the draw immediately.
+    - **Update `miniprogram/utils/score/helpers.js`**:
+      - Found `generateGameStateHash` function.
+      - Added logic to iterate over `pState.cave` (if it exists) and append each card's UID to the hash parts.
 
-3.  **Implementation Steps**:
+3.  **Verification**:
+    - Add cards to cave -> Hash changes -> Cache invalidates -> `calculateTotalScore` runs -> `handleCaveCount` runs -> Returns correct score.
+    - This combined with the previous check (`if (context.cave)`) ensures robustness.
 
-    - Identify the code block in `onConfirmPlay`.
-    - Insert `this.pendingDrawCount = (this.pendingDrawCount || 0) + reward.drawCount` if `reward.drawCount > 0`.
-    - Add comments explaining the fix.
-
-4.  **Verification Plan**:
-    - (Self-Correction during thought process): Checked if `extraTurn` is also affected. It theoretically is, but no current Trigger Effects provide extra turns, only draws. So resolving `drawCount` handles the reported issue and current game mechanics.
+All steps executed.

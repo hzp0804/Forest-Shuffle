@@ -371,7 +371,8 @@ Page({
     if (cardId) {
       // 只有森林中的卡片才准备游戏上下文（用于计分）
       const gameContext = isInForest ? {
-        forest: this.data.playerStates[this.data.openId]?.forest || []
+        forest: this.data.playerStates[this.data.openId]?.forest || [],
+        cave: this.data.playerStates[this.data.openId]?.cave || [] // 添加 cave 字段
       } : null;
 
       this.setData({
@@ -735,7 +736,7 @@ Page({
     }
 
     // Handle Clearing Pick Actions (European Wildcat, Mosquito, etc.)
-    if (gameState && (gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND')) {
+    if (gameState && (gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING_TO_CAVE')) {
       const { playerStates, openId, clearing, selectedClearingIdx, gameState } = this.data;
       const myState = playerStates[openId];
 
@@ -759,6 +760,19 @@ Page({
 
       // Clear local selection
       this.setData({ selectedClearingIdx: -1 });
+
+      // 如果有放入洞穴的卡片，创建动画事件
+      if (result.cavedCards && result.cavedCards.length > 0) {
+        updates['gameState.lastEvent'] = {
+          type: 'CAVE_CARDS',
+          playerOpenId: openId,
+          playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+          playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+          cavedCards: result.cavedCards.map(c => Utils.enrichCard(c)),
+          count: result.cavedCards.length,
+          timestamp: Date.now()
+        };
+      }
 
       const remaining = (gameState.pendingActions || []).slice(1);
       if (remaining.length > 0) {

@@ -1200,6 +1200,10 @@ const SPECIES_DATA = {
     cost: 1,
     type: CARD_TYPES.V_CARD,
     effect: "将空地上的2张牌放入你的洞穴",
+    effectConfig: {
+      type: REWARD_TYPES.ACTION_PICK_FROM_CLEARING_TO_CAVE,
+      count: 2
+    },
     bonus: "",
     points: "你洞穴里的每张牌得1分",
     scoreConfig: {
