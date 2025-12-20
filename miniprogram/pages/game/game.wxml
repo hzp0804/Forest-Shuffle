@@ -180,15 +180,36 @@
                <view class="event-header">
                   <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
                   <text class="event-title">
-                     <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING'}}">翻牌</block>
+                     <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING'}}">
+                        翻牌 ({{currentEvent.count}}张)
+                     </block>
                      <block wx:elif="{{currentEvent.type === 'REWARD_DRAW'}}">
                         {{currentEvent.playerNick}} 奖励 ({{currentEvent.count}}张)
                      </block>
                      <block wx:else>{{currentEvent.playerNick}} 正在摸牌...</block>
                   </text>
                </view>
+               <!-- 翻牌事件：展示所有翻出的卡片 -->
+               <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' && currentEvent.revealedCards}}">
+                  <view class="reward-cards-display">
+                     <view wx:for="{{currentEvent.revealedCards}}" wx:key="uid" class="reward-card-item">
+                        <view class="flip-container">
+                           <view class="flip-inner {{isCardFlipped ? 'is-flipped' : ''}}">
+                              <!-- 初始面: 背面 -->
+                              <view class="flip-front">
+                                 <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
+                              </view>
+                              <!-- 翻转面: 正面 -->
+                              <view class="flip-back">
+                                 <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}};"></view>
+                              </view>
+                           </view>
+                        </view>
+                     </view>
+                  </view>
+               </block>
                <!-- 奖励抽牌：显示多张卡片 -->
-               <block wx:if="{{currentEvent.type === 'REWARD_DRAW' && currentEvent.drawnCards}}">
+               <block wx:elif="{{currentEvent.type === 'REWARD_DRAW' && currentEvent.drawnCards}}">
                   <view class="reward-cards-display">
                      <view wx:for="{{currentEvent.drawnCards}}" wx:key="uid" class="reward-card-item">
                         <view class="flip-container">

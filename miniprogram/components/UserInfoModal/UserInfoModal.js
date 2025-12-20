@@ -83,7 +83,6 @@ Component({
     },
 
     onConfirm() {
-      console.log('onConfirm', this.data);
       if (!this.data.canSubmit) return;
 
       this.setData({ submitting: true });

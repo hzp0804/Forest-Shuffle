@@ -86,11 +86,6 @@ const enrichCardWithSpecies = (card, side) => {
     speciesData = enriched.speciesDetails[0];
   }
 
-  // DEBUG LOG
-  if (enriched.name && enriched.name.includes('野兔')) {
-    console.log('EnrichHare:', { side, index, speciesName: speciesData?.name, ecType: speciesData?.effectConfig?.type, len: enriched.speciesDetails.length });
-  }
-
   let specificTreeSymbol = enriched.tree_symbol;
   if (Array.isArray(enriched.tree_symbol) && enriched.tree_symbol.length > index) {
     specificTreeSymbol = [enriched.tree_symbol[index]];

@@ -11,8 +11,6 @@ App({
       env: wx.cloud.DYNAMIC_CURRENT_ENV,
       traceUser: true,
     });
-    console.log('wx.cloud.init called with DYNAMIC_CURRENT_ENV');
-
     this.globalData = {};
   }
 });

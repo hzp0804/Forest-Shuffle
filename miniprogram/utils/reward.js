@@ -12,8 +12,6 @@ const { TAGS, CARD_TYPES } = require('../data/constants');
  * @returns {Object} 奖励结果 { drawCount, extraTurn, actions, text }
  */
 function calculateReward(card, slot, paymentCards, context = {}, isBonus = false) {
-  console.log('选中的手牌', card, paymentCards);
-
   const result = {
     drawCount: 0,
     extraTurn: false,
@@ -23,17 +21,13 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
   if (!isBonus) result
 
   // 获取配置
-  console.log('isBonus', card)
   const config = isBonus ? card.bonusConfig : card.effectConfig;
-  console.log('config', config, isBonus, isColorMatched(card, paymentCards))
   if (!config) return result;
 
   // 如果是 bonus，需要检查颜色匹配
   if (isBonus && !isColorMatched(card, paymentCards)) {
     return result;
   }
-
-  console.log('逻辑计算中...', card);
 
   // 根据类型处理奖励
   switch (config.type) {
@@ -44,7 +38,6 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
 
     case REWARD_TYPES.EXTRA_TURN:
       result.extraTurn = true;
-      console.log("extra turn");
       break;
 
     case REWARD_TYPES.DRAW_AND_TURN:
@@ -87,11 +80,9 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
         });
       } else if (Array.isArray(config.tags) && config.tags.length > 0) {
         // 有序列的情况，拆分为多个独立行动，每个action带有自己的提示文本
-        console.log('拆分PLAY_FREE actions，tags顺序:', config.tags);
         config.tags.forEach((tag, index) => {
           const tagText = getTagText(tag);
           const actionText = `免费打出一张带有${tagText}符号的牌`;
-          console.log(`  第${index + 1}个action: ${actionText}`);
           result.actions.push({
             type: REWARD_TYPES.PLAY_FREE,
             tags: [tag],
@@ -228,8 +219,6 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
 
     if (!card.effectConfig) return;
     const config = card.effectConfig;
-    // console.log('Checking trigger for', card.name, config.type);
-
     switch (config.type) {
       case TRIGGER_TYPES.TRIGGER_ON_PLAY_TAG_DRAW:
         // 检查触发条件: 此时打出的牌 playedCard 是否包含目标 tag
@@ -237,7 +226,6 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
           if (config.reward) {
             if (config.reward.type === 'DRAW') {
               result.drawCount += (config.reward.value || 0);
-              console.log('TRIGGER_TAG_DRAW triggered!', card.name, result.drawCount);
             }
           }
         }
@@ -245,7 +233,6 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
 
       case TRIGGER_TYPES.TRIGGER_ON_PLAY_POSITION:
         // 检查位置
-        // console.log('Checking position trigger', triggerContext, config.position);
         if (triggerContext && triggerContext.slot && triggerContext.slot.side === config.position) {
           let match = true;
           if (config.tag) {
@@ -256,10 +243,7 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
           if (match && config.reward) {
             if (config.reward.type === 'DRAW') {
               result.drawCount += (config.reward.value || 0);
-              console.log('TRIGGER_POSITION triggered!', card.name, result.drawCount);
             }
-          } else {
-            console.log('Trigger match failed', match, config.tag, playedCard.tags);
           }
         }
         break;

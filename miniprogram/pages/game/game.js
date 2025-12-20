@@ -192,12 +192,15 @@ Page({
       // 检测回合是否切换（activePlayer 变动或 turnCount 变动）
       const turnChanged = currentActive !== this.data.lastActivePlayer || currentTurnCount !== lastTurnCount;
 
-      // 1. 回合切换逻辑 (标记待提示 + 重置选择状态)
+      // 1. 回合切换逻辑 (标记待提示 + 重置选择状态 + 初始化翻牌计数器)
       if (turnChanged) {
         // 回合切换时，重置选择状态
         processedData.primarySelection = null;
         processedData.selectedSlot = null;
         processedData.lastActivePlayer = currentActive;
+        // 初始化翻牌计数器为 0（新回合开始）
+        this.pendingRevealCount = 0;
+        console.log('🔄 回合切换，翻牌计数器已重置为 0');
         processedData.lastTurnCount = currentTurnCount;
       }
 
@@ -402,7 +405,6 @@ Page({
 
     // 显示 list 中的所有卡片
     const cardsToShow = slotCard.list || [];
-    console.log('堆叠卡片列表:', cardsToShow);
 
     this.setData({
       stackModalVisible: true,
@@ -456,9 +458,6 @@ Page({
       const { enrichCard } = require('../../utils/utils');
       primaryCardRaw = enrichCard(primaryCardRaw);
 
-      console.log('富化后的 primaryCardRaw:', primaryCardRaw);
-      console.log('primaryCardRaw.tags:', primaryCardRaw.tags);
-
       const cardType = (primaryCardRaw.type || '').toLowerCase();
 
       // A. 单物种卡不需要插槽
@@ -480,12 +479,6 @@ Page({
         const existingCard = tree.slots?.[side];
 
         if (existingCard) {
-          console.log('=== onSlotTap 堆叠调试 ===');
-          console.log('existingCard:', existingCard);
-          console.log('existingCard.max:', existingCard.max);
-          console.log('existingCard.slotConfig:', existingCard.slotConfig);
-          console.log('primaryCardRaw.tags:', primaryCardRaw.tags);
-
           let allowStack = false;
           let capacity = 1;
 
@@ -967,7 +960,6 @@ Page({
     if (source === 'PLAYER_ACTION') {
       // 在特殊模式下打牌，不重新触发该牌自身的 Bonus 和 Effect (防止无限循环)
       if (!isSpecialPlayMode) {
-        console.log('奖励计算中....')
         // bonus: 需要颜色匹配 (isBonus = true)
         bonus = calculateReward(primaryCard, selectedSlot, paymentCards, {}, true);
         // effect: 不需要颜色匹配 (isBonus = false)
@@ -987,11 +979,18 @@ Page({
 
     // 如果是处于特殊模式下打的这一张牌
     if (isSpecialPlayMode) {
+      // 统计翻牌数量（合并到回合结束处理）
+      // 增强判定：同时检查 type 和 tags
+      const { TAGS } = require("../../data/constants");
+      const isTreeType = (primaryCard.type || '').toLowerCase() === 'tree';
+      const hasTreeTag = primaryCard.tags && primaryCard.tags.includes(TAGS.TREE);
+      const isPlayedAsTree = isTreeType || hasTreeTag;
+
       // 1. 基础更新：手牌、森林、空地、事件
       const updates = {
         [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
         [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
-        [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
+        // [`gameState.clearing`]: DbHelper.cleanClearing(newClearing), // 移除默认全量更新
         [`gameState.lastEvent`]: {
           type: 'PLAY_CARD', playerOpenId: openId,
           playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
@@ -1002,6 +1001,16 @@ Page({
         // 特殊模式下的奖励累积
         [`gameState.accumulatedRewards.drawCount`]: db.command.inc(reward.drawCount),
       };
+      // 如果打出的是树木，累加翻牌计数器
+      // 这里包括奖励行动中打出的树木（如鼼鼠、蝙蝠等效果触发的免费打牌）
+      if (isPlayedAsTree) {
+        updates[`gameState.accumulatedRewards.revealCount`] = db.command.inc(1);
+        this.pendingRevealCount = (this.pendingRevealCount || 0) + 1;
+        console.log('🌳 特殊模式打出树木，计数器+1。当前总计:', this.pendingRevealCount);
+      } else {
+        console.warn('⚠️ 非树木卡牌，未增加计数');
+      }
+
       if (reward.extraTurn) updates[`gameState.accumulatedRewards.extraTurn`] = true;
 
       // 2. 处理 Pending Actions (移除当前执行的，添加新产生的)
@@ -1025,9 +1034,9 @@ Page({
         cleared = true;
         nextPending.shift();
       }
-      // 如果触发了清空，需要更新 updates 中的 clearing 数据
-      updates[`gameState.clearing`] = DbHelper.cleanClearing(newClearing);
+      // 如果触发了清空，需要更新 updates 中的 clearing 数据 (全量更新)
       if (cleared) {
+        updates[`gameState.clearing`] = DbHelper.cleanClearing(newClearing);
         updates[`gameState.notificationEvent`] = db.command.set(createClearingNotification());
       }
 
@@ -1036,14 +1045,6 @@ Page({
         const nextAction = nextPending[0];
         const nextMode = nextAction ? nextAction.type : null;
         const nextText = nextAction?.actionText || null;
-
-        console.log('设置下一个action:', {
-          mode: nextMode,
-          actionText: nextText,
-          tags: nextAction?.tags,
-          pendingCount: nextPending.length
-        });
-
         updates[`gameState.pendingActions`] = nextPending;
         updates[`gameState.actionMode`] = nextMode;
         // 使用action自带的actionText，如果没有则设为null
@@ -1077,6 +1078,18 @@ Page({
     const pendingActions = [...(reward.actions || [])];
     let isRemoveClearingEffect = false;
 
+    // ⚠️ 重要：在进入特殊行动模式之前，先累加翻牌计数器
+    // 无论是否有后续行动，只要打出了树木，都要计数
+    const { TAGS } = require("../../data/constants");
+    const isTreeType = (primaryCard.type || '').toLowerCase() === 'tree';
+    const hasTreeTag = primaryCard.tags && primaryCard.tags.includes(TAGS.TREE);
+    const isPlayedAsTree = isTreeType || hasTreeTag;
+
+    if (isPlayedAsTree) {
+      this.pendingRevealCount = (this.pendingRevealCount || 0) + 1;
+      console.log('🌳 普通模式打出树木，计数器+1。当前总计:', this.pendingRevealCount);
+    }
+
     // Auto-Resolve Loop (For actions at start of chain)
     while (pendingActions.length > 0 && pendingActions[0].type === 'ACTION_REMOVE_CLEARING') {
       isRemoveClearingEffect = true;
@@ -1105,7 +1118,8 @@ Page({
         [`gameState.actionText`]: actionText,
         [`gameState.accumulatedRewards`]: {
           drawCount: reward.drawCount,
-          extraTurn: reward.extraTurn
+          extraTurn: reward.extraTurn,
+          revealCount: isPlayedAsTree ? 1 : 0  // 如果打出了树木，初始化为 1
         },
         [`gameState.lastEvent`]: {
           type: 'PLAY_CARD', playerOpenId: openId,
@@ -1134,15 +1148,6 @@ Page({
     const currentHandSize = newHand.length;
     const maxCanDraw = 10 - currentHandSize;
     const actualDraw = Math.max(0, Math.min(reward.drawCount, maxCanDraw));
-
-    console.log('奖励抽牌计算:', {
-      当前手牌数: currentHandSize,
-      奖励抽牌数: reward.drawCount,
-      最多可抽: maxCanDraw,
-      实际抽牌: actualDraw,
-      手牌详情: newHand.map(c => ({ id: c.id, uid: c.uid }))
-    });
-
     const drawnCards = []; // 记录抽到的卡片
     for (let i = 0; i < actualDraw; i++) {
       if (newDeck.length > 0) {
@@ -1156,21 +1161,46 @@ Page({
 
     paymentCards.forEach(c => newClearing.push({ ...c, selected: false }));
 
-    const { TAGS } = require("../../data/constants");
     const isShrub = primaryCard.tags && primaryCard.tags.includes(TAGS.SHRUB);
 
-    let deckRevealEvent = null;
-    // 灌木不触发翻牌
-    if (isTree && !isShrub && newDeck.length > 0) {
-      const top = newDeck.shift();
-      newClearing.push({ ...top, selected: false });
-      deckRevealEvent = {
-        type: 'DECK_TO_CLEARING',
-        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
-        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-        mainCard: Utils.enrichCard(top),
-        timestamp: Date.now() + 100
-      };
+    // === 翻牌逻辑：回合内累加计数，回合结束时统一翻牌 ===
+    let deckRevealEvent = null; // 翻牌事件（用于动画展示）
+    // 注意：树木判断和计数逻辑已经在前面（第 1112-1118 行）处理了
+    // 这里只需要判断是否立即翻牌还是推迟到回合结束
+
+    const hasNextSteps = (reward.actions && reward.actions.length > 0) || reward.extraTurn;
+    const shouldDeferReveal = hasNextSteps;
+
+    // 决定是否立即翻牌还是推迟到回合结束
+    if (shouldDeferReveal) {
+      console.log('🕒 有后续行动（奖励或额外回合），翻牌推迟到回合结束');
+    } else {
+      // 立即结算所有累积的翻牌（无后续行动，回合结束）
+      const totalReveal = this.pendingRevealCount || 0;
+      this.pendingRevealCount = 0; // Reset
+
+      if (totalReveal > 0) {
+        let revealedCards = [];
+        for (let i = 0; i < totalReveal; i++) {
+          if (newDeck.length > 0) {
+            const top = newDeck.shift();
+            revealedCards.push(top);
+            newClearing.push({ ...top, selected: false });
+          }
+        }
+
+        if (revealedCards.length > 0) {
+          const mainCard = revealedCards[revealedCards.length - 1];
+          deckRevealEvent = {
+            type: 'DECK_TO_CLEARING',
+            playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+            playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+            mainCard: Utils.enrichCard(mainCard),
+            count: revealedCards.length,
+            timestamp: Date.now() + 100
+          };
+        }
+      }
     }
     // 检查空地是否已满
     let notificationEvent = null;
@@ -1227,11 +1257,15 @@ Page({
         mainCard: primaryCard, subCards: paymentCards.map(c => Utils.enrichCard(c)),
         timestamp: Date.now()
       },
-      [`gameState.deckRevealEvent`]: deckRevealEvent,
+      [`gameState.deckRevealEvent`]: deckRevealEvent, // 如果是Immediate模式，会有值；否则为null
       [`gameState.rewardDrawEvent`]: rewardDrawEvent,
       [`gameState.extraTurnEvent`]: extraTurnEvent,
       [`gameState.notificationEvent`]: db.command.set(notificationEvent)
     };
+
+    if (shouldDeferReveal && isPlayedAsTree) {
+      updates[`gameState.accumulatedRewards.revealCount`] = db.command.inc(1);
+    }
 
     // 清除本地选择状态，提示会在数据更新后自动计算
     this.setData({
@@ -1501,6 +1535,67 @@ Page({
       };
     }
     updates['gameState.rewardDrawEvent'] = rewardDrawEvent;
+
+    // === 处理累积的翻牌 (回合结束时统一翻牌) ===
+    // 使用本地计数器 pendingRevealCount，该计数器在回合开始时初始化为 0
+    // 每次打出树木时累加，包括奖励行动中打出的树木
+    console.log('📊 回合结束翻牌统计:', {
+      本回合打出树木数: this.pendingRevealCount || 0,
+      数据库累积计数: rewards.revealCount || 0
+    });
+
+    // 优先使用本地计数器（更准确），数据库计数作为备份（断线重连场景）
+    const pendingReveal = Math.max(this.pendingRevealCount || 0, rewards.revealCount || 0);
+
+    if (pendingReveal > 0) {
+      console.log(`🎴 回合结束，开始翻牌: ${pendingReveal} 张`);
+
+      const isFreshUpdate = !!actionUpdates[`gameState.clearing`];
+      let newClearing = isFreshUpdate ?
+        [...actionUpdates[`gameState.clearing`]] :
+        [...(this.data.clearing || [])];
+
+      let revealedCards = [];
+      for (let i = 0; i < pendingReveal; i++) {
+        if (newDeck.length > 0) {
+          const top = newDeck.shift();
+          revealedCards.push(top);
+          // 确保ID存在，cleanClearing能处理
+          newClearing.push({ ...top, selected: false });
+        }
+      }
+
+      if (revealedCards.length > 0) {
+        if (isFreshUpdate) {
+          // 如果当前Action已经全量更新了clearing（例如包含支付卡或已清空），则追加到该状态
+          updates[`gameState.clearing`] = DbHelper.cleanClearing(newClearing);
+        } else {
+          // 否则，使用原子操作 push，防止覆盖其他并发更新（Race Condition修复核心）
+          updates[`gameState.clearing`] = db.command.push({
+            each: DbHelper.cleanClearing(revealedCards)
+          });
+        }
+
+        updates[`gameState.deck`] = newDeck; // 更新牌堆
+
+        const mainCard = revealedCards[revealedCards.length - 1]; // 事件展示最后一张
+        updates['gameState.deckRevealEvent'] = {
+          type: 'DECK_TO_CLEARING',
+          playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+          playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+          mainCard: Utils.enrichCard(mainCard),
+          revealedCards: revealedCards.map(c => Utils.enrichCard(c)), // 添加所有翻出的卡片
+          count: revealedCards.length,
+          timestamp: Date.now() + 100
+        };
+        console.log(`✅ 翻牌完成: ${revealedCards.length} 张卡牌已放入空地`);
+      }
+    }
+
+    // 重置翻牌计数器（回合结束后清零，等待下一回合开始时重新初始化）
+    // 注意：实际的初始化在回合切换时进行（processGameUpdate 中的 turnChanged 逻辑）
+    this.pendingRevealCount = 0;
+    console.log('🔄 翻牌计数器已重置为 0');
 
     // 3. 决定是否结束回合
     // 如果没有额外回合奖励，则切换玩家

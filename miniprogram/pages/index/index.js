@@ -22,7 +22,6 @@ const loginWithCloud = () => {
       name: "login",
       data: {},
       success: (cloudRes) => {
-        console.log("登录结果:", cloudRes);
         const result = cloudRes?.result || {};
         const openId =
           result.openId || result?.userInfo?.openId || result?.openid;
@@ -121,7 +120,6 @@ Page({
       userProfile.nickName &&
       userProfile.avatarUrl
     ) {
-      console.log("Auto entering lobby with profile:", userProfile);
       wx.navigateTo({
         url: "/pages/lobby/lobby",
       });
@@ -139,7 +137,6 @@ Page({
 
   onUserInfoSubmit: async function (e) {
     let { avatarUrl, nickName } = e.detail;
-    console.log("onUserInfoSubmit", avatarUrl, nickName);
 
     // 显示加载提示，因为上传图片可能需要一点时间
     wx.showLoading({ title: "保存中...", mask: true });
@@ -157,8 +154,6 @@ Page({
         // 构建云存储路径: avatars/{openId}_{timestamp}.jpg
         const cloudPath = `user-avatars/${openId}_${Date.now()}${ext}`;
 
-        console.log("Uploading temporary avatar to:", cloudPath);
-
         const uploadResult = await wx.cloud.uploadFile({
           cloudPath: cloudPath,
           filePath: avatarUrl,
@@ -168,7 +163,6 @@ Page({
           throw new Error("图片上传失败，未获取到 fileID");
         }
 
-        console.log("Upload success, fileID:", uploadResult.fileID);
         avatarUrl = uploadResult.fileID; // 更新为永久的文件ID
       }
 
@@ -205,7 +199,6 @@ Page({
       if (users.length > 0) {
         // 更新现有记录
         const docId = users[0]._id;
-        console.log("Updating existing user:", docId);
         await userCollection.doc(docId).update({
           data: {
             avatarUrl,
@@ -215,7 +208,6 @@ Page({
         });
       } else {
         // 新增记录
-        console.log("Adding new user");
         await userCollection.add({
           data: {
             avatarUrl,

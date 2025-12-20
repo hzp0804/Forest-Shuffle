@@ -153,7 +153,7 @@ function getCountByName(paramContext, name) {
  * 返回 { tagCounts, colorCounts, nameCounts }
  */
 function precalculateStats(context) {
-  console.log("统计森林卡牌信息")
+  console.log("🌳 统计森林卡牌信息")
   const tagCounts = {};
   const colorCounts = {};
   const nameCounts = {};

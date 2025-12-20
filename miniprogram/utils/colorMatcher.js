@@ -23,7 +23,6 @@ const getCardColors = (card) => {
  * @returns {boolean} 是否所有支付卡都符合同色要求
  */
 const isColorMatched = (primaryCard, paymentCards) => {
-  console.log('颜色匹配', primaryCard, paymentCards)
   if (!paymentCards || paymentCards.length === 0) return true;
   let targetColor = primaryCard.tree_symbol[0] // 主卡颜色
   return paymentCards.every(payCard => { // 费用卡全都包含主卡颜色

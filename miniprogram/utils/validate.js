@@ -86,16 +86,7 @@ const validatePlay = (params) => {
 
     // PLAY_FREE 模式：先检查卡片条件（Tag），不检查费用
     if (gameState.actionMode === 'PLAY_FREE' && primaryCard && currentAction) {
-      console.log('PLAY_FREE验证:', {
-        currentAction: currentAction,
-        actionTags: currentAction.tags,
-        actionText: currentAction.actionText,
-        primaryCard: primaryCard.name,
-        primaryCardTags: primaryCard.tags
-      });
-
       const tagValidation = validatePlayFreeTag(primaryCard, currentAction);
-      console.log('Tag验证结果:', tagValidation);
 
       // 检查指定名称 (如: 必须打出小野猪)
       let nameValid = true;
@@ -108,8 +99,6 @@ const validatePlay = (params) => {
       // 如果不符合 Tag 或 名称要求，明确告知
       const isValid = tagValidation.valid && nameValid;
       const errorMsg = isValid ? null : `不符合要求：${text}`;
-
-      console.log('最终验证结果:', { isValid, errorMsg, text });
 
       return {
         valid: isValid,
@@ -281,7 +270,6 @@ const validatePlay = (params) => {
     instructionSegments: segments,
     instructionLines: lines
   }
-  console.log('触发校验：', result)
   // 7. 返回完整结果
   return result;
 };

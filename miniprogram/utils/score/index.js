@@ -40,7 +40,6 @@ function calculateTotalScore(playerState, openId, allPlayerStates, nickName) {
 
   // 优化：统一预统计
   const stats = precalculateStats(playerState);
-  console.log('按标签、颜色、名称统计:', stats)
   const cardScores = {};
 
   pointsCards.forEach(card => {
@@ -64,7 +63,6 @@ function calculateTotalScore(playerState, openId, allPlayerStates, nickName) {
  * 计算单张卡牌得分
  */
 function calculateCardScore(card, context, allPlayerStates, myOpenId, stats) {
-  // console.log('计算单张卡牌得分:', card, context, allPlayerStates, myOpenId, stats)
   if (!card.scoreConfig) return 0;
 
   const config = card.scoreConfig;

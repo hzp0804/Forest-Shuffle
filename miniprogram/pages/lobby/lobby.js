@@ -79,7 +79,6 @@ Page({
   onLoad() {
     const app = getApp();
     const globalProfile = app.globalData.userProfile;
-    console.log("Lobby onLoad, globalProfile:", globalProfile);
 
     // 判断是否已登录（只要有 openId 且有昵称认为已登录）
     if (globalProfile && globalProfile.openId && globalProfile.nickName) {
@@ -249,8 +248,6 @@ Page({
       const res = await db.collection("rooms").add({
         data: roomData
       });
-
-      console.log("Room created:", res);
       wx.hideLoading();
 
       // 更新本地状态，进入房间视图
@@ -271,7 +268,6 @@ Page({
 
     } catch (err) {
       wx.hideLoading();
-      console.error("Create room failed:", err);
       if (
         err.errMsg &&
         (err.errMsg.includes("not exists") ||
@@ -472,7 +468,6 @@ Page({
   },
 
   onRoomContainerLeave() {
-    console.log("Page container leaving...");
     if (this.data.isInRoom) {
       // 这里的逻辑稍微 tricky：如果是用户点击“退出房间”按钮，会先调用 onExitRoom，然后 update db，然后 leaveRoomLocal -> isInRoom=false -> page-container hide -> trigger leave again?
       // 不，page-container 的 show 属性如果变为 false，也会触发 leave 吗？或者只在手势/返回时触发？
@@ -508,7 +503,6 @@ Page({
 
   startRoomPolling(roomId) {
     this.stopRoomPolling(); // 防止重复
-    console.log("Start polling room:", roomId);
     this.pollingTimer = setInterval(() => {
       this.fetchRoomInfo(roomId);
     }, 2000); // 2s 一次，避免过快轮询
@@ -651,8 +645,6 @@ Page({
               },
               success: (updateRes) => {
                 wx.hideLoading();
-                console.log("Join success", updateRes);
-
                 // 乐观更新本地数据，实际会由 watcher 修正
                 room.players = nextPlayers;
                 this.enterRoomLocal(room);
@@ -720,15 +712,12 @@ Page({
 
   initRoomWatcher(roomId) {
     if (this.roomWatcher) return; // 避免重复监听
-    console.log("Start watching room:", roomId);
-
     const db = wx.cloud.database();
     this.roomWatcher = db
       .collection("rooms")
       .doc(roomId)
       .watch({
         onChange: (snapshot) => {
-          console.log("更新房间:", snapshot);
           // 如果房间被删除
           if (!snapshot.docs || snapshot.docs.length === 0) {
             wx.showToast({ title: "房间已解散", icon: "none" });
@@ -907,10 +896,9 @@ Page({
     const finalDeck = topPart.concat(bottomPart);
 
     console.group("Shuffle Result");
-    console.log(`基础卡牌数: ${rawDeck.length}`);
-    console.log(`冬季卡牌数: ${WINTER_CARD_COUNT}`);
-    console.log(`总卡牌数: ${finalDeck.length}`);
-    console.log(`安全区(Top)数量: ${topPart.length}`);
+    console.log(`🌳 基础卡牌数: ${rawDeck.length}`);
+    console.log(`🌳 冬季卡牌数: ${WINTER_CARD_COUNT}`);
+    console.log(`🌳 总卡牌数: ${finalDeck.length}`);
     console.groupEnd();
 
     // 7. 发牌 (Initial Hand)
@@ -977,7 +965,6 @@ Page({
         },
         success: () => {
           wx.hideLoading();
-          console.log("Game Initialized");
         },
         fail: (err) => {
           wx.hideLoading();
