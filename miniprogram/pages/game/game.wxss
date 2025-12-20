@@ -1546,6 +1546,12 @@
   border-radius: 50%;
   border: 1rpx solid #fff;
   flex-shrink: 0;
+  display: block;
+  /* 确保图片表现为块级元素，避免inline-block的基线问题 */
+}
+
+.default-avatar {
+  background-color: #ccc;
 }
 
 .event-title {
@@ -1553,6 +1559,11 @@
   color: #fff;
   font-weight: bold;
   text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.5);
+  line-height: 40rpx;
+  /* 与头像高度一致，确保垂直居中 */
+  display: flex;
+  align-items: center;
+  /* 确保Emoji和文字在行内垂直对齐 */
 }
 
 /* 统一使用 140x210 尺寸，不再是巨大的 500rpx */

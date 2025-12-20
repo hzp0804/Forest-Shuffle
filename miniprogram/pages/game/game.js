@@ -1350,13 +1350,7 @@ Page({
     // 额外回合事件
     let extraTurnEvent = null;
     if (reward.extraTurn) {
-      extraTurnEvent = {
-        type: 'EXTRA_TURN',
-        playerOpenId: openId,
-        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
-        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-        timestamp: Date.now() + 50
-      };
+      extraTurnEvent = this.createExtraTurnEvent();
     }
 
     const nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, reward.extraTurn);
@@ -1759,18 +1753,41 @@ Page({
       updates["gameState.turnAction"] = { drawnCount: 0, takenCount: 0 };
 
       // 添加额外回合提示
-      updates['gameState.notificationEvent'] = db.command.set({
-        type: 'EXTRA_TURN',
-        icon: '⏳',
-        message: '获得额外回合！',
-        timestamp: Date.now()
-      });
+      // 添加额外回合提示
+      updates['gameState.notificationEvent'] = db.command.set(this.createExtraTurnEvent());
     }
 
     // 4. 重置累积奖励数据
     updates['gameState.accumulatedRewards'] = { drawCount: 0, extraTurn: false };
 
     await this.submitGameUpdate(updates, "行动完成", logMsg);
+  },
+
+  /**
+   * 创建带用户信息的标准事件对象
+   */
+  createPlayerEvent(type, data = {}) {
+    const { openId, players } = this.data;
+    const player = players.find(p => p.openId === openId);
+    return {
+      type,
+      playerOpenId: openId,
+      playerNick: player?.nickName || '玩家',
+      playerAvatar: player?.avatarUrl || '',
+      timestamp: Date.now(),
+      ...data
+    };
+  },
+
+  /**
+   * 创建标准化的额外回合事件
+   */
+  createExtraTurnEvent() {
+    return this.createPlayerEvent('EXTRA_TURN', {
+      icon: '⏳',
+      message: '获得额外回合！',
+      timestamp: Date.now() + 50
+    });
   },
 
   async submitGameUpdate(updates, successMsg, logMsg) {
@@ -2054,13 +2071,7 @@ Page({
 
     let extraTurnEvent = null;
     if (reward.extraTurn) {
-      extraTurnEvent = {
-        type: 'EXTRA_TURN',
-        playerOpenId: openId,
-        playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
-        playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-        timestamp: Date.now() + 50
-      };
+      extraTurnEvent = this.createExtraTurnEvent();
     }
 
     const nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, reward.extraTurn);

@@ -268,14 +268,18 @@
             <!-- 场景4: 额外回合 -->
             <block wx:if="{{currentEvent.type === 'EXTRA_TURN'}}">
                <view class="event-header">
-                  <image class="p-avatar-small" src="{{currentEvent.playerAvatar || '/images/default_avatar.png'}}" />
-                  <text class="event-title">🎉 {{currentEvent.playerNick}} 获得额外回合！</text>
+                  <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
+                  <view class="p-avatar-small default-avatar" wx:else></view>
+                  <text class="event-title">
+                     {{currentEvent.icon || '🎉'}} {{currentEvent.playerNick}} {{currentEvent.message}}
+                  </text>
                </view>
             </block>
             <!-- 场景5: 放入洞穴 (浣熊行动) -->
             <block wx:if="{{currentEvent.type === 'CAVE_CARDS'}}">
                <view class="event-header">
-                  <image class="p-avatar-small" src="{{currentEvent.playerAvatar || '/images/default_avatar.png'}}" />
+                  <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
+                  <view class="p-avatar-small default-avatar" wx:else></view>
                   <text class="event-title">
                      {{currentEvent.playerNick}} 将 {{currentEvent.count}} 张牌放入洞穴
                   </text>
