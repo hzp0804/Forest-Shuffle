@@ -57,23 +57,55 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
       // 优先使用卡牌上的描述文案
       const cardText = isBonus ? (card.bonus || '') : (card.effect || '');
 
+      // Tag到中文的映射
+      const getTagText = (tag) => {
+        const tagMap = {
+          [TAGS.MOUNTAIN]: '高山',
+          [TAGS.INSECT]: '昆虫',
+          [TAGS.BUTTERFLY]: '蝴蝶',
+          [TAGS.PLANT]: '植物',
+          [TAGS.BAT]: '蝙蝠',
+          [TAGS.BIRD]: '鸟',
+          [TAGS.PAW]: '爪印',
+          [TAGS.DEER]: '鹿',
+          [TAGS.AMPHIBIAN]: '两栖动物',
+          [TAGS.CLOVEN_HOOFED_ANIMAL]: '蹄足动物',
+          [TAGS.CLOVEN]: '蹄足',
+          [TAGS.MUSHROOM]: '蘑菇',
+          [TAGS.SHRUB]: '灌木',
+          [TAGS.EDGE]: '林缘'
+        };
+        return tagMap[tag] || tag;
+      };
+
       // 如果是无限次模式（如任意数量蝙蝠），直接推入原始config，不拆分
       if (config.isInfinite) {
         result.text = cardText || "特殊行动";
-        result.actions.push(config);
+        result.actions.push({
+          ...config,
+          actionText: cardText
+        });
       } else if (Array.isArray(config.tags) && config.tags.length > 0) {
-        // 有序列的情况，拆分为多个独立行动
-        config.tags.forEach(tag => {
+        // 有序列的情况，拆分为多个独立行动，每个action带有自己的提示文本
+        console.log('拆分PLAY_FREE actions，tags顺序:', config.tags);
+        config.tags.forEach((tag, index) => {
+          const tagText = getTagText(tag);
+          const actionText = `免费打出一张带有${tagText}符号的牌`;
+          console.log(`  第${index + 1}个action: ${actionText}`);
           result.actions.push({
             type: REWARD_TYPES.PLAY_FREE,
-            tags: [tag]
+            tags: [tag],
+            actionText: actionText
           });
         });
         result.text = cardText || "连续特殊行动";
       } else {
         // 默认情况
         result.text = cardText || "特殊行动";
-        result.actions.push(config);
+        result.actions.push({
+          ...config,
+          actionText: cardText || "免费打出一张牌"
+        });
       }
       break;
 

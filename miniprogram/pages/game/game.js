@@ -1035,9 +1035,19 @@ Page({
         // 还有后续行动，更新状态继续
         const nextAction = nextPending[0];
         const nextMode = nextAction ? nextAction.type : null;
+        const nextText = nextAction?.actionText || null;
+
+        console.log('设置下一个action:', {
+          mode: nextMode,
+          actionText: nextText,
+          tags: nextAction?.tags,
+          pendingCount: nextPending.length
+        });
+
         updates[`gameState.pendingActions`] = nextPending;
         updates[`gameState.actionMode`] = nextMode;
-        updates[`gameState.actionText`] = null; // 重置文案，让 helper 重新生成
+        // 使用action自带的actionText，如果没有则设为null
+        updates[`gameState.actionText`] = nextText;
 
         // 清除本地选择状态
         this.setData({
@@ -1080,7 +1090,7 @@ Page({
 
       const firstAction = pendingActions[0];
       const actionMode = firstAction ? firstAction.type : 'SPECIAL_ACTION';
-      const actionText = bonus.text || effect.text || "特殊行动中...";
+      const actionText = firstAction?.actionText || bonus.text || effect.text || "特殊行动中...";
 
       // 如果是全自动行动，直接执行并提交
 
