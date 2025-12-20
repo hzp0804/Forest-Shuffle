@@ -483,6 +483,10 @@ Page({
   },
 
   onSlotTap(e) {
+    if (!this.data.isMyTurn) {
+      wx.showToast({ title: "不是你的回合", icon: "none" });
+      return;
+    }
     const { treeid, side } = e.currentTarget.dataset;
     const { selectedSlot, primarySelection, gameState } = this.data;
 
