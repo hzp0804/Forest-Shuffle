@@ -137,19 +137,42 @@ Component({
 
       try {
         const { calculateCardScore } = require('../../utils/score/index');
-        const { precalculateStats } = require('../../utils/score/helpers');
+        const { precalculateStats, getAllCardsFromContext } = require('../../utils/score/helpers');
+        const { TAGS } = require('../../data/constants');
 
         // 预统计数据
         const stats = precalculateStats(gameContext);
 
-        // 计算单张卡牌得分
-        const score = calculateCardScore(
-          cardData,
-          gameContext,
-          null, // allPlayerStates - 暂时不需要
-          null, // myOpenId - 暂时不需要
-          stats
-        );
+        // 特殊处理：蝴蝶 - 直接显示所有蝴蝶的总得分
+        // 只要卡片带有 BUTTERFLY 标签，就计算并显示蝴蝶总分
+        const isButterfly = cardData.tags && cardData.tags.includes(TAGS.BUTTERFLY);
+
+        let score = 0;
+
+        if (isButterfly) {
+          // 蝴蝶卡：直接计算所有蝴蝶的总得分
+          const { handleButterflySet } = require('../../utils/score/handlers/special');
+          const allCards = getAllCardsFromContext(gameContext);
+          const butterflies = allCards.filter(c => c.tags && c.tags.includes(TAGS.BUTTERFLY));
+
+          if (butterflies.length > 0) {
+            // 找到 Leader (UID 最小)
+            butterflies.sort((a, b) => (a.uid > b.uid ? 1 : -1));
+            // 直接用 Leader 计算蝴蝶总分
+            score = handleButterflySet(butterflies[0], gameContext, null, null, stats);
+          } else {
+            score = 0;
+          }
+        } else {
+          // 其他卡牌正常计算
+          score = calculateCardScore(
+            cardData,
+            gameContext,
+            null,
+            null,
+            stats
+          );
+        }
 
         this.setData({ cardScore: score });
       } catch (error) {
