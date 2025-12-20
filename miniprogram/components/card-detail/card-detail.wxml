@@ -1,7 +1,7 @@
 <view class="overlay" wx:if="{{visible}}" bindtap="onClose" catchtouchmove="true">
   <view class="detail-container" catchtap="noop">
     <view class="content-panel">
-      <!-- Card Preview (Moved Inside) -->
+      <!-- Card Preview (更紧凑) -->
       <view class="card-preview-wrapper">
         <view class="card-preview-container">
           <view class="card-sprite-viewport">
@@ -11,10 +11,8 @@
       </view>
       <!-- Single Species Title -->
       <view class="card-title" wx:if="{{tabs.length === 1}}">{{tabs[0].name}}</view>
-      <!-- Card ID (显示在标题下方) -->
-      <view class="card-id" wx:if="{{card.id}}" style="text-align:center; font-size:24rpx; color:#999; margin-top:8rpx;">
-        ID: {{card.id}}
-      </view>
+      <!-- Card ID -->
+      <view class="card-id" wx:if="{{card.id}}">ID: {{card.id}}</view>
       <!-- Multi-Species Tabs -->
       <view class="tabs-header" wx:if="{{tabs.length > 1}}">
         <view class="tab-item {{index === activeTab ? 'active' : ''}}" wx:for="{{tabs}}" wx:key="name" data-index="{{index}}" catchtap="onTabClick">
@@ -24,6 +22,14 @@
       <!-- Content Area -->
       <block wx:for="{{tabs}}" wx:key="name">
         <view class="tab-content" wx:if="{{index === activeTab}}">
+          <!-- 得分显示（仅在对局中） -->
+          <view class="score-display" wx:if="{{inGame && cardScore !== null}}">
+            <view class="score-icon">🏆</view>
+            <view class="score-info">
+              <view class="score-label">当前得分</view>
+              <view class="score-value">{{cardScore}}</view>
+            </view>
+          </view>
           <!-- Key Stats Grid -->
           <view class="stats-section">
             <!-- Cost -->

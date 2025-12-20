@@ -328,13 +328,58 @@ Page({
   },
 
   onShowDetail(e) {
-    const { uid, idx, type, cardid } = e.currentTarget.dataset;
+    const { uid, idx, type, cardid, treeid, side } = e.currentTarget.dataset;
     let cardId = cardid;
-    if (type === 'clearing') cardId = this.data.clearing[idx]?.id;
-    else if (type === 'hand') cardId = this.data.playerStates[this.data.openId]?.hand?.find(c => c.uid === uid)?.id;
-    if (cardId) this.setData({ detailCardId: cardId });
+    let cardData = null;
+    let isInForest = false;
+    let activeSide = null;
+
+    // 根据来源获取卡片 ID 和完整数据
+    if (type === 'clearing') {
+      const clearingCard = this.data.clearing[idx];
+      cardId = clearingCard?.id;
+      cardData = clearingCard;
+      isInForest = false;
+    } else if (type === 'hand') {
+      const handCard = this.data.playerStates[this.data.openId]?.hand?.find(c => c.uid === uid);
+      cardId = handCard?.id;
+      cardData = handCard;
+      isInForest = false;
+    } else if (treeid && side) {
+      // 森林中的卡片（通过 treeid 和 side 定位）
+      const myForest = this.data.myForest;
+      const tree = myForest?.find(t => t._id === treeid);
+      const slotCard = tree?.slots?.[side];
+      cardId = slotCard?.id;
+      cardData = slotCard;
+      isInForest = true;
+      activeSide = side; // 记录生效的物种侧
+    }
+
+    if (cardId) {
+      // 只有森林中的卡片才准备游戏上下文（用于计分）
+      const gameContext = isInForest ? {
+        forest: this.data.playerStates[this.data.openId]?.forest || []
+      } : null;
+
+      this.setData({
+        detailCardId: cardId,
+        detailCardData: cardData,
+        detailGameContext: gameContext,
+        detailInGame: isInForest,
+        detailActiveSide: activeSide
+      });
+    }
   },
-  onCloseDetail() { this.setData({ detailCardId: null }); },
+  onCloseDetail() {
+    this.setData({
+      detailCardId: null,
+      detailCardData: null,
+      detailGameContext: null,
+      detailInGame: false,
+      detailActiveSide: null
+    });
+  },
   onCloseDrawing() { /* 不需要了，现在统一走 eventQueue */ },
 
   onStackTap(e) {

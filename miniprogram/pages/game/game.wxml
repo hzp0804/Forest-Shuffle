@@ -309,7 +309,7 @@
             </view>
          </scroll-view>
       </view>
-      <card-detail card-id="{{detailCardId}}" bind:close="onCloseDetail" />
+      <card-detail card-id="{{detailCardId}}" in-game="{{detailInGame}}" game-context="{{detailGameContext}}" card-data="{{detailCardData}}" active-side="{{detailActiveSide}}" bind:close="onCloseDetail" />
    </block>
    <!-- 堆叠卡牌弹窗 -->
    <view class="stack-modal-mask" wx:if="{{stackModalVisible}}" bindtap="closeStackModal">

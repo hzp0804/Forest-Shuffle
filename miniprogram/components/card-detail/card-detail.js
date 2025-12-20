@@ -17,6 +17,29 @@ Component({
         }
       },
     },
+    // 是否在对局中（用于判断是否显示得分）
+    inGame: {
+      type: Boolean,
+      value: false
+    },
+    // 游戏上下文（用于计算得分）
+    gameContext: {
+      type: Object,
+      value: null
+    },
+    // 卡牌数据（包含 uid 等信息，用于计算得分）
+    cardData: {
+      type: Object,
+      value: null,
+      observer: function () {
+        this.calculateScore();
+      }
+    },
+    // 生效的物种侧（用于确定默认 tab）
+    activeSide: {
+      type: String,
+      value: null
+    }
   },
 
   data: {
@@ -24,6 +47,7 @@ Component({
     tabs: [],
     activeTab: 0,
     visible: false,
+    cardScore: null // 卡牌得分
   },
 
   methods: {
@@ -63,11 +87,30 @@ Component({
           });
         }
 
+        // 根据 activeSide 确定默认 tab
+        let defaultTab = 0;
+        const activeSide = this.data.activeSide;
+        const cardType = (info.type || '').toLowerCase();
+
+        if (activeSide && tabs.length > 1) {
+          // H_CARD: left=0, right=1
+          if (cardType.includes('hcard') || cardType.includes('h_card')) {
+            if (activeSide === 'right') defaultTab = 1;
+          }
+          // V_CARD: top=0, bottom=1
+          else if (cardType.includes('vcard') || cardType.includes('v_card')) {
+            if (activeSide === 'bottom') defaultTab = 1;
+          }
+        }
+
         this.setData({
           card: info,
           tabs: tabs,
-          activeTab: 0,
+          activeTab: defaultTab,
           visible: true,
+        }, () => {
+          // 数据加载完成后计算得分
+          this.calculateScore();
         });
       }
     },
@@ -80,6 +123,39 @@ Component({
     onClose: function () {
       this.setData({ visible: false });
       this.triggerEvent("close");
+    },
+
+    // 计算卡牌得分
+    calculateScore: function () {
+      const { inGame, gameContext, cardData } = this.data;
+
+      // 只有在对局中且有必要数据时才计算得分
+      if (!inGame || !gameContext || !cardData) {
+        this.setData({ cardScore: null });
+        return;
+      }
+
+      try {
+        const { calculateCardScore } = require('../../utils/score/index');
+        const { precalculateStats } = require('../../utils/score/helpers');
+
+        // 预统计数据
+        const stats = precalculateStats(gameContext);
+
+        // 计算单张卡牌得分
+        const score = calculateCardScore(
+          cardData,
+          gameContext,
+          null, // allPlayerStates - 暂时不需要
+          null, // myOpenId - 暂时不需要
+          stats
+        );
+
+        this.setData({ cardScore: score });
+      } catch (error) {
+        console.error('计算卡牌得分失败:', error);
+        this.setData({ cardScore: null });
+      }
     },
 
     // Catch-all to prevent closing when clicking content
