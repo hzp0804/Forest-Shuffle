@@ -1125,6 +1125,14 @@ Page({
     const maxCanDraw = 10 - currentHandSize;
     const actualDraw = Math.max(0, Math.min(reward.drawCount, maxCanDraw));
 
+    console.log('奖励抽牌计算:', {
+      当前手牌数: currentHandSize,
+      奖励抽牌数: reward.drawCount,
+      最多可抽: maxCanDraw,
+      实际抽牌: actualDraw,
+      手牌详情: newHand.map(c => ({ id: c.id, uid: c.uid }))
+    });
+
     const drawnCards = []; // 记录抽到的卡片
     for (let i = 0; i < actualDraw; i++) {
       if (newDeck.length > 0) {

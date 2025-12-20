@@ -1,0 +1,43 @@
+/* 奖励卡片展示样式 */
+.reward-cards-display {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx;
+  flex-wrap: wrap;
+  max-width: 600rpx;
+  margin: 0 auto;
+}
+
+.reward-card-item {
+  flex-shrink: 0;
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation-fill-mode: both;
+}
+
+/* 为每张卡片添加延迟动画 */
+.reward-card-item:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.reward-card-item:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.reward-card-item:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.reward-card-item:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.reward-card-item:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+.reward-card-item:nth-child(6) {
+  animation-delay: 0.5s;
+}

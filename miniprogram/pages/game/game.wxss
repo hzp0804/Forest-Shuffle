@@ -1,4 +1,5 @@
 @import "./animations.wxss";
+@import "./reward-cards.wxss";
 
 /* Notification Bar State Colors */
 .notification-bar.normal {
