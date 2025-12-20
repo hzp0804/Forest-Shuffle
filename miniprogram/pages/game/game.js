@@ -1034,6 +1034,12 @@ Page({
 
     // 如果是处于特殊模式下打的这一张牌
     if (isSpecialPlayMode) {
+      // 修复：在特殊模式下触发的奖励抽牌（如接骨木效果），需要立即更新本地 pendingDrawCount
+      // 因为 gameState.accumulatedRewards.drawCount 的 DB inc 更新在 finalizeAction 中不可见（finalizeAction 读取的是旧状态）
+      if (reward.drawCount > 0) {
+        this.pendingDrawCount = (this.pendingDrawCount || 0) + reward.drawCount;
+        console.log(`🎁 特殊模式触发奖励抽牌: +${reward.drawCount}, 当前待处理: ${this.pendingDrawCount}`);
+      }
       // 统计翻牌数量（合并到回合结束处理）
       // 增强判定：同时检查 type 和 tags
       const { TAGS } = require("../../data/constants");
