@@ -45,11 +45,13 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "",
-    points: "每张不同的蝴蝶牌得1分",
+    points: "每张不同的蝴蝶牌得分",
     scoreConfig: {
       type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
-      value: 1
+      scale: {
+        1: 0, 2: 3, 3: 6, 4: 12, 5: 20, 6: 35, 7: 55
+      }
     },
   },
 
@@ -210,11 +212,13 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "",
-    points: "每张不同的蝴蝶牌得1分",
+    points: "每张不同的蝴蝶牌得分",
     scoreConfig: {
       type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
-      value: 1
+      scale: {
+        1: 0, 2: 3, 3: 6, 4: 12, 5: 20, 6: 35, 7: 55
+      }
     },
   },
 
@@ -274,11 +278,13 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "",
-    points: "每张不同的蝴蝶牌得1分",
+    points: "每张不同的蝴蝶牌得分",
     scoreConfig: {
       type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
-      value: 1
+      scale: {
+        1: 0, 2: 3, 3: 6, 4: 12, 5: 20, 6: 35, 7: 55
+      }
     },
   },
 
@@ -325,11 +331,13 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "",
-    points: "每张不同的蝴蝶牌得1分",
+    points: "每张不同的蝴蝶牌得分",
     scoreConfig: {
       type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
-      value: 1
+      scale: {
+        1: 0, 2: 3, 3: 6, 4: 12, 5: 20, 6: 35, 7: 55
+      }
     },
   },
 
@@ -357,11 +365,13 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "",
-    points: "每张不同的蝴蝶牌得1分",
+    points: "每张不同的蝴蝶牌得分",
     scoreConfig: {
       type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
-      value: 1
+      scale: {
+        1: 0, 2: 3, 3: 6, 4: 12, 5: 20, 6: 35, 7: 55
+      }
     },
   },
 
@@ -936,7 +946,7 @@ const SPECIES_DATA = {
     points: "每张带有树木符号的牌得1分",
     scoreConfig: {
       type: SCORING_TYPES.PER_TAG,
-      tag: CARD_TYPES.TREE, // Using CARD_TYPES.TREE as tag for trees based on context
+      tag: CARD_TYPES.TREE,
       value: 1
     },
   },
@@ -1055,11 +1065,13 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "",
-    points: "每张不同的蝴蝶牌得1分",
+    points: "每张不同的蝴蝶牌得分",
     scoreConfig: {
       type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
-      value: 1
+      scale: {
+        1: 0, 2: 3, 3: 6, 4: 12, 5: 20, 6: 35, 7: 55
+      }
     },
   },
 
@@ -1513,11 +1525,13 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "",
     bonus: "",
-    points: "每张不同的蝴蝶牌得1分",
+    points: "每张不同的蝴蝶牌得分",
     scoreConfig: {
       type: SCORING_TYPES.BUTTERFLY_SET,
       tag: TAGS.BUTTERFLY,
-      value: 1
+      scale: {
+        1: 0, 2: 3, 3: 6, 4: 12, 5: 20, 6: 35, 7: 55
+      }
     },
   },
 

@@ -124,7 +124,7 @@ const handleScaleByCount = (card, context, allPlayerStates, myOpenId, stats) => 
  * 处理 BUTTERFLY_SET 类型的计分
  * 逻辑：蝴蝶组计分 (Set Collection)
  * 规则：统计所有蝴蝶，按不同名字组成集合。如果在某个集合中名字重复，则放入下一个集合。
- * 每个集合作为一组计分，每组内不同名字的蝴蝶数量 * value。
+ * 只有 UID 最小的蝴蝶负责计算所有套的总分，其他蝴蝶得0分
  */
 const handleButterflySet = (card, context, allPlayerStates, myOpenId, stats) => {
   const conf = card.scoreConfig;
@@ -136,8 +136,7 @@ const handleButterflySet = (card, context, allPlayerStates, myOpenId, stats) => 
 
   if (butterflies.length === 0) return 0;
 
-  // 2. 只有 UID 最小的一张蝴蝶负责由于“蝴蝶集合”产生的总分
-  //    以此避免每张蝴蝶都算一遍全家福
+  // 2. 只有 UID 最小的蝴蝶负责计算总分
   butterflies.sort((a, b) => (a.uid > b.uid ? 1 : -1));
   if (card.uid !== butterflies[0].uid) {
     return 0;
@@ -152,19 +151,18 @@ const handleButterflySet = (card, context, allPlayerStates, myOpenId, stats) => 
     }
   });
 
-  // 4. 贪婪分组
+  // 4. 贪婪分组，计算所有套的总分
   let totalScore = 0;
-  const unitValue = conf.value || 1; // 默认每张1分 (基于不同种类)
+  const nameCountsCopy = { ...nameCounts };
 
-  // 只要还有蝴蝶没处理完
   while (true) {
     let currentSetSize = 0;
     let hasCardInSet = false;
 
-    // 遍历所有名字，每种取一张放入当前 Set
-    Object.keys(nameCounts).forEach(name => {
-      if (nameCounts[name] > 0) {
-        nameCounts[name]--;
+    // 遍历所有名字，每种取一张放入当前套
+    Object.keys(nameCountsCopy).forEach(name => {
+      if (nameCountsCopy[name] > 0) {
+        nameCountsCopy[name]--;
         currentSetSize++;
         hasCardInSet = true;
       }
@@ -172,10 +170,14 @@ const handleButterflySet = (card, context, allPlayerStates, myOpenId, stats) => 
 
     if (!hasCardInSet) break; // 没有剩余卡牌了
 
-    // 计分: 当前组大小 * 单价
-    // 根据描述: "各为一组...同组不重名...按不同名字计分"
-    // 通常意味着每组得分 = 组内不同数量 * unitValue
-    totalScore += currentSetSize * unitValue;
+    // 计算当前套的得分
+    if (conf.scale) {
+      // 使用阶梯计分表
+      totalScore += (conf.scale[currentSetSize] || 0);
+    } else {
+      // 使用简单的线性计分
+      totalScore += currentSetSize * (conf.value || 1);
+    }
   }
 
   return totalScore;
