@@ -990,8 +990,19 @@ Page({
     if (source === 'PLAYER_ACTION') {
       // 在特殊模式下打牌，不重新触发该牌自身的 Bonus 和 Effect (防止无限循环)
       if (!isSpecialPlayMode) {
-        // bonus: 需要颜色匹配 (isBonus = true)
-        bonus = calculateReward(primaryCard, selectedSlot, paymentCards, {}, true);
+        // 棕熊特殊处理：bonus 不需要颜色匹配，直接触发
+        const isBrownBear = primaryCard.name === '棕熊';
+
+        if (isBrownBear) {
+          // 棕熊：强制触发 bonus，传入空数组作为 paymentCards 但设置 isBonus = true
+          // 这样 calculateReward 会处理 bonusConfig，但不检查颜色匹配
+          bonus = calculateReward(primaryCard, selectedSlot, [], {}, true);
+          console.log('🐻 棕熊 Bonus 强制触发:', bonus);
+        } else {
+          // 其他卡牌：bonus 需要颜色匹配 (isBonus = true)
+          bonus = calculateReward(primaryCard, selectedSlot, paymentCards, {}, true);
+        }
+
         // effect: 不需要颜色匹配 (isBonus = false)
         effect = calculateReward(primaryCard, null, paymentCards, { forest }, false);
       }
@@ -1005,6 +1016,20 @@ Page({
       extraTurn: bonus.extraTurn || effect.extraTurn,
       actions: [...(bonus.actions || []), ...(effect.actions || [])]
     };
+
+    // 棕熊特殊兜底：确保额外回合和摸牌
+    if (primaryCard.name === '棕熊') {
+      reward.extraTurn = true;
+      if (reward.drawCount < 1) reward.drawCount = 1;
+      console.log('🐻 棕熊兜底逻辑触发：强制设置额外回合和摸牌');
+    }
+
+    console.log('🎁 奖励计算详情:', {
+      card: primaryCard.name,
+      bonus: bonus,
+      effect: effect,
+      finalReward: reward
+    });
 
 
     // 如果是处于特殊模式下打的这一张牌
@@ -1135,39 +1160,103 @@ Page({
       const actionMode = firstAction ? firstAction.type : 'SPECIAL_ACTION';
       const actionText = firstAction?.actionText || bonus.text || effect.text || "特殊行动中...";
 
-      // 如果是全自动行动，直接执行并提交
+      // 初始化 updates 对象
+      const updates = {};
 
+      // 如果是棕熊行动（ACTION_BEAR），自动执行
+      if (actionMode === 'ACTION_BEAR') {
+        console.log('🐻 棕熊自动行动：将空地所有卡牌收入洞穴');
 
-      // 非自动行动，进入特殊行动模式
-      const updates = {
-        [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
-        [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
-        [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
-        [`gameState.pendingActions`]: pendingActions,
-        [`gameState.actionMode`]: actionMode,
-        [`gameState.actionText`]: actionText,
-        [`gameState.accumulatedRewards`]: {
-          drawCount: reward.drawCount,
-          extraTurn: reward.extraTurn,
-          revealCount: isPlayedAsTree ? 1 : 0  // 如果打出了树木，初始化为 1
-        },
-        [`gameState.lastEvent`]: {
+        const context = {
+          gameState: this.data.gameState,
+          playerStates: this.data.playerStates,
+          playerState: myState,
+          clearing: newClearing,
+          openId
+        };
+
+        const bearResult = SpecialActionUtils.handleAction('ACTION_BEAR', context);
+
+        if (bearResult.success) {
+          // 应用棕熊行动的更新（清空空地，卡牌进洞穴）
+          Object.assign(updates, bearResult.updates);
+          console.log(`🐻 ${bearResult.logMsg}`);
+
+          // 创建放入洞穴的动画事件
+          if (bearResult.cavedCards && bearResult.cavedCards.length > 0) {
+            updates['gameState.lastEvent'] = {
+              type: 'CAVE_CARDS',
+              playerOpenId: openId,
+              playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+              playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+              cavedCards: bearResult.cavedCards.map(c => Utils.enrichCard(c)),
+              count: bearResult.cavedCards.length,
+              timestamp: Date.now()
+            };
+            console.log(`🐻 创建洞穴动画事件: ${bearResult.cavedCards.length} 张卡牌`);
+          }
+
+          // 移除已执行的行动
+          pendingActions.shift();
+
+          // 如果还有其他待处理的行动，继续处理
+          if (pendingActions.length > 0) {
+            const nextAction = pendingActions[0];
+            updates[`gameState.pendingActions`] = pendingActions;
+            updates[`gameState.actionMode`] = nextAction.type;
+            updates[`gameState.actionText`] = nextAction.actionText || "特殊行动中...";
+          } else {
+            // 没有其他行动了，清理状态
+            updates[`gameState.pendingActions`] = [];
+            updates[`gameState.actionMode`] = null;
+            updates[`gameState.actionText`] = null;
+          }
+        }
+      } else {
+        // 非自动行动，进入特殊行动模式
+        updates[`gameState.pendingActions`] = pendingActions;
+        updates[`gameState.actionMode`] = actionMode;
+        updates[`gameState.actionText`] = actionText;
+      }
+
+      // 通用更新
+      updates[`gameState.playerStates.${openId}.hand`] = DbHelper.cleanHand(newHand);
+      updates[`gameState.playerStates.${openId}.forest`] = DbHelper.cleanForest(forest);
+      if (!updates[`gameState.clearing`]) {
+        updates[`gameState.clearing`] = DbHelper.cleanClearing(newClearing);
+      }
+      updates[`gameState.accumulatedRewards`] = {
+        drawCount: reward.drawCount,
+        extraTurn: reward.extraTurn,
+        revealCount: isPlayedAsTree ? 1 : 0
+      };
+
+      // 只有在没有设置特定动画事件（如 CAVE_CARDS）时，才设置 PLAY_CARD
+      if (!updates[`gameState.lastEvent`]) {
+        updates[`gameState.lastEvent`] = {
           type: 'PLAY_CARD', playerOpenId: openId,
           playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
           playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
           mainCard: primaryCard, subCards: paymentCards.map(c => Utils.enrichCard(c)),
           timestamp: Date.now()
-        }
-      };
+        };
+      }
 
-      // 清除本地选择状态，新行动的提示会自动显示
+      // 清除本地选择状态
       this.setData({
         primarySelection: null,
         selectedSlot: null
       });
 
       wx.hideLoading();
-      this.submitGameUpdate(updates, "出牌成功", `触发效果: ${actionText}`);
+
+      // 如果是棕熊行动且没有后续行动，直接完成行动（摸牌等）
+      if (actionMode === 'ACTION_BEAR' && updates[`gameState.pendingActions`] && updates[`gameState.pendingActions`].length === 0) {
+        console.log('🐻 棕熊行动结束，直接结算');
+        this.finalizeAction(updates, `(特殊模式) 打出了 ${primaryCard.name}`);
+      } else {
+        this.submitGameUpdate(updates, "出牌成功", `触发效果: ${actionText}`);
+      }
       return;
     }
 
@@ -1530,16 +1619,18 @@ Page({
     updates['gameState.pendingActions'] = [];
 
     // 2. 处理累积奖励 (drawCount, extraTurn)
-    const rewards = gameState.accumulatedRewards || { drawCount: 0, extraTurn: false };
+    // 优先使用 actionUpdates 中的 accumulatedRewards（如果是棕熊自动触发的情况）
+    const rewards = actionUpdates['gameState.accumulatedRewards'] || gameState.accumulatedRewards || { drawCount: 0, extraTurn: false };
     const baseDraw = rewards.drawCount || 0;
     const pendingDraw = this.pendingDrawCount || 0;
     const totalDraw = baseDraw + pendingDraw;
     this.pendingDrawCount = 0; // 重置
 
-    console.log('📊 finalizeAction 摸牌统计:', {
+    console.log('📊 finalizeAction 统计:', {
       累积奖励摸牌: baseDraw,
       待处理摸牌: pendingDraw,
-      总计摸牌: totalDraw
+      总计摸牌: totalDraw,
+      是否获得额外回合: rewards.extraTurn
     });
 
     let newHand = actionUpdates[`gameState.playerStates.${openId}.hand`] ?

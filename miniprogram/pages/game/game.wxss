@@ -1533,16 +1533,19 @@
 
 .event-header {
   display: flex;
+  flex-direction: row;
   align-items: center;
+  justify-content: center;
   margin-bottom: 20rpx;
   gap: 12rpx;
 }
 
-.p-avatar-small {
+.event-header .p-avatar-small {
   width: 40rpx;
   height: 40rpx;
   border-radius: 50%;
   border: 1rpx solid #fff;
+  flex-shrink: 0;
 }
 
 .event-title {

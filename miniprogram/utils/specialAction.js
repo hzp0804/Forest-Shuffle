@@ -72,6 +72,7 @@ const SpecialActionUtils = {
         const clearingCards = clearing || [];
         if (clearingCards.length > 0) {
           const newCave = [...(playerState.cave || []), ...clearingCards.map(c => ({ ...c, selected: false }))];
+          result.cavedCards = clearingCards; // 添加放入洞穴的卡牌信息
           result.updates = {
             [`gameState.clearing`]: [],
             [`gameState.playerStates.${openId}.cave`]: DbHelper.cleanHand(newCave),

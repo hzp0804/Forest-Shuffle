@@ -24,8 +24,9 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
   const config = isBonus ? card.bonusConfig : card.effectConfig;
   if (!config) return result;
 
-  // 如果是 bonus，需要检查颜色匹配
-  if (isBonus && !isColorMatched(card, paymentCards)) {
+  // 如果是 bonus，需要检查颜色匹配（棕熊除外）
+  const isBrownBear = card.name === '棕熊';
+  if (isBonus && !isBrownBear && !isColorMatched(card, paymentCards)) {
     return result;
   }
 
@@ -115,8 +116,11 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
       break;
 
     case REWARD_TYPES.ACTION_BEAR:
-      result.text = "洞穴收入";
-      result.actions.push(config);
+      result.text = isBonus ? (card.bonus || '洞穴收入') : (card.effect || '洞穴收入');
+      result.actions.push({
+        ...config,
+        actionText: result.text
+      });
       break;
 
     case REWARD_TYPES.ACTION_PLAY_SAPLINGS:
