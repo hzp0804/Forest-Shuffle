@@ -40,6 +40,8 @@ function getAllCardsFromContext(context) {
       if (group.slots) {
         Object.values(group.slots).forEach(card => {
           if (card) {
+            // 如果有 list，说明是堆叠卡片，list 包含了所有卡片（包括最上面显示的那张）
+            // 每张卡片都需要单独计分
             if (card.list && card.list.length > 0) {
               card.list.forEach(sc => cards.push(sc));
             } else {
@@ -92,11 +94,13 @@ function getCountByTag(paramContext, tag) {
         }
         count += val;
       }
-      // 检查 slots
+      // 检查 slots（统计所有卡片，包括堆叠中的）
       if (g.slots) {
         Object.values(g.slots).forEach(s => {
           if (s) {
             if (s.list && s.list.length > 0) {
+              // 堆叠卡片：list 中的每张卡片都已经过 enrichCardWithSpecies 处理
+              // 只包含打出的物种信息，所以需要统计所有卡片
               s.list.forEach(sc => {
                 if (sc.tags && sc.tags.includes(tag)) {
                   count++;
@@ -123,10 +127,13 @@ function getCountByName(paramContext, name) {
       if (g.center && (g.center.name === name)) {
         count++;
       }
+      // 统计所有卡片（包括堆叠中的）
       if (g.slots) {
         Object.values(g.slots).forEach(s => {
           if (s) {
             if (s.list && s.list.length > 0) {
+              // 堆叠卡片：list 中的每张卡片都已经过 enrichCardWithSpecies 处理
+              // 只包含打出的物种信息，所以需要统计所有卡片
               s.list.forEach(sc => {
                 if (sc.name === name) count++;
               });
@@ -146,6 +153,7 @@ function getCountByName(paramContext, name) {
  * 返回 { tagCounts, colorCounts, nameCounts }
  */
 function precalculateStats(context) {
+  console.log("统计森林卡牌信息")
   const tagCounts = {};
   const colorCounts = {};
   const nameCounts = {};
@@ -191,6 +199,8 @@ function precalculateStats(context) {
       Object.values(group.slots).forEach(s => {
         if (s) {
           if (s.list && s.list.length > 0) {
+            // 堆叠卡片：list 中的每张卡片都已经过 enrichCardWithSpecies 处理
+            // 只包含打出的物种信息，所以需要统计所有卡片
             s.list.forEach(processCard);
           } else {
             processCard(s);

@@ -68,6 +68,11 @@ Page({
     }
     const openId = profile.openId || profile.uid;
     this.setData({ roomId: options.roomId, openId, selectedPlayerOpenId: openId });
+
+    // 清空得分缓存,确保进入新房间时数据是干净的
+    const { scoreCache } = require("../../utils/score/helpers");
+    scoreCache.clear();
+    console.log("🧹 进入房间,已清空得分缓存");
   },
 
   onShow() {
@@ -151,7 +156,22 @@ Page({
       this.gameWatcher.close();
       this.gameWatcher = null;
     }
+
+    // 清空事件队列,防止退出后还触发动画和提示
+    this.setData({
+      eventQueue: [],
+      isProcessingEvent: false,
+      currentEvent: null,
+      pendingTurnToast: false,
+      pendingActionToast: null
+    });
+
+    // 清空得分缓存,防止进入其他房间时带入旧数据
+    const { scoreCache } = require("../../utils/score/helpers");
+    scoreCache.clear();
+    console.log("🧹 已清空得分缓存");
   },
+
 
 
 
@@ -235,6 +255,12 @@ Page({
 
   // 4. 事件处理
   async processNextEvent() {
+    // 安全检查: 如果监听器已关闭(页面已卸载),不再处理事件
+    if (!this.gameWatcher) {
+      console.log("⚠️ 页面已卸载,跳过事件处理");
+      return;
+    }
+
     if (this.data.isProcessingEvent) return;
 
     if (this.data.eventQueue.length === 0) {

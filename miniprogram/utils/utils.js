@@ -114,6 +114,12 @@ const enrichCardWithSpecies = (card, side) => {
     };
   }
 
+  // 递归处理堆叠卡片的 list 字段
+  // 堆叠的卡片也需要根据所在槽位的 side 提取对应物种的信息
+  if (card.list && Array.isArray(card.list)) {
+    finalCard.list = card.list.map(c => enrichCardWithSpecies(c, side));
+  }
+
   return finalCard;
 };
 
