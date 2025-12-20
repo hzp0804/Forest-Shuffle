@@ -44,6 +44,7 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
     case REWARD_TYPES.DRAW_AND_TURN:
       result.drawCount = config.count || 0;
       result.extraTurn = true;
+      console.log('棕熊触发额外回合')
       break;
 
     // 免费打牌

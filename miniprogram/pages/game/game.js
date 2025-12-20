@@ -1754,8 +1754,17 @@ Page({
       updates["gameState.turnCount"] = db.command.inc(1);
       updates["gameState.turnAction"] = { drawnCount: 0, takenCount: 0 };
     } else {
-      // 有额外回合，继续是当前玩家
+      // 有额外回合，继续是当前玩家，但也视为新的回合(turnCount + 1)
+      updates["gameState.turnCount"] = db.command.inc(1);
       updates["gameState.turnAction"] = { drawnCount: 0, takenCount: 0 };
+
+      // 添加额外回合提示
+      updates['gameState.notificationEvent'] = db.command.set({
+        type: 'EXTRA_TURN',
+        icon: '⏳',
+        message: '获得额外回合！',
+        timestamp: Date.now()
+      });
     }
 
     // 4. 重置累积奖励数据
