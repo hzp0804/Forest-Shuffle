@@ -274,7 +274,7 @@ const validatePlay = (params) => {
   // 如果是鼹鼠模式，添加特殊提示前缀
   let finalText = text;
   if (isMoleMode) {
-    const molePrefix = gameState.actionText || "支付费用打出牌（无奖励/效果）";
+    const molePrefix = gameState.actionText || "支付费用打出牌";
     finalText = isCostSatisfied ? `${molePrefix} | ${text}` : text;
   }
 

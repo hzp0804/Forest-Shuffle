@@ -228,7 +228,7 @@ const SPECIES_DATA = {
     tags: [TAGS.PAW],
     cost: 2,
     type: CARD_TYPES.V_CARD,
-    effect: "支付费用打出任意数量的牌（无奖励/效果）",
+    effect: "支付费用打出任意数量的牌",
     effectConfig: {
       type: REWARD_TYPES.ACTION_MOLE,
       isInfinite: true
