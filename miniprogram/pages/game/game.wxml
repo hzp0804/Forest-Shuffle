@@ -43,8 +43,8 @@
                      ✋拿取
                   </button>
                </block>
-               <button size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}} {{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'ACTION_RACCOON') ? 'disabled' : ''}}" bindtap="onConfirmPlay" disabled="{{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'ACTION_RACCOON')}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
-                  ✅打出
+               <button size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}} {{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'ACTION_RACCOON' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND') ? 'disabled' : ''}}" bindtap="onConfirmPlay" disabled="{{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'ACTION_RACCOON' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND')}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
+                  {{(gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND') ? '✅确定' : '✅打出'}}
                </button>
                <button size="mini" class="game-btn secondary sapling-btn {{gameState.actionMode ? 'disabled' : ''}}" bindtap="onPlaySapling" disabled="{{gameState.actionMode}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
                   🌱树苗
@@ -324,4 +324,5 @@
          </view>
       </view>
    </view>
+   <card-gallery visible="{{cheatVisible}}" bind:select="onCheatCardSelect" bind:preview="onCheatCardPreview" bind:close="closeCheatModal" />
 </view>

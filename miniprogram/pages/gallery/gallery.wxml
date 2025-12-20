@@ -1,12 +1,2 @@
-<view class="container">
-  <view class="section" wx:for="{{sections}}" wx:key="id">
-    <view class="grid">
-      <view class="card-wrapper" wx:for="{{item.cards}}" wx:for-item="card" wx:key="id">
-        <view class="card card-{{card.id}}" style="background-image: url('{{card.bgImg}}'); background-size: {{card.bgSize}};" bindtap="onPreviewCard" data-id="{{card.id}}">
-          <view class="card-id-badge">{{card.id}}</view>
-        </view>
-      </view>
-    </view>
-  </view>
-</view>
-<card-detail cardId="{{previewCardId}}" bind:close="onClosePreview" />
+<card-gallery visible="{{true}}" show-close="{{false}}" bind:select="onCardSelect" />
+<card-detail card-id="{{previewCardId}}" bind:close="onClosePreview" />

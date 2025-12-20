@@ -12,7 +12,7 @@ const handlePositionOnCard = (card, context, allPlayerStates, myOpenId, stats) =
     for (const group of context.forest) {
       if (group.slots) {
         const slots = Object.values(group.slots);
-        if (slots.some(s => s && s.uid === card.uid)) {
+        if (slots.some(s => s && (s.uid === card.uid || (s.list && s.list.some(sc => sc.uid === card.uid))))) {
           parentTree = group.center;
           break;
         }
@@ -38,7 +38,7 @@ const handlePositionOnShrub = (card, context, allPlayerStates, myOpenId, stats) 
     for (const group of context.forest) {
       if (group.slots) {
         const slots = Object.values(group.slots);
-        if (slots.some(s => s && s.uid === card.uid)) {
+        if (slots.some(s => s && (s.uid === card.uid || (s.list && s.list.some(sc => sc.uid === card.uid))))) {
           parentShrub = group.center;
           break;
         }
@@ -63,7 +63,7 @@ const handlePositionOnTreeOrShrub = (card, context, allPlayerStates, myOpenId, s
     for (const group of context.forest) {
       if (group.slots) {
         const slots = Object.values(group.slots);
-        if (slots.some(s => s && s.uid === card.uid)) {
+        if (slots.some(s => s && (s.uid === card.uid || (s.list && s.list.some(sc => sc.uid === card.uid))))) {
           parent = group.center;
           break;
         }
@@ -174,19 +174,9 @@ const handlePositionShareSlot = (card, context, allPlayerStates, myOpenId, stats
     for (const group of context.forest) {
       if (group.slots) {
         const slots = Object.values(group.slots);
-        const mainCard = slots.find(s => s && s.uid === card.uid);
-        if (mainCard) {
-          foundSlot = mainCard;
-          break;
-        }
-        if (!foundSlot) {
-          for (const s of slots) {
-            if (s && s.list && s.list.some(sc => sc.uid === card.uid)) {
-              foundSlot = s;
-              break;
-            }
-          }
-        }
+        // Find slot containing this card (either as top or in list)
+        foundSlot = slots.find(s => s && (s.uid === card.uid || (s.list && s.list.some(sc => sc.uid === card.uid))));
+        if (foundSlot) break;
       }
       if (foundSlot) break;
     }

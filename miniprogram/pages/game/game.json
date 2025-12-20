@@ -1,5 +1,6 @@
 {
   "usingComponents": {
-    "card-detail": "../../components/card-detail/card-detail"
+    "card-detail": "../../components/card-detail/card-detail",
+    "card-gallery": "../../components/card-gallery/card-gallery"
   }
 }

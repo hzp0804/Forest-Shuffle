@@ -5,6 +5,10 @@ const RoundUtils = require("../../utils/round.js");
 const DbHelper = require("../../utils/dbHelper.js");
 const SpecialActionUtils = require("../../utils/specialAction.js");
 const ClearingUtils = require("../../utils/clearing.js");
+const { CARDS_DATA } = require("../../data/cardData.js");
+const { SPECIES_DATA } = require("../../data/speciesData.js");
+const { getCardInfoById } = require("../../utils/getCardInfoById");
+const { DECK_TYPES, CARD_TYPES } = require("../../data/constants");
 const db = wx.cloud.database();
 
 /**
@@ -42,6 +46,10 @@ Page({
     pendingTurnToast: false, // 是否有待触发的回合提示
     pendingActionToast: null, // 是否有待触发的操作提示 (如: 还可以再拿一张)
     clearingScrollId: "", // 空地滚动定位ID
+    cheatVisible: false,
+    cheatSections: [],
+    allCheatSections: [],
+    cheatSearchQuery: "",
   },
 
   onLoad(options) {
@@ -623,6 +631,46 @@ Page({
       return;
     }
 
+    // Handle Clearing Pick Actions (European Wildcat, Mosquito, etc.)
+    if (gameState && (gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND')) {
+      const { playerStates, openId, clearing, selectedClearingIdx, gameState } = this.data;
+      const myState = playerStates[openId];
+
+      const context = {
+        gameState,
+        playerState: myState,
+        clearing,
+        selectedClearingIdx, // Must be set by onClearingCardTap
+        openId,
+        actionConfig: gameState.actionConfig
+      };
+
+      const result = SpecialActionUtils.handleAction(gameState.actionMode, context);
+
+      if (!result.success) {
+        wx.showToast({ title: result.errorMsg || "请选择空地牌", icon: "none" });
+        return;
+      }
+
+      const updates = { ...result.updates };
+
+      // Clear local selection
+      this.setData({ selectedClearingIdx: -1 });
+
+      const remaining = (gameState.pendingActions || []).slice(1);
+      if (remaining.length > 0) {
+        updates[`gameState.pendingActions`] = remaining;
+        updates[`gameState.actionMode`] = remaining[0].type;
+        this.submitGameUpdate(updates, "特殊行动", result.logMsg);
+      } else {
+        updates[`gameState.pendingActions`] = [];
+        updates[`gameState.actionMode`] = null;
+        updates[`gameState.actionText`] = null;
+        await this.finalizeAction(updates, result.logMsg);
+      }
+      return;
+    }
+
     if (turnAction?.drawnCount > 0 || turnAction?.takenCount > 0) {
       wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
       return;
@@ -1094,6 +1142,14 @@ Page({
     });
 
     this.submitGameUpdate(updates, "出牌成功", `打出了 ${primaryCard.name}`);
+  },
+
+  onClearingCardTap(e) {
+    const idx = e.currentTarget.dataset.idx;
+    // Toggle selection
+    this.setData({
+      selectedClearingIdx: this.data.selectedClearingIdx === idx ? -1 : idx
+    });
   },
 
   onDrawCard() {
@@ -1678,41 +1734,42 @@ Page({
   },
 
   onCheatAddCards() {
-    wx.showModal({
-      title: '金手指',
-      editable: true,
-      placeholderText: '输入Card ID (如 card_1,card_2)',
-      success: (res) => {
-        if (res.confirm && res.content) {
-          const ids = res.content.split(/[,\uff0c]/).map(s => s.trim()).filter(s => s);
-          if (ids.length === 0) return;
+    this.setData({ cheatVisible: true });
+  },
 
-          const { openId, playerStates } = this.data;
-          const currentHand = playerStates[openId].hand || [];
+  closeCheatModal() {
+    this.setData({ cheatVisible: false });
+  },
 
-          const newCards = ids.map((id, index) => {
-            // Smart prefix
-            let realId = id;
-            if (!realId.startsWith('card_') && /^\d+$/.test(realId)) {
-              realId = realId;
-            }
-            return {
-              id: realId,
-              uid: `cheat_${Date.now()}_${index}`,
-              selected: false
-            };
-          });
+  onCheatCardSelect(e) {
+    const cardId = e.detail.cardId;
+    const { playerStates, openId } = this.data;
+    const myState = playerStates[openId];
+    if (!myState) return;
 
-          const newHand = [...currentHand, ...newCards];
+    const hand = [...(myState.hand || [])];
+    const rawInfo = getCardInfoById(cardId);
+    if (!rawInfo) return;
 
-          const updates = {
-            [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand)
-          };
+    const newCard = {
+      ...rawInfo,
+      uid: `cheat_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      selected: false
+    };
 
-          this.submitGameUpdate(updates, "金手指", `添加了 ${ids.length} 张牌`);
-        }
-      }
-    });
+    hand.push(newCard);
+
+    const updates = {
+      [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(hand)
+    };
+
+    this.submitGameUpdate(updates, "金手指", `添加了 ${rawInfo.name}`);
+    wx.showToast({ title: '已添加', icon: 'success', duration: 500 });
+  },
+
+  onCheatCardPreview(e) {
+    const cardId = e.detail.cardId;
+    this.setData({ detailCardId: cardId });
   },
 
   onClearingCardTap(e) {

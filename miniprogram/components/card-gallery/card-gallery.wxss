@@ -1,0 +1,88 @@
+/* components/card-gallery/card-gallery.wxss */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #ffffff;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 24rpx;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  /* Subtle shadow for separation */
+  z-index: 10;
+}
+
+.search-input {
+  flex: 1;
+  background: #f5f5f5;
+  height: 72rpx;
+  border-radius: 36rpx;
+  padding: 0 30rpx;
+  color: #333;
+}
+
+.scroll-area {
+  flex: 1;
+  height: 0;
+  /* Important for flex child scrolling */
+  padding: 20rpx;
+  box-sizing: border-box;
+}
+
+.section {
+  margin-bottom: 40rpx;
+}
+
+.section-title {
+  color: #333;
+  /* Dark text for white background */
+  font-weight: bold;
+  margin-bottom: 20rpx;
+  font-size: 32rpx;
+  padding-left: 10rpx;
+  border-left: 8rpx solid #4caf50;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16rpx;
+}
+
+.card-item {
+  position: relative;
+  width: 100%;
+  padding-bottom: 156%;
+}
+
+.card-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 8rpx;
+  background-repeat: no-repeat;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
+}
+
+.card-id {
+  position: absolute;
+  top: 4rpx;
+  left: 4rpx;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 18rpx;
+  padding: 2rpx 6rpx;
+  border-radius: 4rpx;
+}

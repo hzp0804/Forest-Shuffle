@@ -97,22 +97,28 @@ const SpecialActionUtils = {
       }
 
       case 'ACTION_PICK_FROM_CLEARING': {
-        // 欧洲野猫：从空地选一张牌进洞穴
+        // 欧洲野猫/喜鹊效果：从空地选一张牌进手牌
         if (selectedClearingIdx === undefined || selectedClearingIdx < 0) {
           result.success = false;
-          result.errorMsg = "请先选择空地牌";
+          result.errorMsg = "请选择空地牌";
+          return result;
+        }
+
+        if (playerState.hand.length >= 10) {
+          result.success = false;
+          result.errorMsg = "手牌已满";
           return result;
         }
 
         const card = clearing[selectedClearingIdx];
         const newClearing = clearing.filter((_, idx) => idx !== selectedClearingIdx);
-        const newCave = [...(playerState.cave || []), { ...card, selected: false }];
+        const newHand = [...playerState.hand, { ...card, selected: false }];
 
         result.updates = {
           [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
-          [`gameState.playerStates.${openId}.cave`]: DbHelper.cleanHand(newCave),
+          [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
         };
-        result.logMsg = `完成了欧洲野猫行动：从空地拿走 ${card.name} 放入洞穴`;
+        result.logMsg = `完成了特殊行动：从空地拿走 ${card.name} 放入手牌`;
         break;
       }
 

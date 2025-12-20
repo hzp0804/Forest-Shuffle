@@ -400,6 +400,25 @@ const processGameData = (res, currentData) => {
   };
 };
 
+const DbHelper = {
+  cleanHand(hand) {
+    if (!Array.isArray(hand)) return [];
+    return hand.map(c => {
+      // 保留核心数据，移除UI状态
+      // 如果原来的逻辑需要保留uid，则保留。通常手牌需要uid来唯一标识
+      const { selected, speciesDetails, bgImg, bgSize, cssClass, ...rest } = c;
+      return rest;
+    });
+  },
+  cleanClearing(clearing) {
+    if (!Array.isArray(clearing)) return [];
+    return clearing.map(c => {
+      const { selected, speciesDetails, bgImg, bgSize, cssClass, ...rest } = c;
+      return rest;
+    });
+  }
+};
+
 module.exports = {
   getCardInfoById,
   enrichCard,
@@ -412,5 +431,6 @@ module.exports = {
   processGameData,
   getCardColors,
   isColorMatched,
-  getAvatarPath
+  getAvatarPath,
+  DbHelper
 };

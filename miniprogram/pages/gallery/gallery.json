@@ -3,6 +3,7 @@
   "navigationBarBackgroundColor": "#3a6b35",
   "navigationBarTextStyle": "white",
   "usingComponents": {
-    "card-detail": "/components/card-detail/card-detail"
+    "card-detail": "/components/card-detail/card-detail",
+    "card-gallery": "/components/card-gallery/card-gallery"
   }
 }

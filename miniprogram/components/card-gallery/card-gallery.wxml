@@ -1,0 +1,20 @@
+<!-- components/card-gallery/card-gallery.wxml -->
+<view wx:if="{{visible}}" class="overlay">
+  <view class="header">
+    <input placeholder="🔍 搜索卡牌 (名称/物种)" bindinput="onSearchInput" value="{{searchQuery}}" class="search-input" />
+    <button wx:if="{{showClose}}" size="mini" bindtap="onClose" style="margin:0;">关闭</button>
+  </view>
+  <scroll-view scroll-y class="scroll-area">
+    <view wx:for="{{sections}}" wx:key="id" class="section">
+      <view class="section-title">{{item.title}}</view>
+      <view class="card-grid">
+        <view wx:for="{{item.cards}}" wx:for-item="card" wx:key="id" bindtap="onCardTap" bindlongpress="onCardLongPress" data-id="{{card.id}}" class="card-item">
+          <view class="card-sprite-native card-bg {{card.cssClass}}" style="background-image:url('{{card.bgImg}}'); background-size:{{card.bgSize}};"></view>
+          <view class="card-id">{{card.id}}</view>
+        </view>
+      </view>
+    </view>
+    <!-- 占位 -->
+    <view style="height: 100rpx;"></view>
+  </scroll-view>
+</view>
