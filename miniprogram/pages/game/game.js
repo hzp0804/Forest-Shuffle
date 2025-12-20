@@ -1565,9 +1565,16 @@ Page({
         playerStates[openId].hand.forEach(c => c.selected = false);
       }
 
+      // 判断是否回合结束 (activePlayer 或 turnCount 发生变化)
+      const isTurnEnding = updates['gameState.activePlayer'] !== undefined || updates['gameState.turnCount'] !== undefined;
+
+      // 只有选中牌堆(-2)且回合未结束时才保留，否则重置
+      // 空地牌(-1 或 >=0)拿走后不再保留选中
+      const shouldKeepSelection = !isTurnEnding && this.data.selectedClearingIdx === -2;
+
       // 准备本地更新的数据
       const nextLocalData = {
-        selectedClearingIdx: -1,
+        selectedClearingIdx: shouldKeepSelection ? -2 : -1,
         primarySelection: null,
         selectedSlot: null,
         [`playerStates.${openId}.hand`]: playerStates[openId].hand || []
