@@ -1222,7 +1222,7 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "被视为一只欧洲野兔",
     effectConfig: {
-      type: REWARD_TYPES.TREATED_AS,
+      type: MODIFIER_TYPES.SPECIES_ALIAS,
       target: SPECIES_NAMES.EUROPEAN_HARE
     },
     bonus: "",

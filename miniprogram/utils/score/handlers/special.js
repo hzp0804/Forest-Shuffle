@@ -58,12 +58,15 @@ const handleScaleByCount = (card, context, allPlayerStates, myOpenId, stats) => 
         // 检查 Center
         if (group.center && group.center.name === targetName) {
           targetCount += 1;
-          // 检查 Multiplier
-          const hasMultiplier =
-            (group.slots?.left?.effectConfig?.type === 'TREE_MULTIPLIER') ||
-            (group.slots?.right?.effectConfig?.type === 'TREE_MULTIPLIER');
-          if (hasMultiplier) {
-            targetCount += 1;
+          // 检查 Multiplier（紫木蜂效果只对山毛榉和欧洲七叶树有效）
+          const isValidTree = targetName === '山毛榉' || targetName === '欧洲七叶树';
+          if (isValidTree && group.slots) {
+            const hasMultiplier = Object.values(group.slots).some(s =>
+              s && s.effectConfig && s.effectConfig.type === 'TREE_MULTIPLIER'
+            );
+            if (hasMultiplier) {
+              targetCount += 1;
+            }
           }
         }
         // 检查 Slots (通常 Slot 卡不受 Tree Multiplier 影响)

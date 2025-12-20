@@ -167,11 +167,6 @@ function precalculateStats(context) {
     if (card.tags && Array.isArray(card.tags)) {
       card.tags.forEach(t => {
         tagCounts[t] = (tagCounts[t] || 0) + 1;
-
-        // 如果是 Tree 且有 Multiplier，额外加一次 Tree 计数
-        if (t === TAGS.TREE && card.effectConfig && card.effectConfig.type === 'TREE_MULTIPLIER') {
-          tagCounts[t] = (tagCounts[t] || 0) + 1;
-        }
       });
     }
 
@@ -194,7 +189,26 @@ function precalculateStats(context) {
   };
 
   context.forest.forEach(group => {
-    if (group.center) processCard(group.center);
+    // 处理树木中心
+    if (group.center) {
+      processCard(group.center);
+
+      // 检查是否有紫木蜂效果（TREE_MULTIPLIER）
+      // 紫木蜂效果只对山毛榉和欧洲七叶树有效
+      if (group.slots) {
+        const hasMultiplier = Object.values(group.slots).some(s =>
+          s && s.effectConfig && s.effectConfig.type === 'TREE_MULTIPLIER'
+        );
+
+        const isValidTree = group.center.name === '山毛榉' || group.center.name === '欧洲七叶树';
+
+        if (hasMultiplier && isValidTree && group.center.name) {
+          nameCounts[group.center.name] = (nameCounts[group.center.name] || 0) + 1;
+        }
+      }
+    }
+
+    // 处理槽位卡片
     if (group.slots) {
       Object.values(group.slots).forEach(s => {
         if (s) {
