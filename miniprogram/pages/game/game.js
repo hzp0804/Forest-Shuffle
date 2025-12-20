@@ -1070,7 +1070,12 @@ Page({
           type: 'PLAY_CARD', playerOpenId: openId,
           playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
           playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-          mainCard: primaryCard, subCards: paymentCards.map(c => Utils.enrichCard(c)),
+          mainCard: primaryCard,
+          subCards: paymentCards.map(c => Utils.enrichCard(c)),
+          // 添加奖励和效果信息 - 使用物种数据中的原始文本
+          bonusText: primaryCard.bonus || null,
+          effectText: primaryCard.effect || null,
+          triggers: triggers.triggers || [],
           timestamp: Date.now()
         },
         // 特殊模式下的奖励累积
@@ -1257,7 +1262,12 @@ Page({
           type: 'PLAY_CARD', playerOpenId: openId,
           playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
           playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-          mainCard: primaryCard, subCards: paymentCards.map(c => Utils.enrichCard(c)),
+          mainCard: primaryCard,
+          subCards: paymentCards.map(c => Utils.enrichCard(c)),
+          // 添加奖励和效果信息 - 使用物种数据中的原始文本
+          bonusText: primaryCard.bonus || null,
+          effectText: primaryCard.effect || null,
+          triggers: triggers.triggers || [],
           timestamp: Date.now()
         };
       }
@@ -1387,7 +1397,12 @@ Page({
         type: 'PLAY_CARD', playerOpenId: openId,
         playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
         playerAvatar: this.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-        mainCard: primaryCard, subCards: paymentCards.map(c => Utils.enrichCard(c)),
+        mainCard: primaryCard,
+        subCards: paymentCards.map(c => Utils.enrichCard(c)),
+        // 添加奖励和效果信息 - 使用物种数据中的原始文本
+        bonusText: primaryCard.bonus || null,
+        effectText: primaryCard.effect || null,
+        triggers: triggers.triggers || [],
         timestamp: Date.now()
       },
       [`gameState.deckRevealEvent`]: deckRevealEvent, // 如果是Immediate模式，会有值；否则为null
@@ -1974,7 +1989,28 @@ Page({
       wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
       return;
     }
-    const { primarySelection } = this.data;
+
+    const { gameState, primarySelection, playerStates, openId } = this.data;
+
+    // 水田鼠模式下的特殊处理
+    if (gameState && gameState.actionMode === 'ACTION_PLAY_SAPLINGS') {
+      // 水田鼠模式:不需要先选择手牌,直接选择第一张手牌作为树苗
+      const myHand = playerStates[openId]?.hand || [];
+      if (myHand.length === 0) {
+        wx.showToast({ title: "手牌为空", icon: "none" });
+        return;
+      }
+
+      // 自动选择第一张手牌
+      const firstCard = myHand[0];
+      this.setData({ primarySelection: firstCard.uid });
+
+      // 直接执行打出树苗,不需要确认
+      this.executePlaySapling();
+      return;
+    }
+
+    // 普通模式:需要先选择手牌
     if (!primarySelection) {
       wx.showToast({ title: "请先选择一张手牌作为树苗", icon: "none" });
       return;
@@ -2094,16 +2130,16 @@ Page({
       extraTurnEvent = this.createExtraTurnEvent();
     }
 
-    const nextPlayer = RoundUtils.getNextPlayer(openId, this.data.players, reward.extraTurn);
+    // 检查是否在水田鼠模式下
+    const isWaterVoleMode = this.data.gameState && this.data.gameState.actionMode === 'ACTION_PLAY_SAPLINGS';
+
+    const nextPlayer = isWaterVoleMode ? openId : RoundUtils.getNextPlayer(openId, this.data.players, reward.extraTurn);
     const updates = {
       [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
       [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
       [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
       [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
       [`gameState.activePlayer`]: nextPlayer,
-      [`gameState.turnAction`]: { drawnCount: 0, takenCount: 0 },
-      [`gameState.turnCount`]: db.command.inc(1),
-      [`gameState.turnReason`]: reward.extraTurn ? "extra" : "normal",
       [`gameState.lastEvent`]: {
         type: 'PLAY_CARD', playerOpenId: openId,
         playerNick: this.data.players.find(p => p.openId === openId)?.nickName || '玩家',
@@ -2116,7 +2152,18 @@ Page({
       [`gameState.notificationEvent`]: db.command.set(notificationEvent)
     };
 
-    this.submitGameUpdate(updates, "种植成功", "将一张手牌作为树苗打出");
+    // 水田鼠模式下:不结束回合,保持ACTION_PLAY_SAPLINGS模式
+    if (!isWaterVoleMode) {
+      updates[`gameState.turnAction`] = { drawnCount: 0, takenCount: 0 };
+      updates[`gameState.turnCount`] = db.command.inc(1);
+      updates[`gameState.turnReason`] = reward.extraTurn ? "extra" : "normal";
+    }
+    // 如果是水田鼠模式,保持actionMode不变,让玩家可以继续打出树苗
+
+    // 清除本地选择状态
+    this.setData({ primarySelection: null });
+
+    this.submitGameUpdate(updates, "种植成功", isWaterVoleMode ? "打出树苗(水田鼠模式)" : "将一张手牌作为树苗打出");
   },
 
   onCheatAddCards() {

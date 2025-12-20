@@ -108,12 +108,12 @@ const validatePlay = (params) => {
       };
     }
 
-    // ACTION_MOLE 模式：需要正常验证费用（不是免费打牌）
-    if (gameState.actionMode === 'ACTION_MOLE') {
+    // ACTION_MOLE 和 ACTION_PLAY_SAPLINGS 模式：需要正常验证费用（不是免费打牌）
+    if (gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS') {
       // 跳过特殊模式处理，继续执行正常的费用验证逻辑
       // 不在这里 return，让代码继续往下走到费用计算部分
     } else {
-      // 其他特殊模式（如 ACTION_PLAY_SAPLINGS 等）
+      // 其他特殊模式
       const text = gameState.actionText;
       return {
         valid: true, // 其他特殊模式默认允许
@@ -229,11 +229,12 @@ const validatePlay = (params) => {
   const hasBonus = !!primaryCard.bonusConfig;
   const hasEffect = !!primaryCard.effectConfig;
 
-  // 检查是否是鼹鼠模式
+  // 检查是否是鼹鼠或水田鼠模式
   const isMoleMode = gameState && gameState.actionMode === 'ACTION_MOLE';
+  const isSaplingMode = gameState && gameState.actionMode === 'ACTION_PLAY_SAPLINGS';
 
-  // 奖励行：加【奖励】标签（鼹鼠模式下不显示）
-  if (hasBonus && !isMoleMode) {
+  // 奖励行：加【奖励】标签（鼹鼠和水田鼠模式下不显示）
+  if (hasBonus && !isMoleMode && !isSaplingMode) {
     const isBonusMatched = isColorMatched(primaryCard, paymentCards);
     const bonusText = primaryCard.bonus || "奖励";
     const isBonusActive = isCostSatisfied && isBonusMatched;
@@ -245,8 +246,8 @@ const validatePlay = (params) => {
     lines.bonus = { text: "", class: "" };
   }
 
-  // 效果行：加【效果】标签（鼹鼠模式下不显示）
-  if (hasEffect && !isMoleMode) {
+  // 效果行：加【效果】标签（鼹鼠和水田鼠模式下不显示）
+  if (hasEffect && !isMoleMode && !isSaplingMode) {
     const effectText = primaryCard.effect || "效果";
     const isEffectActive = isCostSatisfied;
     lines.effect = {
@@ -271,11 +272,14 @@ const validatePlay = (params) => {
 
   const text = segments.map(s => s.text).join(" ");
 
-  // 如果是鼹鼠模式，添加特殊提示前缀
+  // 如果是鼹鼠或水田鼠模式，添加特殊提示前缀
   let finalText = text;
   if (isMoleMode) {
     const molePrefix = gameState.actionText || "支付费用打出牌";
     finalText = isCostSatisfied ? `${molePrefix} | ${text}` : text;
+  } else if (isSaplingMode) {
+    const saplingPrefix = gameState.actionText || "打出树苗";
+    finalText = isCostSatisfied ? `${saplingPrefix} | ${text}` : text;
   }
 
   const result = {

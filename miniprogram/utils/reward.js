@@ -18,7 +18,6 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
     actions: [],
     text: ''
   };
-  if (!isBonus) result
 
   // 获取配置
   const config = isBonus ? card.bonusConfig : card.effectConfig;
@@ -261,11 +260,13 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
 
 /**
  * 计算常驻效果触发 (Trigger Effects)
+ * @returns {Object} { drawCount, actions, triggers: [{ cardName, text }] }
  */
 function calculateTriggerEffects(forest, playedCard, triggerContext) {
   const result = {
     drawCount: 0,
-    actions: []
+    actions: [],
+    triggers: [] // 新增: 记录触发的效果详情
   };
 
   if (!forest || !Array.isArray(forest)) return result;
@@ -294,7 +295,13 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
         if (playedCard.tags && playedCard.tags.includes(config.tag)) {
           if (config.reward) {
             if (config.reward.type === 'DRAW') {
-              result.drawCount += (config.reward.value || 0);
+              const drawValue = config.reward.value || 0;
+              result.drawCount += drawValue;
+              // 记录触发详情
+              result.triggers.push({
+                cardName: card.name || '未知卡牌',
+                text: `摸${drawValue}张牌`
+              });
             }
           }
         }
@@ -311,7 +318,13 @@ function calculateTriggerEffects(forest, playedCard, triggerContext) {
           }
           if (match && config.reward) {
             if (config.reward.type === 'DRAW') {
-              result.drawCount += (config.reward.value || 0);
+              const drawValue = config.reward.value || 0;
+              result.drawCount += drawValue;
+              // 记录触发详情
+              result.triggers.push({
+                cardName: card.name || '未知卡牌',
+                text: `摸${drawValue}张牌`
+              });
             }
           }
         }
