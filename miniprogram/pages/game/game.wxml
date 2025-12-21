@@ -387,7 +387,7 @@
          <scroll-view scroll-y class="hand-scroll" enable-flex>
             <view class="hand-grid">
                <block wx:for="{{playerStates[openId].hand}}" wx:key="uid">
-                  <view class="hand-card {{item.uid === primarySelection ? 'primary-selected' : (item.selected ? 'payment-selected' : '')}}" bindtap="onHandTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
+                  <view class="hand-card {{item.uid === primarySelection ? 'primary-selected' + (playerStates[openId].bonusActive ? ' bonus-active' : '') : (item.selected ? 'payment-selected' : '')}}" bindtap="onHandTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
                      <view wx:if="{{item.uid === primarySelection}}" class="primary-flag">主牌</view>
                      <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
                   </view>

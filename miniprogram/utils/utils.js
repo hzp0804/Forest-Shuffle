@@ -288,8 +288,15 @@ const handleHandTap = (uid, currentData) => {
     instructionLines
   } = computeInstruction(nextData);
 
+  // 计算是否满足奖励条件
+  let bonusActive = false;
+  if (instructionLines && instructionLines.bonus && instructionLines.bonus.class === "text-success") {
+    bonusActive = true;
+  }
+
   const updates = {
     [`playerStates.${openId}.hand`]: newHand,
+    [`playerStates.${openId}.bonusActive`]: bonusActive, // 将状态暴露给前端
     primarySelection: newPrimary,
     instructionState,
     instructionText,

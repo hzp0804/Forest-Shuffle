@@ -760,8 +760,10 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
-  justify-content: space-between;
-  /* 两端对齐，自动计算间隙 */
+  justify-content: flex-start;
+  /* changed from space-between to flex-start */
+  gap: 15rpx;
+  /* manually control gap */
   padding: 0;
   width: 660rpx;
   /* Match forest-grid width */
@@ -795,10 +797,45 @@
   margin-bottom: 20rpx;
 }
 
+@keyframes floatYellowLine {
+
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: translateX(-50%) translateY(6rpx);
+    opacity: 1;
+  }
+}
+
 .hand-card.primary-selected {
   transform: translateY(-4rpx) scale(1.05);
   box-shadow: 0 0 0 6rpx #2ecc71, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
   z-index: 10;
+}
+
+.hand-card.primary-selected::after {
+  content: none;
+  /* 默认不显示 */
+}
+
+/* 只有当满足 bonus-active 时才显示黄条 */
+.hand-card.primary-selected.bonus-active::after {
+  content: "";
+  position: absolute;
+  top: -20rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 8rpx;
+  background: #f1c40f;
+  border-radius: 4rpx;
+  box-shadow: 0 0 8rpx rgba(241, 196, 15, 0.8);
+  animation: floatYellowLine 1.5s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .hand-card.payment-selected {
