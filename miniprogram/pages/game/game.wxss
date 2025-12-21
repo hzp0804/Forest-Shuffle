@@ -314,29 +314,51 @@
   flex: 1;
   min-width: 0;
   /* 确保在 flex 布局中能正确缩小 */
-  white-space: nowrap;
-  overflow: hidden;
-  /* 必须设为 hidden 以便正常限制滚动区域 */
+  white-space: normal;
+  /* Allow wrap */
+  overflow: visible;
+  /* Show content */
+  margin-left: 10rpx;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
 .clearing-row {
   display: flex;
   flex-direction: row;
-  align-items: flex-end;
-  padding: 8rpx 4rpx 0rpx 20rpx;
-  /* 右侧保留最小安全间距 */
+  flex-wrap: wrap;
+  /* Enable wrapping */
+  align-items: flex-start;
+  padding: 15rpx 0 0 10rpx;
+  /* Top padding to align with deck */
   gap: 20rpx;
+  /* Gap for spacing */
   box-sizing: border-box;
-  width: max-content;
+  width: 100%;
+}
+
+/* 空地和牌库卡片统一缩小 */
+#deck-card .hand-card,
+.clearing-row .hand-card {
+  width: 96rpx !important;
+  height: 144rpx !important;
+  flex-shrink: 0;
 }
 
 .clearing-row .hand-card {
-  margin-top: 10rpx !important;
-}
-
-.clearing-row .hand-card {
-  margin-bottom: 10rpx;
+  width: 96rpx !important;
+  height: 144rpx !important;
+  margin-top: 0 !important;
+  margin-bottom: 11rpx;
+  /* (15 padding + 144 card + 11 margin = 170) */
   margin-right: 0 !important;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+
+.clearing-row .hand-card:nth-child(n+6) {
+  margin-bottom: 11rpx !important;
+  scroll-snap-align: start;
 }
 
 .clearing-card {
@@ -807,6 +829,8 @@
   /* padding-top: 30rpx; */
   /* 给title留空间 */
   overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
 .hand-grid {
@@ -848,6 +872,7 @@
   /* Clear margins except right and bottom */
   box-sizing: border-box;
   /* Ensure borders don't increase width */
+  scroll-snap-align: start;
 }
 
 /* Every 5th card (end of row) has no right margin */

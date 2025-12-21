@@ -16,14 +16,13 @@ const getScrollTarget = (oldClearing, newClearing) => {
 
   // 只要卡片数量增加，就尝试滚动到最新那张卡
   if (newLen > oldLen && newLen > 0) {
-    // 为了让最新卡片出现在屏幕右侧，我们滚动到它前面的第3张卡片 (适配不同机型宽度)
-    const targetIndex = Math.max(0, newLen - 3);
-    return { type: 'id', value: `clearing-${targetIndex}` };
+    // 垂直布局 5个一行。滚动到最新的一张卡，paging-enabled 会处理对齐
+    return { type: 'id', value: `clearing-${newLen - 1}` };
   }
 
-  // 如果原本有点，现在没了 (被清空)，滚动回最左边
+  // 如果原本有点，现在没了 (被清空)，滚动回顶部锚点
   if (oldLen > 0 && newLen === 0) {
-    return { type: 'left', value: 0 };
+    return { type: 'id', value: 'clearing-top' };
   }
 
   return null;
