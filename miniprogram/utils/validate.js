@@ -132,7 +132,7 @@ const validatePlay = (params) => {
     return {
       valid: false,
       error: "请再摸一张牌",
-      instructionState: "warning",
+      instructionState: "action",
       instructionText: "请再摸一张牌"
     };
   }
@@ -142,7 +142,7 @@ const validatePlay = (params) => {
     return {
       valid: false,
       error: "请先选择要打出的牌",
-      instructionState: "normal",
+      instructionState: "action",
       instructionText: "请打牌/摸牌"
     };
   }

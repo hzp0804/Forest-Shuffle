@@ -201,17 +201,22 @@
 }
 
 .player-slot.selected {
-  /* background: rgba(52, 152, 219, 0.2); */
-  /* border: 2rpx solid #3498db; */
-  /* box-shadow: 0 0 16rpx rgba(52, 152, 219, 0.4); */
+  background: rgba(46, 204, 113, 0.2);
+  border: 4rpx solid #2ecc71;
+  /* Thicker border for clarity */
+  box-shadow: 0 0 16rpx rgba(46, 204, 113, 0.6);
+  transform: scale(1.05);
+  /* Slight zoom */
+  z-index: 10;
 }
 
 .player-slot.is-active {
-  background: rgba(46, 204, 113, 0.2);
-  border: 2rpx solid #2ecc71;
-  box-shadow: 0 0 16rpx #2ecc71;
-  animation: pulseActivePlayer 1.5s infinite;
-  z-index: 3;
+  /* Removed active player highlight per user request */
+  /* background: rgba(46, 204, 113, 0.2); */
+  /* border: 2rpx solid #2ecc71; */
+  /* box-shadow: 0 0 16rpx #2ecc71; */
+  /* animation: pulseActivePlayer 1.5s infinite; */
+  /* z-index: 3; */
 }
 
 @keyframes pulseActivePlayer {
@@ -351,11 +356,14 @@
 
 .hand-card.placeholder {
   background: rgba(255, 255, 255, 0.1);
-  border: 3rpx dashed rgba(255, 255, 255, 0.7);
+  border: 3rpx dashed rgba(255, 255, 255, 0.4);
+  /* Slightly thinner border to match size better */
   color: rgba(255, 255, 255, 0.7);
   justify-content: center;
   align-items: center;
   box-shadow: none;
+  box-sizing: border-box;
+  /* Ensure border is included in width */
 }
 
 /* Board 里的卡片样式 */
@@ -746,6 +754,31 @@
   }
 }
 
+.instruction-tip.action {
+  color: #FFD700;
+  font-weight: bold;
+  text-shadow: 0 0 4rpx rgba(255, 215, 0, 0.5);
+  display: inline-block;
+  animation: pulse-action 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-action {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
 .instruction-tip.error {
   color: #f39c12;
   /* Orange */
@@ -774,14 +807,13 @@
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: flex-start;
-  /* changed from space-between to flex-start */
-  gap: 15rpx;
-  /* manually control gap */
+  /* gap: 0; */
+  /* row-gap: 20rpx; */
+  /* column-gap: 25rpx; */
+  /* Android compatibility: Use margins instead of gap */
   padding: 0;
   width: 660rpx;
-  /* Match forest-grid width */
   margin: 20rpx auto;
-  /* 居中并保持顶部间距 */
 }
 
 /* 移除 after 伪元素，避免干扰 space-between */
@@ -792,9 +824,8 @@
 
 /* 手牌卡片样式 */
 .hand-card {
-  width: 120rpx;
-  /* 5 * 120 + 4 * 15(gap) = 660 */
-  height: 180rpx;
+  width: 112rpx;
+  height: 168rpx;
   background: #fff;
   border-radius: 8rpx;
   flex-shrink: 0;
@@ -805,9 +836,15 @@
   box-shadow: 0 6rpx 12rpx rgba(0, 0, 0, 0.32);
   position: relative;
   transition: transform 0.2s, box-shadow 0.2s;
+  margin: 20rpx 25rpx 20rpx 0;
+  /* Clear margins except right and bottom */
+  box-sizing: border-box;
+  /* Ensure borders don't increase width */
+}
+
+/* Every 5th card (end of row) has no right margin */
+.hand-card:nth-child(5n) {
   margin-right: 0;
-  /* 让 space-between 控制 */
-  margin-bottom: 20rpx;
 }
 
 @keyframes floatYellowLine {

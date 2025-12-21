@@ -2426,5 +2426,67 @@ Page({
   onClearingCardTap(e) {
     const idx = e.currentTarget.dataset.idx;
     this.setData({ selectedClearingIdx: this.data.selectedClearingIdx === idx ? -1 : idx });
+  },
+
+  // === 森林区域滑动切换逻辑 ===
+  onForestTouchStart(e) {
+    if (e.touches.length !== 1) return;
+    this.touchStartX = e.touches[0].clientX;
+    this.touchStartY = e.touches[0].clientY;
+  },
+
+  onForestTouchMove(e) {
+    // 主要是为了防止页面滚动干扰（如果需要），这里暂不处理
+  },
+
+  onForestTouchEnd(e) {
+    if (e.changedTouches.length !== 1) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+
+    const diffX = touchEndX - this.touchStartX;
+    const diffY = touchEndY - this.touchStartY;
+
+    // 如果垂直滑动过多，视为滚动，不触发切换
+    if (Math.abs(diffY) > 50) return;
+
+    // 水平滑动阈值
+    const SWIPE_THRESHOLD = 80;
+
+    if (Math.abs(diffX) > SWIPE_THRESHOLD) {
+      const { players, selectedPlayerOpenId } = this.data;
+      if (!players || players.length === 0) return;
+
+      const currentIndex = players.findIndex(p => p.openId === selectedPlayerOpenId);
+      if (currentIndex === -1) return;
+
+      let nextIndex = currentIndex;
+      if (diffX > 0) {
+        // 向右滑动 -> 上一个玩家
+        nextIndex = (currentIndex - 1 + players.length) % players.length;
+      } else {
+        // 向左滑动 -> 下一个玩家
+        nextIndex = (currentIndex + 1) % players.length;
+      }
+
+      const nextPlayer = players[nextIndex];
+
+      // 立即计算新玩家的森林数据，确保视图更新
+      const targetState = this.data.gameState.playerStates[nextPlayer.openId];
+      const rawForest = targetState?.forest || [];
+      // 确保引入 enrichment 函数
+      const { enrichForest } = require("../../utils/utils");
+      const newDisplayForest = enrichForest(rawForest);
+
+      // 切换视图并更新相关数据
+      this.setData({
+        selectedPlayerOpenId: nextPlayer.openId,
+        myForest: newDisplayForest,
+        viewingPlayerNick: nextPlayer.nickName || '玩家',
+        isViewingSelf: nextPlayer.openId === this.data.openId
+      });
+      // 触发震动反馈
+      wx.vibrateShort({ type: 'light' });
+    }
   }
 });

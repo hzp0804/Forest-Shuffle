@@ -102,7 +102,7 @@
             </scroll-view>
          </view>
          <!-- 森林区域 -->
-         <view class="forest-area">
+         <view class="forest-area" bindtouchstart="onForestTouchStart" bindtouchmove="onForestTouchMove" bindtouchend="onForestTouchEnd">
             <view class="area-label" style="display:flex; justify-content:space-between; width:100%; padding-right:20rpx; box-sizing:border-box;">
                <text>{{viewingPlayerNick}}的森林 {{!isViewingSelf ? '(仅查看)' : ''}}</text>
                <view style="display: flex; align-items: center;">
