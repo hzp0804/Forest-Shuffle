@@ -7,7 +7,7 @@
       <scroll-view scroll-x>
          <view class="players-bar">
             <view wx:for="{{players}}" wx:key="index">
-               <view class="player-slot {{item.isEmpty ? 'is-empty' : ''}} {{item.openId === selectedPlayerOpenId ? 'selected' : ''}} {{item.openId === (gameState.activePlayer || lastActivePlayer) ? 'is-active' : ''}}" bindtap="onPlayerTap" data-openid="{{item.openId}}">
+               <view class="player-slot {{item.isEmpty ? 'is-empty' : ''}} {{item.openId === selectedPlayerOpenId ? (item.openId === openId ? 'selected-me' : 'selected-other') : ''}} {{item.openId === (gameState.activePlayer || lastActivePlayer) ? 'is-active' : ''}}" bindtap="onPlayerTap" data-openid="{{item.openId}}">
                   <block wx:if="{{!item.isEmpty}}">
                      <view class="p-avatar-wrap">
                         <image class="p-avatar" src="{{item.avatarUrl || '/images/default_avatar.png'}}" mode="aspectFill" />
@@ -107,16 +107,14 @@
             </scroll-view>
          </view>
          <!-- 森林区域 -->
-         <view class="forest-area" bindtouchstart="onForestTouchStart" bindtouchmove="onForestTouchMove" bindtouchend="onForestTouchEnd">
+         <view class="forest-area {{(selectedPlayerOpenId || openId) === gameState.activePlayer ? (isViewingSelf ? 'active-turn-me' : 'active-turn-other') : ''}}" bindtouchstart="onForestTouchStart" bindtouchmove="onForestTouchMove" bindtouchend="onForestTouchEnd">
             <view class="area-label {{isViewingSelf ? 'self' : ''}}" style="display:flex; justify-content:space-between; width:100%; padding-right:20rpx; box-sizing:border-box;">
                <text>{{viewingPlayerNick}}的森林 {{!isViewingSelf ? '(仅查看)' : ''}}</text>
                <view style="display: flex; align-items: center;">
                   <view class="cave-info">
                      洞穴: {{playerStates[selectedPlayerOpenId || openId].cave.length || 0}}
                   </view>
-                  <view class="buff-btn" bindtap="onShowBuffs" wx:if="{{isViewingSelf}}">
-                     ✨Buff
-                  </view>
+                  <view class="buff-btn" bindtap="onShowBuffs">✨Buff</view>
                </view>
             </view>
             <scroll-view class="forest-scroll" scroll-y enable-flex>
@@ -373,16 +371,10 @@
                <view class="expand-icon {{handExpanded ? 'up' : 'down'}}"></view>
             </view>
             <view wx:if="{{gameState.activePlayer === openId}}" class="instruction-tip {{instructionState}}">
-               <block wx:if="{{instructionLines}}">
-                  <view wx:if="{{instructionLines.cost.text}}" class="{{instructionLines.cost.class}}">
+               <block wx:if="{{instructionLines && instructionLines.cost && instructionLines.cost.text}}">
+                  <view class="{{instructionLines.cost.class}}">
                      {{instructionLines.cost.text}}
                   </view>
-                  <!-- <view wx:if="{{instructionLines.bonus.text}}" class="{{instructionLines.bonus.class}}" style="min-height: 32rpx;">
-                     {{instructionLines.bonus.text}}
-                  </view>
-                  <view wx:if="{{instructionLines.effect.text}}" class="{{instructionLines.effect.class}}" style="min-height: 32rpx;">
-                     {{instructionLines.effect.text}}
-                  </view> -->
                </block>
                <block wx:elif="{{instructionSegments && instructionSegments.length > 0}}">
                   <view>
@@ -391,7 +383,9 @@
                      </text>
                   </view>
                </block>
-               <block wx:else>{{instructionText}}</block>
+               <block wx:else>
+                  <text>{{instructionText}}</text>
+               </block>
             </view>
          </view>
          <scroll-view scroll-y class="hand-scroll" enhanced show-scrollbar="{{false}}" enable-flex bounces="{{false}}">

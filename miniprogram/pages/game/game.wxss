@@ -25,27 +25,46 @@
 .instruction-tip {
   font-size: 24rpx;
   font-weight: bold;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .instruction-tip.normal {
-  color: #bdc3c7;
-  /* Gray */
+  color: #bdc3c7 !important;
 }
 
 .instruction-tip.success {
-  color: #2ecc71;
-  /* Green */
+  color: #2ecc71 !important;
 }
 
 .instruction-tip.warning {
-  color: #f1c40f;
-  /* Yellow */
+  color: #f1c40f !important;
 }
 
 .instruction-tip.error {
-  color: #e74c3c;
-  /* Red */
+  color: #e74c3c !important;
+}
+
+.instruction-tip.action {
+  color: #2ecc71 !important;
+  animation: pulse-action 1.5s infinite ease-in-out;
+  display: inline-block;
+}
+
+@keyframes pulse-action {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+    filter: brightness(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
 }
 
 /* 通用文本颜色类（用于 instructionLines 内部） */
@@ -201,13 +220,22 @@
   /* box-shadow: 0 0 10rpx rgba(52, 152, 219, 0.3); */
 }
 
-.player-slot.selected {
+.player-slot.selected,
+.player-slot.selected-me {
   background: rgba(46, 204, 113, 0.2);
   border: 4rpx solid #2ecc71;
   /* Thicker border for clarity */
   box-shadow: 0 0 16rpx rgba(46, 204, 113, 0.6);
   transform: scale(1.05);
   /* Slight zoom */
+  z-index: 10;
+}
+
+.player-slot.selected-other {
+  background: rgba(241, 196, 15, 0.2);
+  border: 4rpx solid #f1c40f;
+  box-shadow: 0 0 16rpx rgba(241, 196, 15, 0.6);
+  transform: scale(1.05);
   z-index: 10;
 }
 
@@ -374,14 +402,11 @@
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
+/* Card selected state (e.g. deck/clearing) */
+.hand-card.selected,
 .clearing-card.selected {
-  transform: translateY(-10rpx) scale(1.05);
-  box-shadow: 0 0 0 6rpx #e74c3c, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
-}
-
-.hand-card.selected {
-  transform: translateY(-10rpx) scale(1.05);
-  box-shadow: 0 0 0 6rpx #e74c3c, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
+  transform: translateY(-4rpx) scale(1.05);
+  box-shadow: 0 0 0 6rpx #2ecc71, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
   z-index: 10;
 }
 
@@ -426,6 +451,67 @@
   overflow: hidden;
   position: relative;
   margin-top: 5rpx;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.forest-area.active-turn-me {
+  border: 2rpx solid #2ecc71;
+  animation: forestBreathMe 2.5s infinite ease-in-out;
+}
+
+.forest-area.active-turn-other {
+  border: 2rpx solid #f1c40f;
+  animation: forestBreathOther 2.5s infinite ease-in-out;
+}
+
+@keyframes forestBreathMe {
+
+  0%,
+  100% {
+    border-color: rgba(46, 204, 113, 0.4);
+    box-shadow: 0 0 10rpx rgba(46, 204, 113, 0.2), inset 0 0 15rpx rgba(46, 204, 113, 0.1);
+  }
+
+  50% {
+    border-color: rgba(46, 204, 113, 1);
+    box-shadow: 0 0 25rpx rgba(46, 204, 113, 0.5), inset 0 0 30rpx rgba(46, 204, 113, 0.2);
+  }
+}
+
+@keyframes forestBreathOther {
+
+  0%,
+  100% {
+    border-color: rgba(241, 196, 15, 0.4);
+    box-shadow: 0 0 10rpx rgba(241, 196, 15, 0.2), inset 0 0 15rpx rgba(241, 196, 15, 0.1);
+  }
+
+  50% {
+    border-color: rgba(241, 196, 15, 1);
+    box-shadow: 0 0 25rpx rgba(241, 196, 15, 0.5), inset 0 0 30rpx rgba(241, 196, 15, 0.2);
+  }
+}
+
+.forest-area .area-label.self text:first-child {
+  color: #2ecc71;
+  font-weight: bold;
+}
+
+/* 正在行动时的标题颜色同步 */
+.forest-area.active-turn-me .area-label text:first-child {
+  color: #2ecc71 !important;
+  font-weight: bold;
+}
+
+.forest-area.active-turn-other .area-label text:first-child {
+  color: #f1c40f !important;
+  font-weight: bold;
+}
+
+/* 确保非行动状态下标题颜色恢正常（除非是自己的森林） */
+.forest-area:not(.active-turn-me):not(.active-turn-other) .area-label:not(.self) text:first-child {
+  color: #bdc3c7;
+  font-weight: normal;
 }
 
 .forest-area .area-label {
@@ -779,85 +865,7 @@
   border-bottom: 12rpx solid #bdc3c7;
 }
 
-.instruction-tip {
-  font-size: 24rpx;
-  color: #bdc3c7;
-  /* Default/Normal */
-  font-weight: normal;
-  transition: color 0.3s;
-}
-
-.instruction-tip.warning {
-  color: #f39c12;
-  /* Orange */
-  display: inline-block;
-}
-
-@keyframes notice-shake {
-
-  0%,
-  70%,
-  100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-
-  75% {
-    transform: translateX(-6rpx);
-    opacity: 0.8;
-  }
-
-  80% {
-    transform: translateX(6rpx);
-    opacity: 0.8;
-  }
-
-  85% {
-    transform: translateX(-6rpx);
-    opacity: 0.8;
-  }
-
-  90% {
-    transform: translateX(6rpx);
-    opacity: 0.8;
-  }
-}
-
-.instruction-tip.action {
-  color: #FFD700;
-  font-weight: bold;
-  text-shadow: 0 0 4rpx rgba(255, 215, 0, 0.5);
-  display: inline-block;
-  animation: pulse-action 1.5s infinite ease-in-out;
-}
-
-@keyframes pulse-action {
-  0% {
-    transform: scale(1);
-    filter: brightness(1);
-  }
-
-  50% {
-    transform: scale(1.05);
-    filter: brightness(1.2);
-  }
-
-  100% {
-    transform: scale(1);
-    filter: brightness(1);
-  }
-}
-
-.instruction-tip.error {
-  color: #f39c12;
-  /* Orange */
-  display: inline-block;
-}
-
-.instruction-tip.success {
-  color: #2ecc71;
-  /* Green */
-}
+/* 移除重复的 .instruction-tip 定义 */
 
 .hand-scroll {
   width: 100%;
@@ -961,15 +969,11 @@
 
 .hand-card.payment-selected {
   transform: translateY(-4rpx) scale(1.05);
-  box-shadow: 0 0 0 6rpx #f1c40f, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 6rpx #2ecc71, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
   z-index: 5;
 }
 
-.hand-card.selected {
-  transform: translateY(-4rpx) scale(1.05);
-  box-shadow: 0 0 0 6rpx #f1c40f, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
-  z-index: 5;
-}
+/* 移除重复的 .hand-card.selected */
 
 /* The following rules are added based on the user's instruction */
 /* Assuming .clearing-card.selected exists elsewhere or will be added */

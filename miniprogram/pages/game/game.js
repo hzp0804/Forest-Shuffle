@@ -2136,8 +2136,9 @@ Page({
    * 只统计带有触发效果的卡片,不包括得分效果
    */
   onShowBuffs() {
-    const { playerStates, openId } = this.data;
-    const forest = playerStates[openId]?.forest || [];
+    const { playerStates, openId, selectedPlayerOpenId } = this.data;
+    const viewingId = selectedPlayerOpenId || openId;
+    const forest = playerStates[viewingId]?.forest || [];
     const { TRIGGER_TYPES } = require("../../data/enums");
 
     let buffs = [];
