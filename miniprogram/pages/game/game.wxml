@@ -108,7 +108,7 @@
          </view>
          <!-- 森林区域 -->
          <view class="forest-area" bindtouchstart="onForestTouchStart" bindtouchmove="onForestTouchMove" bindtouchend="onForestTouchEnd">
-            <view class="area-label" style="display:flex; justify-content:space-between; width:100%; padding-right:20rpx; box-sizing:border-box;">
+            <view class="area-label {{isViewingSelf ? 'self' : ''}}" style="display:flex; justify-content:space-between; width:100%; padding-right:20rpx; box-sizing:border-box;">
                <text>{{viewingPlayerNick}}的森林 {{!isViewingSelf ? '(仅查看)' : ''}}</text>
                <view style="display: flex; align-items: center;">
                   <view class="cave-info">
@@ -196,22 +196,22 @@
                   </view>
                </view>
                <!-- 奖励和效果信息展示 -->
-               <view class="reward-info" wx:if="{{currentEvent.bonusText || currentEvent.effectText || (currentEvent.triggers && currentEvent.triggers.length > 0)}}" style="margin-top: 20rpx; padding: 16rpx 24rpx; background: rgba(255, 215, 0, 0.15); border-radius: 12rpx; border: 2rpx solid rgba(255, 215, 0, 0.3);">
-                  <!-- 奖励优先显示,用绿色 -->
-                  <view wx:if="{{currentEvent.bonusText}}" style="color: #90EE90; font-size: 26rpx; margin-bottom: 8rpx; display: flex; align-items: center;">
-                     <text style="margin-right: 8rpx;">🎁</text>
-                     <text>奖励: {{currentEvent.bonusText}}</text>
+               <view class="reward-info" wx:if="{{currentEvent.bonusText || currentEvent.effectText || (currentEvent.triggers && currentEvent.triggers.length > 0)}}" style="margin-top: 30rpx; text-align: center;">
+                  <!-- 奖励优先显示,用白色 -->
+                  <view wx:if="{{currentEvent.bonusText}}" style="color: #FFFFFF; font-size: 28rpx; margin-bottom: 12rpx; display: flex; align-items: center; justify-content: center; text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.5);">
+                     <text style="margin-right: 12rpx;">🎁</text>
+                     <text>奖励：{{currentEvent.bonusText}}</text>
                   </view>
-                  <!-- 效果用蓝色 -->
-                  <view wx:if="{{currentEvent.effectText}}" style="color: #87CEEB; font-size: 26rpx; margin-bottom: 8rpx; display: flex; align-items: center;">
-                     <text style="margin-right: 8rpx;">✨</text>
-                     <text>效果: {{currentEvent.effectText}}</text>
+                  <!-- 效果用白色 -->
+                  <view wx:if="{{currentEvent.effectText}}" style="color: #FFFFFF; font-size: 28rpx; margin-bottom: 12rpx; display: flex; align-items: center; justify-content: center; text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.5);">
+                     <text style="margin-right: 12rpx;">✨</text>
+                     <text>效果：{{currentEvent.effectText}}</text>
                   </view>
-                  <!-- 触发效果用金色 -->
+                  <!-- 触发效果用白色 -->
                   <block wx:if="{{currentEvent.triggers && currentEvent.triggers.length > 0}}">
-                     <view wx:for="{{currentEvent.triggers}}" wx:key="index" style="color: #FFD700; font-size: 26rpx; margin-bottom: 8rpx; display: flex; align-items: center;">
-                        <text style="margin-right: 8rpx;">⚡</text>
-                        <text>触发【{{item.cardName}}】: {{item.text}}</text>
+                     <view wx:for="{{currentEvent.triggers}}" wx:key="index" style="color: #FFFFFF; font-size: 28rpx; margin-bottom: 12rpx; display: flex; align-items: center; justify-content: center; text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.5);">
+                        <text style="margin-right: 12rpx;">⚡</text>
+                        <text>触发【{{item.cardName}}】：{{item.text}}</text>
                      </view>
                   </block>
                </view>

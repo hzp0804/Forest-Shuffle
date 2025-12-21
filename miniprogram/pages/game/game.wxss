@@ -985,6 +985,11 @@
   pointer-events: none;
 }
 
+.self {
+  color: #2ecc71 !important;
+  font-weight: bold;
+}
+
 .row-1-num {
   top: 75rpx;
 }
