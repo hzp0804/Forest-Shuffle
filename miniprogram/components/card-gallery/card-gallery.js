@@ -42,8 +42,8 @@ Component({
 
         const sections = [
           { id: "basic_tree", title: "基础树木", cards: [] },
-          { id: "basic_h", title: "基础动物-横", cards: [] },
-          { id: "basic_v", title: "基础动物-竖", cards: [] },
+          { id: "basic_h", title: "基础动物", cards: [] },
+          { id: "basic_v", title: "基础动物", cards: [] },
           { id: "alpine", title: "高山", cards: [] },
           { id: "edge", title: "林缘", cards: [] },
         ];

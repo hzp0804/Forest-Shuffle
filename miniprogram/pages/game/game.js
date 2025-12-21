@@ -82,6 +82,8 @@ Page({
     allCheatSections: [],
     cheatSearchQuery: "",
     handExpanded: false, // 手牌区是否展开
+    forestScrollTop: 0, // 森林区域滚动位置
+    currentForestIndex: 0, // 当前显示的森林索引（swiper 使用）
   },
 
   onLoad(options) {
@@ -116,6 +118,37 @@ Page({
 
   onToggleHandExpanded() {
     this.setData({ handExpanded: !this.data.handExpanded });
+  },
+
+  onHandTouchStart(e) {
+    if (e.touches.length === 1) {
+      this.handTouchStartX = e.touches[0].clientX;
+      this.handTouchStartY = e.touches[0].clientY;
+    }
+  },
+
+  onHandTouchEnd(e) {
+    if (e.changedTouches.length === 1) {
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const deltaX = endX - this.handTouchStartX;
+      const deltaY = endY - this.handTouchStartY;
+
+      // 确保是水平滑动，且滑动距离超过 50
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+        if (deltaX < 0) {
+          // 左滑 -> 展开
+          if (!this.data.handExpanded) {
+            this.setData({ handExpanded: true });
+          }
+        } else {
+          // 右滑 -> 收起
+          if (this.data.handExpanded) {
+            this.setData({ handExpanded: false });
+          }
+        }
+      }
+    }
   },
 
   onShow() {
@@ -379,9 +412,34 @@ Page({
 
     this.setData({ currentEvent: event, eventQueue: remaining, isCardFlipped: false });
 
-    // 如果是回合切换且轮到自己,震动提示 - 已移除
+    // === 自动切换视角逻辑 ===
+    // 只有在回合切换时才自动跟随视角，其他玩家行动（打牌、抽牌等）不再强制拉走用户视角
+    const autoSwitchTypes = ['TURN_CHANGE'];
+    const targetOpid = event.playerOpenId;
+    if (autoSwitchTypes.includes(event.type) && targetOpid && targetOpid !== this.data.selectedPlayerOpenId) {
+      const viewingPlayerState = this.data.playerStates?.[targetOpid];
+      if (viewingPlayerState) {
+        const displayForest = viewingPlayerState.forest || [];
+        const viewingPlayer = this.data.players.find(p => p && p.openId === targetOpid);
+
+        const syncedSlot = viewingPlayerState.selectedSlot || null;
+        const targetIndex = this.data.players.findIndex(p => p && p.openId === targetOpid);
+
+        this.setData({
+          selectedPlayerOpenId: targetOpid,
+          myForest: displayForest,
+          viewingPlayerNick: viewingPlayer?.nickName || '玩家',
+          isViewingSelf: targetOpid === this.data.openId,
+          forestScrollTop: 0,
+          // 自动跳转时从 playerStates 获取最新同步状态
+          selectedSlot: syncedSlot,
+          currentForestIndex: targetIndex >= 0 ? targetIndex : 0
+        });
+      }
+    }
+
+    // 如果是回合切换且轮到自己
     if (event.type === 'TURN_CHANGE' && event.isMyTurn) {
-      // wx.vibrateShort({ type: 'medium' });
     }
 
     // 如果是带翻页效果的事件，延迟触发翻转
@@ -413,11 +471,24 @@ Page({
     const displayForest = viewingPlayerState?.forest || [];
     const viewingPlayer = this.data.players.find(p => p && p.openId === opid);
 
+    const targetState = this.data.playerStates?.[opid];
+    // 关键修复：无论切到谁（包括自己），都从 playerStates 中获取最新的同步状态
+    // 这样即使离开后再回来，也能看到最新的选中插槽
+    const syncedSlot = targetState?.selectedSlot || null;
+
+    // 计算目标玩家在 players 数组中的索引，用于控制 swiper
+    const targetIndex = this.data.players.findIndex(p => p && p.openId === opid);
+
     this.setData({
       selectedPlayerOpenId: opid,
       myForest: displayForest,
       viewingPlayerNick: viewingPlayer?.nickName || '玩家',
-      isViewingSelf: opid === this.data.openId
+      isViewingSelf: opid === this.data.openId,
+      forestScrollTop: 0,
+      // 始终使用从云端同步的最新状态
+      selectedSlot: syncedSlot,
+      // 更新 swiper 索引，触发页面切换
+      currentForestIndex: targetIndex >= 0 ? targetIndex : 0
     });
   },
 
@@ -425,6 +496,11 @@ Page({
     // 只有在自己的回合才能点击手牌
     if (!this.data.isMyTurn) {
       wx.showToast({ title: "不是你的回合", icon: "none", duration: 1000 });
+      return;
+    }
+    // 如果已经摸了一张牌，禁止选手牌，强制继续摸牌
+    if (this.data.turnAction?.drawnCount === 1) {
+      wx.showToast({ title: "请再摸一张牌或结束回合", icon: "none", duration: 1500 });
       return;
     }
     const updates = Utils.handleHandTap(e.currentTarget.dataset.uid, this.data);
@@ -523,6 +599,15 @@ Page({
       wx.showToast({ title: "不是你的回合", icon: "none" });
       return;
     }
+    if (!this.data.isViewingSelf) {
+      wx.showToast({ title: "只能操作自己的森林", icon: "none" });
+      return;
+    }
+    // 如果已经摸了一张牌，禁止选插槽，强制继续摸牌
+    if (this.data.turnAction?.drawnCount === 1) {
+      wx.showToast({ title: "请再摸一张牌或结束回合", icon: "none", duration: 1500 });
+      return;
+    }
     const { treeid, side } = e.currentTarget.dataset;
     const { selectedSlot, primarySelection, gameState } = this.data;
 
@@ -533,7 +618,7 @@ Page({
     }
 
     // 1. 处理取消选中 (点击已选中的槽位)
-    if (selectedSlot?.treeId === treeid && selectedSlot?.side === side) {
+    if (selectedSlot?.treeId === String(treeid) && selectedSlot?.side === side) {
       const nextData = { ...this.data, selectedSlot: null };
       const res = Utils.computeInstruction(nextData);
       this.setData({
@@ -543,11 +628,15 @@ Page({
         instructionSegments: res.instructionSegments || null,
         instructionLines: res.instructionLines || null
       });
+      // 同步取消选中到数据库
+      db.collection("rooms").doc(this.data.roomId).update({
+        data: { [`gameState.playerStates.${this.data.openId}.selectedSlot`]: null }
+      });
       return;
     }
 
-    // 2. 准备新槽位
-    const nextSlot = { treeId: treeid, side, isValid: true };
+    // 2. 准备新槽位（确保 treeId 是字符串，与 forest 中的 _id 类型一致）
+    const nextSlot = { treeId: String(treeid), side, isValid: true };
 
     // 3. 验证槽位可用性
     // 3. 验证槽位可用性
@@ -687,6 +776,11 @@ Page({
         instructionSegments: res.instructionSegments || null,
         instructionLines: res.instructionLines || null,
         [`playerStates.${openId}.bonusActive`]: bonusActive
+      });
+
+      // 同步选中槽位到数据库，方便观看者实时看到
+      db.collection("rooms").doc(this.data.roomId).update({
+        data: { [`gameState.playerStates.${openId}.selectedSlot`]: nextSlot }
       });
     } else {
       // 未选主牌：不允许选择插槽，直接返回
@@ -1501,6 +1595,7 @@ Page({
     const updates = {
       [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
       [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
+      [`gameState.playerStates.${openId}.selectedSlot`]: null,
       [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
       [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
       [`gameState.activePlayer`]: nextPlayer,
@@ -2109,6 +2204,9 @@ Page({
         [`playerStates.${openId}.hand`]: playerStates[openId].hand || []
       };
 
+      // 提交成功后也确保同步字段被清空 (updates 已经包含了数据库清除，这里是本地状态同步)
+      updates[`gameState.playerStates.${openId}.selectedSlot`] = null;
+
       // 如果有 TurnAction 更新,立即应用到本地,并重算指引
       if (nextTurnAction) {
         nextLocalData.turnAction = nextTurnAction;
@@ -2199,6 +2297,14 @@ Page({
   },
 
   onPlaySapling() {
+    if (!this.data.isMyTurn) {
+      wx.showToast({ title: "不是你的回合", icon: "none" });
+      return;
+    }
+    if (!this.data.isViewingSelf) {
+      wx.showToast({ title: "只能操作自己的森林", icon: "none" });
+      return;
+    }
     if (this.data.turnAction?.drawnCount > 0 || this.data.turnAction?.takenCount > 0) {
       wx.showToast({ title: "已摸牌，本回合只能继续摸牌", icon: "none" });
       return;
@@ -2351,6 +2457,7 @@ Page({
     const updates = {
       [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
       [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
+      [`gameState.playerStates.${openId}.selectedSlot`]: null,
       [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
       [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
       [`gameState.activePlayer`]: nextPlayer,
@@ -2443,65 +2550,27 @@ Page({
     this.setData({ selectedClearingIdx: this.data.selectedClearingIdx === idx ? -1 : idx });
   },
 
-  // === 森林区域滑动切换逻辑 ===
-  onForestTouchStart(e) {
-    if (e.touches.length !== 1) return;
-    this.touchStartX = e.touches[0].clientX;
-    this.touchStartY = e.touches[0].clientY;
-  },
+  // === 森林区域 Swiper 切换逻辑 ===
+  onForestSwiperChange(e) {
+    const { current, source } = e.detail;
 
-  onForestTouchMove(e) {
-    // 主要是为了防止页面滚动干扰（如果需要），这里暂不处理
-  },
+    // 只处理用户主动滑动，忽略程序设置导致的变化
+    if (source !== 'touch') return;
 
-  onForestTouchEnd(e) {
-    if (e.changedTouches.length !== 1) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
+    const { players } = this.data;
+    if (!players || players.length === 0 || current >= players.length) return;
 
-    const diffX = touchEndX - this.touchStartX;
-    const diffY = touchEndY - this.touchStartY;
+    const nextPlayer = players[current];
+    const targetState = this.data.gameState.playerStates[nextPlayer.openId];
+    const syncedSlot = targetState?.selectedSlot || null;
 
-    // 如果垂直滑动过多，视为滚动，不触发切换
-    if (Math.abs(diffY) > 50) return;
-
-    // 水平滑动阈值
-    const SWIPE_THRESHOLD = 80;
-
-    if (Math.abs(diffX) > SWIPE_THRESHOLD) {
-      const { players, selectedPlayerOpenId } = this.data;
-      if (!players || players.length === 0) return;
-
-      const currentIndex = players.findIndex(p => p.openId === selectedPlayerOpenId);
-      if (currentIndex === -1) return;
-
-      let nextIndex = currentIndex;
-      if (diffX > 0) {
-        // 向右滑动 -> 上一个玩家
-        nextIndex = (currentIndex - 1 + players.length) % players.length;
-      } else {
-        // 向左滑动 -> 下一个玩家
-        nextIndex = (currentIndex + 1) % players.length;
-      }
-
-      const nextPlayer = players[nextIndex];
-
-      // 立即计算新玩家的森林数据，确保视图更新
-      const targetState = this.data.gameState.playerStates[nextPlayer.openId];
-      const rawForest = targetState?.forest || [];
-      // 确保引入 enrichment 函数
-      const { enrichForest } = require("../../utils/utils");
-      const newDisplayForest = enrichForest(rawForest);
-
-      // 切换视图并更新相关数据
-      this.setData({
-        selectedPlayerOpenId: nextPlayer.openId,
-        myForest: newDisplayForest,
-        viewingPlayerNick: nextPlayer.nickName || '玩家',
-        isViewingSelf: nextPlayer.openId === this.data.openId
-      });
-      // 触发震动反馈
-      wx.vibrateShort({ type: 'light' });
-    }
+    this.setData({
+      currentForestIndex: current,
+      selectedPlayerOpenId: nextPlayer.openId,
+      viewingPlayerNick: nextPlayer.nickName || '玩家',
+      isViewingSelf: nextPlayer.openId === this.data.openId,
+      forestScrollTop: 0,
+      selectedSlot: syncedSlot
+    });
   }
 });

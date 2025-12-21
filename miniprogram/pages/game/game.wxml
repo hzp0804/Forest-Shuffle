@@ -4,9 +4,9 @@
    </view>
    <block wx:else>
       <!-- 顶部玩家列表 -->
-      <scroll-view scroll-x>
+      <scroll-view scroll-x scroll-into-view="player-{{gameState.activePlayer}}" scroll-with-animation>
          <view class="players-bar">
-            <view wx:for="{{players}}" wx:key="index">
+            <view wx:for="{{players}}" wx:key="index" id="player-{{item.openId}}">
                <view class="player-slot {{item.isEmpty ? 'is-empty' : ''}} {{item.openId === selectedPlayerOpenId ? (item.openId === openId ? 'selected-me' : 'selected-other') : ''}} {{item.openId === (gameState.activePlayer || lastActivePlayer) ? 'is-active' : ''}}" bindtap="onPlayerTap" data-openid="{{item.openId}}">
                   <block wx:if="{{!item.isEmpty}}">
                      <view class="p-avatar-wrap">
@@ -117,7 +117,7 @@
                   <view class="buff-btn" bindtap="onShowBuffs">✨Buff</view>
                </view>
             </view>
-            <scroll-view class="forest-scroll" scroll-y enable-flex>
+            <scroll-view class="forest-scroll" scroll-y enable-flex scroll-top="{{forestScrollTop}}">
                <view class="forest-grid">
                   <block wx:for="{{myForest}}" wx:key="_id">
                      <view class="tree-group">
@@ -128,7 +128,7 @@
                            </view>
                         </view>
                         <!-- 槽位渲染：使用你原始的详细布局 -->
-                        <view class="slot-pos slot-top {{selectedSlot.treeId === item._id && selectedSlot.side === 'top' ? 'selected' : ''}} {{selectedSlot.treeId === item._id && selectedSlot.side === 'top' && instructionState === 'success' ? 'can-play' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="top" data-cardid="{{item.slots.top.id}}">
+                        <view class="slot-pos slot-top {{selectedSlot && selectedSlot.treeId === item._id && selectedSlot.side === 'top' ? 'selected' : ''}} {{selectedSlot && selectedSlot.treeId === item._id && selectedSlot.side === 'top' && instructionState === 'success' ? 'can-play' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="top" data-cardid="{{item.slots.top.id}}">
                            <view class="slot-card {{!item.slots.top ? 'empty' : ''}}">
                               <view wx:if="{{item.slots.top}}" class="card-sprite-native slot-crop {{item.slots.top.cssClass}}" style="background-image: url('{{item.slots.top.bgImg}}'); background-size: {{item.slots.top.bgSize}}"></view>
                            </view>
@@ -136,7 +136,7 @@
                               {{item.slots.top.list.length}}
                            </view>
                         </view>
-                        <view class="slot-pos slot-bottom {{selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' ? 'selected' : ''}} {{selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' && instructionState === 'success' ? 'can-play' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="bottom" data-cardid="{{item.slots.bottom.id}}">
+                        <view class="slot-pos slot-bottom {{selectedSlot && selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' ? 'selected' : ''}} {{selectedSlot && selectedSlot.treeId === item._id && selectedSlot.side === 'bottom' && instructionState === 'success' ? 'can-play' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="bottom" data-cardid="{{item.slots.bottom.id}}">
                            <view class="slot-card {{!item.slots.bottom ? 'empty' : ''}}">
                               <view wx:if="{{item.slots.bottom}}" class="card-sprite-native slot-crop {{item.slots.bottom.cssClass}}" style="background-image: url('{{item.slots.bottom.bgImg}}'); background-size: {{item.slots.bottom.bgSize}}"></view>
                            </view>
@@ -144,7 +144,7 @@
                               {{item.slots.bottom.list.length}}
                            </view>
                         </view>
-                        <view class="slot-pos slot-left {{selectedSlot.treeId === item._id && selectedSlot.side === 'left' ? 'selected' : ''}} {{selectedSlot.treeId === item._id && selectedSlot.side === 'left' && instructionState === 'success' ? 'can-play' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="left" data-cardid="{{item.slots.left.id}}">
+                        <view class="slot-pos slot-left {{selectedSlot && selectedSlot.treeId === item._id && selectedSlot.side === 'left' ? 'selected' : ''}} {{selectedSlot && selectedSlot.treeId === item._id && selectedSlot.side === 'left' && instructionState === 'success' ? 'can-play' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="left" data-cardid="{{item.slots.left.id}}">
                            <view class="slot-card h-crop {{!item.slots.left ? 'empty' : ''}}">
                               <view wx:if="{{item.slots.left}}" class="card-sprite-native slot-crop {{item.slots.left.cssClass}}" style="background-image: url('{{item.slots.left.bgImg}}'); background-size: {{item.slots.left.bgSize}}"></view>
                            </view>
@@ -152,7 +152,7 @@
                               {{item.slots.left.list.length}}
                            </view>
                         </view>
-                        <view class="slot-pos slot-right {{selectedSlot.treeId === item._id && selectedSlot.side === 'right' ? 'selected' : ''}} {{selectedSlot.treeId === item._id && selectedSlot.side === 'right' && instructionState === 'success' ? 'can-play' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="right" data-cardid="{{item.slots.right.id}}">
+                        <view class="slot-pos slot-right {{selectedSlot && selectedSlot.treeId === item._id && selectedSlot.side === 'right' ? 'selected' : ''}} {{selectedSlot && selectedSlot.treeId === item._id && selectedSlot.side === 'right' && instructionState === 'success' ? 'can-play' : ''}}" bindtap="onSlotTap" bindlongpress="onShowDetail" data-treeid="{{item._id}}" data-side="right" data-cardid="{{item.slots.right.id}}">
                            <view class="slot-card h-crop {{!item.slots.right ? 'empty' : ''}}">
                               <view wx:if="{{item.slots.right}}" class="card-sprite-native slot-crop {{item.slots.right.cssClass}}" style="background-image: url('{{item.slots.right.bgImg}}'); background-size: {{item.slots.right.bgSize}}"></view>
                            </view>
@@ -364,7 +364,7 @@
       <view class="spectator-bar" wx:if="{{isSpectator}}" style="width:100%; height:120rpx; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; position:fixed; bottom:0; padding-bottom:env(safe-area-inset-bottom);">
          <text style="color:white; font-size:32rpx;">👀 当前为旁观模式</text>
       </view>
-      <view class="hand-area {{handExpanded ? 'expanded' : 'collapsed'}}" wx:else>
+      <view class="hand-area {{handExpanded ? 'expanded' : 'collapsed'}}" wx:else bindtouchstart="onHandTouchStart" bindtouchend="onHandTouchEnd">
          <view class="hand-header" bindtap="onToggleHandExpanded">
             <view class="area-title" style="display:flex; align-items:center;">
                手牌 ({{playerStates[openId].hand.length}})

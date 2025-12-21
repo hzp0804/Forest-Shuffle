@@ -14,14 +14,18 @@ const getScrollTarget = (oldClearing, newClearing) => {
   const oldLen = oldClearing ? oldClearing.length : 0;
   const newLen = newClearing ? newClearing.length : 0;
 
-  // 只要卡片数量增加，就尝试滚动到最新那张卡
-  if (newLen > oldLen && newLen > 0) {
-    // 垂直布局 5个一行。滚动到最新的一张卡，paging-enabled 会处理对齐
+  // 卡片数量 ≤5（第一行）：滚动到顶部，确保吸附在第一行
+  if (newLen > 0 && newLen <= 5) {
+    return { type: 'id', value: 'clearing-top' };
+  }
+
+  // 卡片数量 >5（第二行）：滚动到最后一张卡片，确保能看到最新的
+  if (newLen > 5) {
     return { type: 'id', value: `clearing-${newLen - 1}` };
   }
 
-  // 如果原本有点，现在没了 (被清空)，滚动回顶部锚点
-  if (oldLen > 0 && newLen === 0) {
+  // 没有卡片：滚动到顶部第一个占位符
+  if (newLen === 0) {
     return { type: 'id', value: 'clearing-top' };
   }
 
@@ -46,6 +50,13 @@ const executeScroll = (page, instruction) => {
     page.setData({ clearingScrollId: '' }, () => {
       setTimeout(() => {
         page.setData({ clearingScrollId: instruction.value });
+      }, 100);
+    });
+  } else if (instruction.type === 'top') {
+    // 滚动到顶部：先置空ID防止冲突，再设置 scroll-top
+    page.setData({ clearingScrollId: '' }, () => {
+      setTimeout(() => {
+        page.setData({ clearingScrollTop: instruction.value });
       }, 100);
     });
   } else if (instruction.type === 'left') {

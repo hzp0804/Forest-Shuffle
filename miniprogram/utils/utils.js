@@ -335,7 +335,8 @@ const processGameData = (res, currentData) => {
         playerState.hand = enrichHand(playerState.hand, myOpenId, playerState._openid || openId, selectedUids);
       }
       if (playerState?.forest) {
-        playerState.forest = enrichForest(playerState.forest);
+        // 增强森林数据富化：确保 _id 是字符串以配合 WXML 比较
+        playerState.forest = enrichForest(playerState.forest).map(g => ({ ...g, _id: String(g._id) }));
       }
     });
   }
@@ -368,7 +369,14 @@ const processGameData = (res, currentData) => {
 
   const cardsChanged = totalCardCount !== (currentData.lastCardCount || 0);
   const users = res.data.players || [];
-  const enrichedPlayers = users.map((p) => {
+
+  // 如果有 turnOrder，按照 turnOrder 的顺序重新排列玩家
+  const turnOrder = gameState.turnOrder || [];
+  const sortedUsers = turnOrder.length > 0
+    ? turnOrder.map(openId => users.find(p => p && p.openId === openId)).filter(Boolean)
+    : users;
+
+  const enrichedPlayers = sortedUsers.map((p) => {
     if (!p) return null;
     const pState = playerStates?.[p.openId];
     let score = 0;
@@ -428,6 +436,9 @@ const processGameData = (res, currentData) => {
     myForest: displayForest,
     viewingPlayerNick: viewingPlayer?.nickName || "玩家",
     isViewingSelf: viewingId === myOpenId,
+    // 同步插槽逻辑：始终从 playerStates 获取最新状态
+    // 这样确保无论何时切回视角（包括切回自己），都能看到云端同步的最新选中插槽
+    selectedSlot: viewingPlayerState?.selectedSlot || null,
     isMyTurn,
     instructionState,
     instructionText,

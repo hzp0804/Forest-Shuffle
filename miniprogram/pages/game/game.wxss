@@ -405,7 +405,6 @@
 /* Card selected state (e.g. deck/clearing) */
 .hand-card.selected,
 .clearing-card.selected {
-  transform: translateY(-4rpx) scale(1.05);
   box-shadow: 0 0 0 6rpx #2ecc71, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
   z-index: 10;
 }
@@ -941,7 +940,6 @@
 }
 
 .hand-card.primary-selected {
-  transform: translateY(-4rpx) scale(1.05);
   box-shadow: 0 0 0 6rpx #2ecc71, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
   z-index: 10;
 }
@@ -968,8 +966,7 @@
 }
 
 .hand-card.payment-selected {
-  transform: translateY(-4rpx) scale(1.05);
-  box-shadow: 0 0 0 6rpx #2ecc71, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 6rpx #f1c40f, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
   z-index: 5;
 }
 
