@@ -335,6 +335,7 @@
   /* Gap for spacing */
   box-sizing: border-box;
   width: 100%;
+  position: relative;
 }
 
 /* 空地和牌库卡片统一缩小 */
@@ -712,13 +713,34 @@
 /* 底部区域：手牌 (Hand) */
 /* 底部区域：手牌 (Hand) */
 .hand-area {
-  height: 400rpx;
+  max-height: 480rpx;
   /* 增加高度以容纳两行 */
   background: #34495e;
   padding: 12rpx 0rpx 6rpx 12rpx;
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+  position: relative;
+}
+
+.hand-area.collapsed {
+  max-height: 272rpx;
+  /* 进一步精调：刚好遮住第二行顶部，同时完整保留第一行阴影 */
+}
+
+.hand-area.expanded {
+  max-height: 750rpx;
+  height: auto;
+}
+
+.hand-area.expanded .hand-scroll {
+  flex: none;
+  /* 展开时不再撑开盒子，由内容决定高度 */
+  height: auto;
+  max-height: 550rpx;
+  /* 限制最大高度，防止覆盖森林 */
+  scroll-snap-type: none;
 }
 
 .hand-header {
@@ -737,7 +759,24 @@
 .area-title {
   font-size: 24rpx;
   color: #bdc3c7;
-  width: 200rpx;
+  /* width: 200rpx; */
+}
+
+.expand-icon {
+  width: 0;
+  height: 0;
+  border-left: 10rpx solid transparent;
+  border-right: 10rpx solid transparent;
+  margin-left: 15rpx;
+  transition: transform 0.3s;
+}
+
+.expand-icon.down {
+  border-top: 12rpx solid #bdc3c7;
+}
+
+.expand-icon.up {
+  border-bottom: 12rpx solid #bdc3c7;
 }
 
 .instruction-tip {
@@ -823,11 +862,9 @@
 .hand-scroll {
   width: 100%;
   flex: 1;
-  display: block;
-  /* 取消flex，由内部grid控制 */
-  padding-bottom: 10rpx;
-  /* padding-top: 30rpx; */
-  /* 给title留空间 */
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 20rpx;
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   -webkit-overflow-scrolling: touch;
@@ -846,6 +883,7 @@
   padding: 0;
   width: 660rpx;
   margin: 10rpx auto;
+  position: relative;
 }
 
 /* 移除 after 伪元素，避免干扰 space-between */
@@ -931,6 +969,50 @@
   transform: translateY(-4rpx) scale(1.05);
   box-shadow: 0 0 0 6rpx #f1c40f, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
   z-index: 5;
+}
+
+/* The following rules are added based on the user's instruction */
+/* Assuming .clearing-card.selected exists elsewhere or will be added */
+/* If .clearing-row exists, add position: relative; to it. It's not in the provided content. */
+
+/* 行号指示器 */
+.clearing-row-number {
+  position: absolute;
+  right: 0rpx;
+  font-size: 18rpx;
+  color: rgba(189, 195, 199, 0.6);
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.row-1-num {
+  top: 75rpx;
+}
+
+.row-2-num {
+  top: 245rpx;
+}
+
+/* 手牌行号 */
+.hand-row-number {
+  position: absolute;
+  right: -25rpx;
+  font-size: 18rpx;
+  color: rgba(189, 195, 199, 0.6);
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.hand-row-1-num {
+  top: 90rpx;
+}
+
+.hand-row-2-num {
+  top: 300rpx;
+}
+
+.hand-row-3-num {
+  top: 510rpx;
 }
 
 .pay-flag {

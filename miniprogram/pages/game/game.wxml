@@ -67,11 +67,11 @@
                      <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; pointer-events: none;"></view>
                      <view class="card-body" style="background:transparent; color:white; z-index:1; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
                         <!-- 回合数 (恢复显示) -->
-                        <view style="font-size:16rpx; font-weight:bold; opacity: 0.9; text-shadow: 0 1px 2px rgba(0,0,0,0.8); margin-bottom: 2rpx;">
+                        <view style="font-size:16rpx; font-weight:bold; opacity: 0.9; text-shadow: 0 1px 2px rgba(0,0,0,0.8); margin-bottom: 2rpx; width: 100%; text-align: center; display: block;">
                            回合 {{currentTurn || 1}}
                         </view>
                         <!-- 牌库数量 -->
-                        <view style="font-size:32rpx; margin-top: 20rpx; font-weight:900; text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.8); line-height: 1; margin-bottom: 4rpx;">
+                        <view style="font-size:32rpx; margin-top: 20rpx; font-weight:900; text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.8); line-height: 1; margin-bottom: 4rpx; width: 100%; text-align: center; display: block;">
                            {{deck.length || 0}}
                         </view>
                         <view style="flex: 1;"></view>
@@ -83,7 +83,7 @@
                   </block>
                </view>
             </view>
-            <scroll-view class="clearing-scroll" scroll-y enhanced show-scrollbar="{{false}}" enable-flex scroll-into-view="{{clearingScrollId}}" scroll-with-animation style="height: 170rpx;">
+            <scroll-view class="clearing-scroll" scroll-y enhanced show-scrollbar="{{false}}" enable-flex scroll-into-view="{{clearingScrollId}}" scroll-with-animation style="height: 170rpx;" bounces="{{false}}">
                <view class="clearing-row" id="clearing-top">
                   <block wx:for="{{clearing}}" wx:key="uid">
                      <view id="clearing-{{index}}" class="hand-card clearing-card {{item.effectConfig ? 'has-trigger' : ''}} {{item.bonusConfig ? 'has-reward' : ''}} {{index === selectedClearingIdx ? 'selected' : ''}}" bindtap="onClearingCardTap" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
@@ -100,6 +100,9 @@
                   </block>
                   <!-- 滚动锚点 -->
                   <view id="clearing-end-anchor" style="width: 1rpx; height: 1rpx; flex-shrink: 0;"></view>
+                  <!-- 行号指示器 -->
+                  <view class="clearing-row-number row-1-num">1</view>
+                  <view class="clearing-row-number row-2-num">2</view>
                </view>
             </scroll-view>
          </view>
@@ -363,9 +366,12 @@
       <view class="spectator-bar" wx:if="{{isSpectator}}" style="width:100%; height:120rpx; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; position:fixed; bottom:0; padding-bottom:env(safe-area-inset-bottom);">
          <text style="color:white; font-size:32rpx;">👀 当前为旁观模式</text>
       </view>
-      <view class="hand-area" wx:else>
-         <view class="hand-header">
-            <view class="area-title">手牌 ({{playerStates[openId].hand.length}})</view>
+      <view class="hand-area {{handExpanded ? 'expanded' : 'collapsed'}}" wx:else>
+         <view class="hand-header" bindtap="onToggleHandExpanded">
+            <view class="area-title" style="display:flex; align-items:center;">
+               手牌 ({{playerStates[openId].hand.length}})
+               <view class="expand-icon {{handExpanded ? 'up' : 'down'}}"></view>
+            </view>
             <view wx:if="{{gameState.activePlayer === openId}}" class="instruction-tip {{instructionState}}">
                <block wx:if="{{instructionLines}}">
                   <view wx:if="{{instructionLines.cost.text}}" class="{{instructionLines.cost.class}}">
@@ -388,7 +394,7 @@
                <block wx:else>{{instructionText}}</block>
             </view>
          </view>
-         <scroll-view scroll-y class="hand-scroll" enhanced show-scrollbar="{{false}}" enable-flex>
+         <scroll-view scroll-y class="hand-scroll" enhanced show-scrollbar="{{false}}" enable-flex bounces="{{false}}">
             <view class="hand-grid">
                <block wx:for="{{playerStates[openId].hand}}" wx:key="uid">
                   <view class="hand-card {{item.effectConfig ? 'has-trigger' : ''}} {{item.bonusConfig ? 'has-reward' : ''}} {{item.uid === primarySelection ? 'primary-selected' + (playerStates[openId].bonusActive ? ' bonus-active' : '') : (item.selected ? 'payment-selected' : '')}}" bindtap="onHandTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
@@ -402,6 +408,14 @@
                      <view class="card-body" style="background: transparent;">+</view>
                   </view>
                </block>
+               <!-- 手牌行号 -->
+               <view class="hand-row-number hand-row-1-num">1</view>
+               <view class="hand-row-number hand-row-2-num" wx:if="{{playerStates[openId].hand.length > 5 || handExpanded}}">
+                  2
+               </view>
+               <view class="hand-row-number hand-row-3-num" wx:if="{{playerStates[openId].hand.length > 10 && handExpanded}}">
+                  3
+               </view>
             </view>
          </scroll-view>
       </view>

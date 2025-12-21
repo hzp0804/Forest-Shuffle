@@ -81,6 +81,7 @@ Page({
     cheatSections: [],
     allCheatSections: [],
     cheatSearchQuery: "",
+    handExpanded: false, // 手牌区是否展开
   },
 
   onLoad(options) {
@@ -110,7 +111,11 @@ Page({
     // 清空得分缓存,确保进入新房间时数据是干净的
     const { scoreCache } = require("../../utils/score/helpers");
     scoreCache.clear();
-    console.log("🧹 进入房间,已清空得分缓存");
+    console.log("Sweep 进入房间,已清空得分缓存");
+  },
+
+  onToggleHandExpanded() {
+    this.setData({ handExpanded: !this.data.handExpanded });
   },
 
   onShow() {
