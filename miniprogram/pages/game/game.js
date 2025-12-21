@@ -12,6 +12,37 @@ const { DECK_TYPES, CARD_TYPES } = require("../../data/constants");
 const db = wx.cloud.database();
 
 /**
+ * 将森林数据按树木名称分组
+ * @param {Array} forest 
+ * @returns {Array} grouped array: [{name: 'Oak', list: [tree1, tree2]}, ...]
+ */
+const groupForest = (forest) => {
+  if (!forest || !Array.isArray(forest)) return [];
+  const groups = [];
+  const map = new Map();
+
+  forest.forEach(tree => {
+    // 确保有 center 数据
+    if (!tree.center) return;
+    const name = tree.center.name || 'Unknown';
+    if (!map.has(name)) {
+      const newGroup = {
+        name,
+        list: []
+      };
+      map.set(name, newGroup);
+      groups.push(newGroup);
+    }
+    map.get(name).list.push(tree);
+  });
+
+  // Sort groups by list length descending (数量大的排在上面)
+  groups.sort((a, b) => b.list.length - a.list.length);
+
+  return groups;
+};
+
+/**
  * 构造清空空地的系统通知
  */
 const createClearingNotification = () => ({
@@ -343,9 +374,9 @@ Page({
 
     this.setData({ currentEvent: event, eventQueue: remaining, isCardFlipped: false });
 
-    // 如果是回合切换且轮到自己,震动提示
+    // 如果是回合切换且轮到自己,震动提示 - 已移除
     if (event.type === 'TURN_CHANGE' && event.isMyTurn) {
-      wx.vibrateShort({ type: 'medium' });
+      // wx.vibrateShort({ type: 'medium' });
     }
 
     // 如果是带翻页效果的事件，延迟触发翻转

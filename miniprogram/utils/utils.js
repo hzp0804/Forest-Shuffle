@@ -155,10 +155,27 @@ const enrichForest = (forest) => {
     };
   });
 
-  // 按树木名称排序,相同的树木排在一起
+  // 按树木名称排序,相同的树木排在一起，灌木放在后面，树苗放到最后
   enrichedForest.sort((a, b) => {
     const nameA = a.center?.name || '';
     const nameB = b.center?.name || '';
+
+    // 定义特殊类型的优先级 (0: 普通树木, 1: 灌木, 2: 树苗)
+    const getPriority = (name) => {
+      if (name === '树苗') return 2;
+      if (name === '灌木') return 1;
+      return 0;
+    };
+
+    const priorityA = getPriority(nameA);
+    const priorityB = getPriority(nameB);
+
+    // 优先按类型排序
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
+
+    // 同类型按名称排序
     return nameA.localeCompare(nameB, 'zh-CN');
   });
 
