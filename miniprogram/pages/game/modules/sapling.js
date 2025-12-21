@@ -99,103 +99,41 @@ async function executePlaySapling(page) {
   // 3. 计算场上效果触发
   const triggers = calculateTriggerEffects(forest, enriched, { slot: null });
 
-  const reward = {
-    drawCount: triggers.drawCount || 0,
-    extraTurn: triggers.extraTurn || false,
-    actions: triggers.actions || []
-  };
-
-  // 4. 处理奖励抽牌
-  let drawnCards = [];
-  if (reward.drawCount > 0) {
-    const currentSize = newHand.length;
-    const maxCanDraw = 10 - currentSize;
-    const actualDraw = Math.min(reward.drawCount, maxCanDraw);
-
-    for (let i = 0; i < actualDraw; i++) {
-      if (newDeck.length > 0) {
-        const card = newDeck.shift();
-        newHand.push(card);
-        drawnCards.push(Utils.enrichCard(card));
-      }
-    }
-  }
-
-  // 5. 翻牌逻辑
-  let deckRevealEvent = null;
-  if (newDeck.length > 0) {
-    const top = newDeck.shift();
-    newClearing.push({ ...top, selected: false });
-    deckRevealEvent = {
-      type: 'DECK_TO_CLEARING',
-      playerNick: page.data.players.find(p => p.openId === openId)?.nickName || '玩家',
-      playerAvatar: page.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-      mainCard: Utils.enrichCard(top),
-      timestamp: Date.now() + 100
-    };
-  }
-
-  // 自动清空满的空地
-  let notificationEvent = null;
-  if (newClearing.length >= 10) {
-    newClearing.length = 0;
-    const { createClearingNotification } = require("./core.js");
-    notificationEvent = createClearingNotification();
-  }
-
-  // 6. 构造事件
-  let rewardDrawEvent = null;
-  if (drawnCards.length > 0) {
-    rewardDrawEvent = {
-      type: 'REWARD_DRAW',
-      playerOpenId: openId,
-      playerNick: page.data.players.find(p => p.openId === openId)?.nickName || '玩家',
-      playerAvatar: page.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-      count: drawnCards.length,
-      drawnCards: drawnCards,
-      timestamp: Date.now() - 50
-    };
-  }
-
-  let extraTurnEvent = null;
-  if (reward.extraTurn) {
-    extraTurnEvent = createExtraTurnEvent(page);
-  }
-
-  // 检查是否在水田鼠模式下
-  const isWaterVoleMode = page.data.gameState && page.data.gameState.actionMode === 'ACTION_PLAY_SAPLINGS';
-
-  const nextPlayer = isWaterVoleMode ? openId : RoundUtils.getNextPlayer(openId, page.data.players, reward.extraTurn);
   const updates = {
     [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
     [`gameState.playerStates.${openId}.forest`]: DbHelper.cleanForest(forest),
     [`gameState.playerStates.${openId}.selectedSlot`]: null,
-    [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
-    [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
-    [`gameState.activePlayer`]: nextPlayer,
     [`gameState.lastEvent`]: {
-      type: 'PLAY_CARD', playerOpenId: openId,
+      type: 'PLAY_CARD',
+      playerOpenId: openId,
       playerNick: page.data.players.find(p => p.openId === openId)?.nickName || '玩家',
       playerAvatar: page.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-      mainCard: enriched, subCards: [], timestamp: Date.now()
+      mainCard: enriched,
+      timestamp: Date.now()
     },
-    [`gameState.deckRevealEvent`]: deckRevealEvent,
-    [`gameState.rewardDrawEvent`]: rewardDrawEvent,
-    [`gameState.extraTurnEvent`]: extraTurnEvent,
-    [`gameState.notificationEvent`]: db.command.set(notificationEvent)
+    // 将奖励累积到 accumulatedRewards，统一由 finalizeAction 处理
+    [`gameState.accumulatedRewards`]: {
+      drawCount: triggers.drawCount || 0,
+      extraTurn: triggers.extraTurn || false,
+      revealCount: 1, // 树苗固定翻一张
+      removeClearingFlag: false,
+      clearingToCaveFlag: false
+    }
   };
 
-  // 水田鼠模式下:不结束回合,保持ACTION_PLAY_SAPLINGS模式
-  if (!isWaterVoleMode) {
-    updates[`gameState.turnAction`] = { drawnCount: 0, takenCount: 0 };
-    updates[`gameState.turnCount`] = db.command.inc(1);
-    updates[`gameState.turnReason`] = reward.extraTurn ? "extra" : "normal";
-  }
+  // 清除本地状态
+  page.setData({
+    primarySelection: null,
+    selectedSlot: null
+  });
 
-  // 清除本地选择状态
-  page.setData({ primarySelection: null });
+  submitGameUpdate(page, updates, "打出树苗", `将一张手牌作为树苗打出`);
 
-  submitGameUpdate(page, updates, "种植成功", isWaterVoleMode ? "打出树苗(水田鼠模式)" : "将一张手牌作为树苗打出");
+  // 调用 finalizeAction 统一处理剩余流程
+  const { finalizeAction } = require("./action.js");
+  await finalizeAction(page, updates, "打出树苗");
+
+  wx.hideLoading();
 }
 
 module.exports = {

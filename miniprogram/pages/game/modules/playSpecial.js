@@ -182,6 +182,22 @@ async function handleClearingPickAction(page) {
     };
   }
 
+  // 如果有拿入手牌的卡片，创建动画事件
+  if (result.takenCards && result.takenCards.length > 0) {
+    const takeEvent = {
+      type: 'TAKE_CARD',
+      playerOpenId: openId,
+      playerNick: page.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+      playerAvatar: page.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+      mainCard: Utils.enrichCard(result.takenCards[0]), // 目前一次只拿一张
+      timestamp: Date.now()
+    };
+
+    // 如果已经有 lastEvent (例如同时发生了放洞穴?), 则需要合并或者做成数组
+    // 但此处 handleClearingPickAction 互斥, 要么进洞要么进手
+    updates['gameState.lastEvent'] = takeEvent;
+  }
+
   const remaining = (gameState.pendingActions || []).slice(1);
   if (remaining.length > 0) {
     updates[`gameState.pendingActions`] = remaining;

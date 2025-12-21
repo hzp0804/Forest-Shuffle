@@ -253,28 +253,21 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
   // 5. 计算奖励
   const { reward } = calculatePlayRewards(page, primaryCard, selectedSlot, paymentCards, forest, source, gameState);
 
-  // 6. 处理抽牌奖励
+  // 6. 处理抽牌奖励 (修改: 不立即执行,改为累积到 accumulatedRewards)
   let rewardDrawEvent = null;
-  let finalHand = newHand;
-  let finalDeck = deck;
+  let finalHand = newHand; // 不再执行 processRewardDraw, 所以手牌不变
+  let finalDeck = deck;    // 牌堆也不变
 
-  if (reward.drawCount > 0) {
-    const drawResult = processRewardDraw(deck, newHand, reward.drawCount);
-    if (drawResult.actualDraw > 0) {
-      finalHand = drawResult.newHand;
-      finalDeck = drawResult.newDeck;
+  // if (reward.drawCount > 0) { ... } // 移除这段立即抽牌逻辑
 
-      // 创建抽牌事件
-      rewardDrawEvent = {
-        type: 'REWARD_DRAW',
-        playerOpenId: openId,
-        playerNick: page.data.players.find(p => p.openId === openId)?.nickName || '玩家',
-        playerAvatar: page.data.players.find(p => p.openId === openId)?.avatarUrl || '',
-        count: drawResult.actualDraw,
-        drawnCards: drawResult.drawnCards.map(c => Utils.enrichCard(c)),
-        timestamp: Date.now() - 50
-      };
-    }
+  // 6.5. 打出树木时累积翻牌计数
+  console.log('🔍 检查是否为树木:', { isTree, cardName: primaryCard.name, cardType: primaryCard.type });
+  if (isTree) {
+    const oldCount = page.pendingRevealCount || 0;
+    page.pendingRevealCount = oldCount + 1;
+    console.log('🌲 打出树木,累积翻牌计数:', { 之前: oldCount, 之后: page.pendingRevealCount, 卡牌: primaryCard.name });
+  } else {
+    console.log('⚠️ 不是树木,不累积翻牌计数');
   }
 
   // 7. 处理空地自动清空
@@ -291,12 +284,6 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
   }
 
   // 9. 构造更新数据
-  // 检查是否在特殊模式下 (如免费打牌)
-  const isSpecialMode = gameState.actionMode === 'PLAY_FREE';
-
-  // 计算下一个玩家 (仅当不仅特殊模式出牌时才流转)
-  // 如果是普通出牌，则结束回合(除非有额外回合)
-  // 如果是 PLAY_FREE，则通常是单次行动，可能需要 finalizeAction
 
   const updates = {
     [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(finalHand),
@@ -318,14 +305,21 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
     }
   };
 
-  // 10. 确定下一步
-  // 恢复状态并提交
-  if (!isSpecialMode) {
-    const nextPlayer = RoundUtils.getNextPlayer(openId, page.data.players, reward.extraTurn);
-    updates[`gameState.activePlayer`] = nextPlayer;
-    updates[`gameState.turnAction`] = { drawnCount: 0, takenCount: 0 };
-    updates[`gameState.turnCount`] = db.command.inc(1); // 回合数+1
-    updates[`gameState.turnReason`] = reward.extraTurn ? "extra" : "normal";
+  // 10. 确定下一步:检查是否有行动队列
+  if (reward.actions && reward.actions.length > 0) {
+    // 有行动队列,进入行动模式
+    console.log('🎁 触发行动队列:', reward.actions);
+
+    updates[`gameState.pendingActions`] = reward.actions;
+    updates[`gameState.actionMode`] = reward.actions[0].type;
+    updates[`gameState.actionText`] = reward.actions[0].actionText || null;
+    updates[`gameState.accumulatedRewards`] = {
+      drawCount: 0,
+      extraTurn: reward.extraTurn,
+      revealCount: 0,
+      removeClearingFlag: reward.removeClearingFlag || false,
+      clearingToCaveFlag: reward.clearingToCaveFlag || false
+    };
 
     // 清除本地状态
     page.setData({
@@ -336,27 +330,26 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
 
     submitGameUpdate(page, updates, "出牌成功", `打出了 ${primaryCard.name}`);
   } else {
-    // 特殊模式下 (如 PLAY_FREE)
-    // 需要调用 finalizeAction 来处理剩余的 pendingActions
-    // 这里我们假设 PLAY_FREE 就是一次性行动
-    const remaining = (gameState.pendingActions || []).slice(1);
-    if (remaining.length > 0) {
-      updates[`gameState.pendingActions`] = remaining;
-      updates[`gameState.actionMode`] = remaining[0].type;
-      submitGameUpdate(page, updates, "出牌成功", `打出了 ${primaryCard.name}`);
-    } else {
-      updates[`gameState.pendingActions`] = [];
-      updates[`gameState.actionMode`] = null;
-
-      const { finalizeAction } = require("./action.js");
-      await finalizeAction(page, updates, `打出了 ${primaryCard.name}`);
-    }
+    // 没有行动队列,直接结束回合
+    updates[`gameState.accumulatedRewards`] = {
+      drawCount: reward.drawCount || 0,
+      extraTurn: reward.extraTurn,
+      revealCount: 0,
+      removeClearingFlag: reward.removeClearingFlag || false,
+      clearingToCaveFlag: reward.clearingToCaveFlag || false
+    };
 
     // 清除本地状态
     page.setData({
       primarySelection: null,
-      selectedSlot: null
+      selectedSlot: null,
+      selectedClearingIdx: -1
     });
+
+    // 调用 finalizeAction 处理翻牌和回合切换
+    console.log('📞 准备调用 finalizeAction, pendingRevealCount:', page.pendingRevealCount);
+    const { finalizeAction } = require("./action.js");
+    await finalizeAction(page, updates, `打出了 ${primaryCard.name}`);
   }
 }
 

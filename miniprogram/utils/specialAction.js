@@ -120,6 +120,7 @@ const SpecialActionUtils = {
           [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
           [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand),
         };
+        result.takenCards = [{ ...card, selected: false }];
         result.logMsg = `完成了特殊行动：从空地拿走 ${card.name} 放入手牌`;
         break;
       }
@@ -175,6 +176,7 @@ const SpecialActionUtils = {
           [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
           [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(newHand)
         };
+        result.takenCards = [{ ...card, selected: false }];
         result.logMsg = `奖励：从空地拿走 ${card.name} 放入手牌`;
         break;
       }

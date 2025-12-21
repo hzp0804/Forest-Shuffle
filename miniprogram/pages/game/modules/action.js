@@ -58,10 +58,14 @@ async function onConfirmSpecialAction(page) {
 }
 
 /**
- * 结束特殊行动模式，执行累积奖励并可能切换回合
- * @param {Page} page 页面实例
- * @param {Object} actionUpdates - 本次行动产生的状态更新
- * @param {String} logMsg - 日志
+ * 回合结束处理函数
+ * 
+ * 执行固定的回合结束流程:
+ * 1. 清理行动状态(actionMode, pendingActions)
+ * 2. 奖励摸牌(给玩家)
+ * 3. 翻牌到空地(根据树木数量)
+ * 4. 清空空地(雌性野猪强制清空 或 数量≥10)
+ * 5. 判断是否新回合(额外回合 或 切换玩家)
  */
 async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
   const { gameState, openId, playerStates } = page.data;
@@ -69,31 +73,46 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
 
   const updates = { ...actionUpdates };
 
-  // 1. 清理特殊行动状态
+  // ========== 步骤1: 清理行动状态 ==========
   updates['gameState.actionMode'] = null;
   updates['gameState.actionText'] = null;
   updates['gameState.pendingActions'] = [];
 
-  // 2. 处理累积奖励 (drawCount, extraTurn)
-  // 优先使用 actionUpdates 中的 accumulatedRewards（如果是棕熊自动触发的情况）
-  const rewards = actionUpdates['gameState.accumulatedRewards'] || gameState.accumulatedRewards || { drawCount: 0, extraTurn: false };
+  // ========== 步骤2: 准备奖励摸牌 ==========
+  const rewards = actionUpdates['gameState.accumulatedRewards'] || gameState.accumulatedRewards || {
+    drawCount: 0,
+    extraTurn: false,
+    removeClearingFlag: false,
+    clearingToCaveFlag: false
+  };
+
   const baseDraw = rewards.drawCount || 0;
   const pendingDraw = page.pendingDrawCount || 0;
   const totalDraw = baseDraw + pendingDraw;
   page.pendingDrawCount = 0; // 重置
 
-  console.log('📊 finalizeAction 统计:', {
-    累积奖励摸牌: baseDraw,
+  console.log('📊 回合结束统计:', {
+    奖励摸牌: baseDraw,
     待处理摸牌: pendingDraw,
     总计摸牌: totalDraw,
-    是否获得额外回合: rewards.extraTurn
+    额外回合: rewards.extraTurn,
+    强制清空空地: rewards.removeClearingFlag
   });
 
   let newHand = actionUpdates[`gameState.playerStates.${openId}.hand`] ?
     [...actionUpdates[`gameState.playerStates.${openId}.hand`]] :
     [...(myState.hand || [])];
 
-  let newDeck = [...page.data.deck];
+  // 优先使用 actionUpdates 中的 deck (如果已经在 playNormal 中处理过抽牌)
+  let newDeck = actionUpdates[`gameState.deck`] ?
+    [...actionUpdates[`gameState.deck`]] :
+    [...page.data.deck];
+
+  console.log('🎴 finalizeAction 初始化牌堆:', {
+    使用actionUpdates: !!actionUpdates[`gameState.deck`],
+    牌堆数量: newDeck.length
+  });
+
   const currentSize = newHand.length;
   const maxCanDraw = 10 - currentSize;
   const actualDraw = Math.min(totalDraw, maxCanDraw);
@@ -101,7 +120,14 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
   let currentWinterCount = gameState.winterCardCount || 0;
   let allEvents = [];
 
-  // 2.1 执行奖励摸牌 (使用带冬季卡检测的逻辑)
+  // 如果 actionUpdates 中有 lastEvent (如 PLAY_CARD),先添加到事件列表
+  if (actionUpdates['gameState.lastEvent']) {
+    const playEvent = actionUpdates['gameState.lastEvent'];
+    allEvents.push(playEvent);
+    console.log('📢 添加打出卡牌事件到事件列表:', playEvent.type);
+  }
+
+  // ========== 步骤2: 执行奖励摸牌(给玩家) ==========
   const drawRes = processDrawWithWinter(page, newDeck, actualDraw, currentWinterCount);
   newDeck = drawRes.newDeck;
   currentWinterCount = drawRes.winterCount;
@@ -116,13 +142,13 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
     return;
   }
 
-  console.log(`✅ 实际摸牌: ${actualDraw} 张 (手牌: ${currentSize} -> ${newHand.length})`);
+  console.log(`✅ 奖励摸牌完成: ${actualDraw} 张 (手牌: ${currentSize} -> ${newHand.length})`);
 
   updates[`gameState.playerStates.${openId}.hand`] = DbHelper.cleanHand(newHand);
   updates[`gameState.deck`] = DbHelper.cleanDeck(newDeck);
   updates[`gameState.winterCardCount`] = currentWinterCount;
 
-  // 创建奖励抽牌事件（仅包含实际摸到的普通牌）
+  // 创建奖励抽牌事件
   if (drawRes.drawnCards.length > 0) {
     const rewardDrawEvent = {
       type: 'REWARD_DRAW',
@@ -133,24 +159,23 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
       drawnCards: drawRes.drawnCards.map(c => Utils.enrichCard(c)),
       timestamp: Date.now()
     };
-    // 添加到事件列表
     allEvents.push(rewardDrawEvent);
   }
 
-  // === 处理累积的翻牌 (回合结束时统一翻牌) ===
+  // ========== 步骤3: 翻牌到空地(根据树木数量) ==========
   const pendingReveal = Math.max(page.pendingRevealCount || 0, rewards.revealCount || 0);
 
   if (pendingReveal > 0) {
-    console.log(`🎴 回合结束，开始翻牌: ${pendingReveal} 张`);
+    console.log(`🎴 开始翻牌到空地: ${pendingReveal} 张`);
 
     const isFreshUpdate = !!actionUpdates[`gameState.clearing`];
     let newClearing = isFreshUpdate ?
       [...actionUpdates[`gameState.clearing`]] :
       [...(page.data.clearing || [])];
 
-    // 2.2 执行翻牌 (使用带冬季卡检测的逻辑)
+    // 执行翻牌
     const revealRes = processDrawWithWinter(page, newDeck, pendingReveal, currentWinterCount);
-    newDeck = revealRes.newDeck; // 更新牌堆
+    newDeck = revealRes.newDeck;
     currentWinterCount = revealRes.winterCount;
     allEvents.push(...revealRes.events);
 
@@ -198,19 +223,67 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
 
   // 重置翻牌计数器
   page.pendingRevealCount = 0;
-  console.log('🔄 翻牌计数器已重置为 0');
 
-  // 2.5. 检查空地是否需要清空（达到10张时清空）
-  const currentClearing = updates['gameState.clearing'] || page.data.clearing || [];
-  if (currentClearing.length >= 10) {
-    console.log(`🧹 空地达到 ${currentClearing.length} 张，触发清空`);
-    updates['gameState.clearing'] = [];
-    updates['gameState.notificationEvent'] = db.command.set(createClearingNotification());
+  // ========== 步骤3.5: 棕熊效果-将空地卡牌放入洞穴 ==========
+  const shouldClearingToCave = rewards.clearingToCaveFlag || false;
+
+  if (shouldClearingToCave) {
+    const currentClearing = updates['gameState.clearing'] || page.data.clearing || [];
+    if (currentClearing.length > 0) {
+      // 将空地卡牌放入当前玩家的洞穴
+      const currentCave = myState.cave || [];
+      const newCave = [...currentCave, ...currentClearing];
+
+      updates[`gameState.playerStates.${openId}.cave`] = newCave;
+      updates['gameState.clearing'] = [];
+
+      console.log(`🐻 棕熊效果:将空地上的 ${currentClearing.length} 张卡牌放入洞穴`);
+
+      // 创建洞穴收入事件
+      const caveEvent = {
+        type: 'CAVE_CARDS',
+        playerOpenId: openId,
+        playerNick: page.data.players.find(p => p.openId === openId)?.nickName || '玩家',
+        playerAvatar: page.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+        cards: currentClearing.map(c => Utils.enrichCard(c)),
+        count: currentClearing.length,
+        timestamp: Date.now() + 150
+      };
+      allEvents.push(caveEvent);
+    }
   }
 
-  // 3. 决定是否结束回合
-  // 如果没有额外回合奖励，则切换玩家
+  // ========== 步骤4: 清空空地判断 ==========
+  const currentClearing = updates['gameState.clearing'] || page.data.clearing || [];
+  const shouldRemoveClearing = rewards.removeClearingFlag || false;
+
+  if (shouldRemoveClearing) {
+    // 雌性野猪效果:强制清空空地(不判断数量)
+    console.log('🐗 雌性野猪效果:强制清空空地');
+    updates['gameState.clearing'] = [];
+
+    // 创建清空空地通知事件
+    const clearEvent = createClearingNotification();
+    clearEvent.timestamp = Date.now() + 200;
+    allEvents.push(clearEvent);
+
+    // updates['gameState.notificationEvent'] = db.command.set(createClearingNotification());
+  } else if (currentClearing.length >= 10) {
+    // 正常情况:空地达到10张时清空
+    console.log(`🧹 空地达到 ${currentClearing.length} 张,触发清空`);
+    updates['gameState.clearing'] = [];
+
+    // 创建清空空地通知事件
+    const clearEvent = createClearingNotification();
+    clearEvent.timestamp = Date.now() + 200;
+    allEvents.push(clearEvent);
+
+    // updates['gameState.notificationEvent'] = db.command.set(createClearingNotification());
+  }
+
+  // ========== 步骤5: 判断是否新回合 ==========
   if (!rewards.extraTurn) {
+    // 没有额外回合,切换到下一个玩家
     const turnOrder = gameState.turnOrder || [];
     const curIdx = turnOrder.indexOf(openId);
     const nextIdx = (curIdx + 1) % turnOrder.length;
@@ -218,17 +291,27 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
     updates["gameState.turnReason"] = "normal";
     updates["gameState.turnCount"] = db.command.inc(1);
     updates["gameState.turnAction"] = { drawnCount: 0, takenCount: 0 };
+    console.log(`🔄 回合结束,切换到下一个玩家`);
   } else {
-    // 有额外回合，继续是当前玩家，但也视为新的回合(turnCount + 1)
+    // 有额外回合,继续是当前玩家
     updates["gameState.turnCount"] = db.command.inc(1);
     updates["gameState.turnAction"] = { drawnCount: 0, takenCount: 0 };
 
-    // 添加额外回合提示
-    updates['gameState.notificationEvent'] = db.command.set(createExtraTurnEvent(page));
+    // 添加额外回合事件到事件列表(确保时间戳晚于前面的事件)
+    const extraTurnEvent = createExtraTurnEvent(page);
+    extraTurnEvent.timestamp = Date.now() + 300;
+    allEvents.push(extraTurnEvent);
+
+    console.log(`🎁 获得额外回合,继续当前玩家`);
   }
 
-  // 4. 重置累积奖励数据
-  updates['gameState.accumulatedRewards'] = { drawCount: 0, extraTurn: false };
+  // 重置累积奖励
+  updates['gameState.accumulatedRewards'] = {
+    drawCount: 0,
+    extraTurn: false,
+    removeClearingFlag: false,
+    clearingToCaveFlag: false
+  };
 
   await submitGameUpdate(page, updates, "行动完成", logMsg);
 }

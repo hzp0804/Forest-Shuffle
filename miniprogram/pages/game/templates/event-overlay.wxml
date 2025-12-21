@@ -167,7 +167,7 @@
           <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
           <view class="p-avatar-small default-avatar" wx:else></view>
           <view class="event-title" style="{{currentEvent.isMyTurn ? 'color: #90EE90; font-weight: bold;' : ''}}">
-            {{currentEvent.isMyTurn ? '🎯 轮到你了!' : currentEvent.playerNick + ' 的回合'}}
+            {{currentEvent.isMyTurn ? '轮到你了!' : currentEvent.playerNick + ' 的回合'}}
           </view>
         </view>
       </block>

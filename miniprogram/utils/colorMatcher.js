@@ -52,8 +52,7 @@ const isColorMatched = (primaryCard, paymentCards) => {
   });
 
   if (!result) {
-    // 简化日志，只打印关键信息以避免控制台刷屏
-    // console.log("❌ 颜色匹配失败. 主牌:", primaryCard.name, "目标色:", targetColor, "支付卡:", paymentCards.map(c => `${c.name}(${c.tree_symbol})`));
+    console.log("❌ 颜色匹配失败. 主牌:", primaryCard.name, "目标色:", targetColor, "支付卡:", paymentCards.map(c => `${c.name}(${c.tree_symbol})`));
   } else {
     console.log("✅ 颜色匹配成功. 主牌:", primaryCard.name, "目标色:", targetColor);
   }

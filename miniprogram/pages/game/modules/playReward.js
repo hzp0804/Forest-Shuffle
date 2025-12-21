@@ -11,18 +11,9 @@ function calculatePlayRewards(page, primaryCard, selectedSlot, paymentCards, for
   const isSpecialPlayMode = ['ACTION_MOLE', 'ACTION_PLAY_SAPLINGS', 'PLAY_FREE'].includes(gameState.actionMode);
 
   if (source === 'PLAYER_ACTION') {
-    // 在特殊模式下打牌，不重新触发该牌自身的 Bonus 和 Effect (防止无限循环)
+    // 在特殊模式下打牌,不重新触发该牌自身的 Bonus 和 Effect (防止无限循环)
     if (!isSpecialPlayMode) {
-      // 棕熊特殊处理：bonus 不需要颜色匹配，直接触发
-      const isBrownBear = primaryCard.name === '棕熊';
-
-      if (isBrownBear) {
-        bonus = calculateReward(primaryCard, selectedSlot, [], {}, true);
-        console.log('🐻 棕熊 Bonus 强制触发:', bonus);
-      } else {
-        bonus = calculateReward(primaryCard, selectedSlot, paymentCards, {}, true);
-      }
-
+      bonus = calculateReward(primaryCard, selectedSlot, paymentCards, {}, true);
       effect = calculateReward(primaryCard, null, paymentCards, { forest }, false);
     }
   }
@@ -33,15 +24,10 @@ function calculatePlayRewards(page, primaryCard, selectedSlot, paymentCards, for
   const reward = {
     drawCount: (bonus.drawCount || 0) + (effect.drawCount || 0) + (triggers.drawCount || 0),
     extraTurn: bonus.extraTurn || effect.extraTurn,
-    actions: [...(bonus.actions || []), ...(effect.actions || [])]
+    actions: [...(bonus.actions || []), ...(effect.actions || [])],
+    removeClearingFlag: bonus.removeClearingFlag || effect.removeClearingFlag || false,
+    clearingToCaveFlag: bonus.clearingToCaveFlag || effect.clearingToCaveFlag || false
   };
-
-  // 棕熊特殊兜底：确保额外回合和摸牌
-  if (primaryCard.name === '棕熊') {
-    reward.extraTurn = true;
-    if (reward.drawCount < 1) reward.drawCount = 1;
-    console.log('🐻 棕熊兜底逻辑触发：强制设置额外回合和摸牌');
-  }
 
   console.log('🎁 奖励计算详情:', {
     card: primaryCard.name,

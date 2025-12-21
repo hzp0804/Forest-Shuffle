@@ -21,13 +21,25 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
 
   // 获取配置
   const config = isBonus ? card.bonusConfig : card.effectConfig;
-  if (!config) return result;
+  console.log('🔍 calculateReward 调用:', {
+    卡牌: card.name,
+    isBonus,
+    config类型: config?.type,
+    完整config: config
+  });
 
-  // 如果是 bonus，需要检查颜色匹配（棕熊除外）
-  const isBrownBear = card.name === '棕熊';
-  if (isBonus && !isBrownBear && !isColorMatched(card, paymentCards)) {
+  if (!config) {
+    console.log('⚠️ 没有配置,返回空结果');
     return result;
   }
+
+  // 如果是 bonus,需要检查颜色匹配
+  if (isBonus && !isColorMatched(card, paymentCards)) {
+    console.log('❌ Bonus 颜色匹配失败,不触发奖励:', card.name);
+    return result;
+  }
+
+  console.log('✅ 准备处理奖励,类型:', config.type);
 
   // 根据类型处理奖励
   switch (config.type) {
@@ -121,11 +133,10 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
       break;
 
     case REWARD_TYPES.ACTION_BEAR:
+      // 棕熊效果:将空地上的所有卡牌放入洞穴(自动执行,不需要玩家选择)
+      result.clearingToCaveFlag = true;
       result.text = isBonus ? (card.bonus || '洞穴收入') : (card.effect || '洞穴收入');
-      result.actions.push({
-        ...config,
-        actionText: result.text
-      });
+      console.log('🐻 棕熊效果:设置空地卡牌放入洞穴标记');
       break;
 
     case REWARD_TYPES.ACTION_PLAY_SAPLINGS:
@@ -134,6 +145,11 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
       break;
 
     case REWARD_TYPES.ACTION_REMOVE_CLEARING:
+      // 雌性野猪效果:设置强制清空标记,在回合结束时清空空地
+      result.removeClearingFlag = true;
+      console.log('🐗 雌性野猪效果:设置清空空地标记');
+      break;
+
     case REWARD_TYPES.ACTION_CLEARING_TO_CAVE:
     case REWARD_TYPES.ACTION_PICK_FROM_CLEARING:
     case REWARD_TYPES.PICK_FROM_CLEARING_TO_HAND:
