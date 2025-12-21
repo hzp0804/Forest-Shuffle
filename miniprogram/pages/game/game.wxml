@@ -4,26 +4,28 @@
    </view>
    <block wx:else>
       <!-- 顶部玩家列表 -->
-      <scroll-view class="players-bar" scroll-x enable-flex>
-         <block wx:for="{{players}}" wx:key="index">
-            <view class="player-slot {{item.isEmpty ? 'is-empty' : ''}} {{item.openId === selectedPlayerOpenId ? 'selected' : ''}} {{item.openId === (gameState.activePlayer || lastActivePlayer) ? 'is-active' : ''}}" bindtap="onPlayerTap" data-openid="{{item.openId}}">
-               <block wx:if="{{!item.isEmpty}}">
-                  <view class="p-avatar-wrap">
-                     <image class="p-avatar" src="{{item.avatarUrl || '/images/default_avatar.png'}}" mode="aspectFill" />
-                  </view>
-                  <view class="p-info">
-                     <view class="p-name">{{item.nickName}}</view>
-                     <view class="p-stats">
-                        <text class="stat-item">🃏{{item.handCount}}</text>
-                        <text class="stat-item">🏆{{item.score}}</text>
+      <scroll-view scroll-x>
+         <view class="players-bar">
+            <view wx:for="{{players}}" wx:key="index">
+               <view class="player-slot {{item.isEmpty ? 'is-empty' : ''}} {{item.openId === selectedPlayerOpenId ? 'selected' : ''}} {{item.openId === (gameState.activePlayer || lastActivePlayer) ? 'is-active' : ''}}" bindtap="onPlayerTap" data-openid="{{item.openId}}">
+                  <block wx:if="{{!item.isEmpty}}">
+                     <view class="p-avatar-wrap">
+                        <image class="p-avatar" src="{{item.avatarUrl || '/images/default_avatar.png'}}" mode="aspectFill" />
                      </view>
-                  </view>
-               </block>
-               <block wx:else>
-                  <view class="empty-seat">+</view>
-               </block>
+                     <view class="p-info">
+                        <view class="p-name">{{item.nickName}}</view>
+                        <view class="p-stats">
+                           <text class="stat-item">🃏{{item.handCount}}</text>
+                           <text class="stat-item">🏆{{item.score}}</text>
+                        </view>
+                     </view>
+                  </block>
+                  <block wx:else>
+                     <view class="empty-seat">+</view>
+                  </block>
+               </view>
             </view>
-         </block>
+         </view>
       </scroll-view>
       <!-- 中间：牌桌区域 (Board) -->
       <view class="game-board">
@@ -58,8 +60,8 @@
             </view>
          </view>
          <!-- 牌库与空地 -->
-         <view style="display:flex; gap:16rpx; align-items:flex-start;">
-            <view id="deck-card" style="display:flex; align-items:flex-end; padding: 15rpx 0 0rpx 0rpx; flex-shrink:0;">
+         <view style="display:flex; align-items:flex-start;">
+            <view id="deck-card" style="display:flex; align-items:flex-end; padding: 15rpx 0 0rpx 0rpx; padding-right: 10rpx; flex-shrink:0;">
                <view class="hand-card {{selectedClearingIdx === -2 ? 'selected' : ''}}" bindtap="onDrawCard" style="background:#8e44ad; color:white; border:none; position: relative; overflow: hidden; margin:0;">
                   <block wx:if="{{deckVisual && deckVisual.bgImg}}">
                      <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; pointer-events: none;"></view>
