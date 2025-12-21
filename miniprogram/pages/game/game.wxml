@@ -384,7 +384,7 @@
                <block wx:else>{{instructionText}}</block>
             </view>
          </view>
-         <scroll-view scroll-x class="hand-scroll" enable-flex>
+         <scroll-view scroll-y class="hand-scroll" enable-flex>
             <view class="hand-grid">
                <block wx:for="{{playerStates[openId].hand}}" wx:key="uid">
                   <view class="hand-card {{item.uid === primarySelection ? 'primary-selected' : (item.selected ? 'payment-selected' : '')}}" bindtap="onHandTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
