@@ -1,0 +1,31 @@
+<template name="action-bar">
+  <view style="display: flex; justify-content: space-between; align-items: center; padding: 0 10rpx;">
+    <view style="display: flex; align-items: center; gap: 16rpx;">
+      <view class="area-label" style="margin-bottom:0; padding-right: 0;">
+        空地 ({{clearingLength}}/10)
+      </view>
+      <view class="end-turn-text" bindtap="onEndTurn" wx:if="{{isMyTurn}}">
+        {{gameState.actionMode ? '跳过' : '结束'}}
+      </view>
+    </view>
+    <view class="action-bar-inline" wx:if="{{isMyTurn}}" style="display:flex; gap:12rpx;">
+      <!-- 水田鼠模式下隐藏拿取按钮 -->
+      <block wx:if="{{!gameState.actionMode && gameState.actionMode !== 'ACTION_PLAY_SAPLINGS'}}">
+        <button size="mini" class="game-btn draw-btn" bindtap="onConfirmTake" style="margin:0; padding:0 12rpx; font-weight:normal;">
+          ✋拿取
+        </button>
+      </block>
+      <!-- 水田鼠模式下隐藏打出按钮 -->
+      <button wx:if="{{gameState.actionMode !== 'ACTION_PLAY_SAPLINGS'}}" size="mini" class="game-btn {{instructionState === 'success' ? 'valid-play-btn' : ''}} {{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'ACTION_RACCOON' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING_TO_CAVE') ? 'disabled' : ''}}" bindtap="onConfirmPlay" disabled="{{gameState.actionMode && !(gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS' || gameState.actionMode === 'PLAY_FREE' || gameState.actionMode === 'ACTION_RACCOON' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING_TO_CAVE')}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
+        {{(gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' || gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND' || gameState.actionMode === 'ACTION_PICK_FROM_CLEARING_TO_CAVE') ? '✅确定' : '✅打出'}}
+      </button>
+      <!-- 水田鼠模式下启用树苗按钮 -->
+      <button size="mini" class="game-btn secondary sapling-btn {{gameState.actionMode && gameState.actionMode !== 'ACTION_PLAY_SAPLINGS' ? 'disabled' : ''}}" bindtap="onPlaySapling" disabled="{{gameState.actionMode && gameState.actionMode !== 'ACTION_PLAY_SAPLINGS'}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
+        🌱树苗
+      </button>
+      <button size="mini" class="game-btn secondary" bindtap="onCheatAddCards" style="margin:0; padding:0 12rpx; min-width: 50rpx; font-weight:normal; background-color: #FFD700; color: #333;">
+        🔑
+      </button>
+    </view>
+  </view>
+</template>

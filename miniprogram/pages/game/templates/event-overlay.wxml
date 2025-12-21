@@ -1,0 +1,185 @@
+<template name="event-overlay">
+  <view class="preview-overlay" wx:if="{{currentEvent}}">
+    <view class="preview-card-container">
+      <!-- 场景1: 玩家出牌 -->
+      <block wx:if="{{currentEvent.type === 'PLAY_CARD'}}">
+        <view class="event-header">
+          <image class="p-avatar-small" src="{{currentEvent.playerAvatar || '/images/default_avatar.png'}}" />
+          <view class="event-title">{{currentEvent.playerNick}} 打出了</view>
+        </view>
+        <view class="main-card-display">
+          <view class="primary-flag">主牌</view>
+          <view class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}; background-position: {{currentEvent.mainCard.bgPosition || '0 0'}}"></view>
+        </view>
+        <view class="sub-cards-label" wx:if="{{currentEvent.subCards.length > 0}}">支付费用：</view>
+        <view class="sub-cards-display" wx:if="{{currentEvent.subCards.length > 0}}">
+          <view wx:for="{{currentEvent.subCards}}" wx:key="uid" class="event-sub-card">
+            <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
+          </view>
+        </view>
+        <!-- 奖励和效果信息展示 -->
+        <view class="reward-info" wx:if="{{currentEvent.bonusText || currentEvent.effectText || (currentEvent.triggers && currentEvent.triggers.length > 0)}}" style="margin-top: 30rpx; text-align: center;">
+          <!-- 奖励优先显示,用白色 -->
+          <view wx:if="{{currentEvent.bonusText}}" style="color: #FFFFFF; font-size: 28rpx; margin-bottom: 12rpx; display: flex; align-items: center; justify-content: center; text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.5);">
+            <view style="margin-right: 12rpx;">🎁</view>
+            <view>奖励：{{currentEvent.bonusText}}</view>
+          </view>
+          <!-- 效果用白色 -->
+          <view wx:if="{{currentEvent.effectText}}" style="color: #FFFFFF; font-size: 28rpx; margin-bottom: 12rpx; display: flex; align-items: center; justify-content: center; text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.5);">
+            <view style="margin-right: 12rpx;">✨</view>
+            <view>效果：{{currentEvent.effectText}}</view>
+          </view>
+          <!-- 触发效果用白色 -->
+          <block wx:if="{{currentEvent.triggers && currentEvent.triggers.length > 0}}">
+            <view wx:for="{{currentEvent.triggers}}" wx:key="index" style="color: #FFFFFF; font-size: 28rpx; margin-bottom: 12rpx; display: flex; align-items: center; justify-content: center; text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.5);">
+              <view style="margin-right: 12rpx;">⚡</view>
+              <view>触发【{{item.cardName}}】：{{item.text}}</view>
+            </view>
+          </block>
+        </view>
+      </block>
+      <!-- 场景2: 牌库翻开/摸牌/奖励抽牌 (3D Flip) -->
+      <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.type === 'DRAW_CARD' || currentEvent.type === 'REWARD_DRAW'}}">
+        <view class="event-header">
+          <!-- 翻牌到空地不显示玩家头像 -->
+          <image class="p-avatar-small" wx:if="{{currentEvent.type !== 'DECK_TO_CLEARING' && currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
+          <view class="event-title">
+            <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING'}}">
+              翻牌 ({{currentEvent.count}}张)
+            </block>
+            <block wx:elif="{{currentEvent.type === 'REWARD_DRAW'}}">
+              {{currentEvent.playerNick}} 奖励 ({{currentEvent.count}}张)
+            </block>
+            <block wx:else>{{currentEvent.playerNick}} 正在摸牌...</block>
+          </view>
+        </view>
+        <!-- 翻牌事件：展示所有翻出的卡片 -->
+        <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' && currentEvent.revealedCards}}">
+          <view class="reward-cards-display">
+            <view wx:for="{{currentEvent.revealedCards}}" wx:key="uid" class="reward-card-item">
+              <view class="flip-container">
+                <view class="flip-inner {{isCardFlipped ? 'is-flipped' : ''}}">
+                  <!-- 初始面: 背面 -->
+                  <view class="flip-front">
+                    <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}}; pointer-events: none;"></view>
+                  </view>
+                  <!-- 翻转面: 正面 -->
+                  <view class="flip-back">
+                    <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}};"></view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </block>
+        <!-- 奖励抽牌：显示多张卡片 -->
+        <block wx:elif="{{currentEvent.type === 'REWARD_DRAW' && currentEvent.drawnCards}}">
+          <view class="reward-cards-display">
+            <view wx:for="{{currentEvent.drawnCards}}" wx:key="uid" class="reward-card-item">
+              <view class="flip-container">
+                <view class="flip-inner {{isCardFlipped ? 'is-flipped' : ''}}">
+                  <!-- 初始面: 背面 -->
+                  <view class="flip-front">
+                    <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
+                  </view>
+                  <!-- 翻转面: 只有自己能看到正面 -->
+                  <view class="flip-back">
+                    <block wx:if="{{currentEvent.playerOpenId === openId}}">
+                      <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}};"></view>
+                    </block>
+                    <block wx:else>
+                      <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
+                    </block>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </block>
+        <!-- 其他抽牌事件：单张卡片 -->
+        <block wx:else>
+          <view class="flip-container">
+            <view class="flip-inner {{isCardFlipped ? 'is-flipped' : ''}}">
+              <!-- 初始面 (0deg): 背面 (Sapling) -->
+              <view class="flip-front">
+                <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
+              </view>
+              <!-- 翻转面 (180deg): 内容 -->
+              <view class="flip-back">
+                <!-- 只有玩家自己或公开翻牌时才看得到正面内容 -->
+                <block wx:if="{{currentEvent.type === 'DECK_TO_CLEARING' || currentEvent.playerOpenId === openId}}">
+                  <view wx:if="{{currentEvent.mainCard}}" class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}">
+                    <!-- 冬季卡提示遮罩 -->
+                    <view class="winter-overlay" wx:if="{{currentEvent.isWinterReveal}}">
+                      <view class="winter-count-badge">冬季卡 {{currentEvent.winterCount}}/3</view>
+                    </view>
+                  </view>
+                  <view wx:else class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
+                </block>
+                <block wx:else>
+                  <view class="card-sprite-native {{deckVisual.cssClass}}" style="background-image: url('{{deckVisual.bgImg}}'); background-size: {{deckVisual.bgSize}};"></view>
+                </block>
+              </view>
+            </view>
+          </view>
+        </block>
+      </block>
+      <!-- 场景3: 玩家拿取卡片 -->
+      <block wx:if="{{currentEvent.type === 'TAKE_CARD'}}">
+        <view class="event-header">
+          <image class="p-avatar-small" src="{{currentEvent.playerAvatar || '/images/default_avatar.png'}}" />
+          <view class="event-title">{{currentEvent.playerNick}} 拿走了</view>
+        </view>
+        <view class="main-card-display">
+          <view class="card-sprite-native {{currentEvent.mainCard.cssClass}}" style="background-image: url('{{currentEvent.mainCard.bgImg}}'); background-size: {{currentEvent.mainCard.bgSize}}"></view>
+        </view>
+      </block>
+      <!-- 场景4: 额外回合 -->
+      <block wx:if="{{currentEvent.type === 'EXTRA_TURN'}}">
+        <view class="event-header">
+          <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
+          <view class="p-avatar-small default-avatar" wx:else></view>
+          <view class="event-title">
+            {{currentEvent.icon || '🎉'}} {{currentEvent.playerNick}} {{currentEvent.message}}
+          </view>
+        </view>
+      </block>
+      <!-- 场景5: 放入洞穴 (浣熊行动) -->
+      <block wx:if="{{currentEvent.type === 'CAVE_CARDS'}}">
+        <view class="event-header">
+          <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
+          <view class="p-avatar-small default-avatar" wx:else></view>
+          <view class="event-title">
+            {{currentEvent.playerNick}} 将 {{currentEvent.count}} 张牌放入洞穴
+          </view>
+        </view>
+        <view class="reward-cards-display">
+          <view wx:for="{{currentEvent.cavedCards}}" wx:key="uid" class="reward-card-item">
+            <view class="hand-card" style="margin: 0;">
+              <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
+            </view>
+          </view>
+        </view>
+      </block>
+      <!-- 场景6: 回合切换 -->
+      <block wx:if="{{currentEvent.type === 'TURN_CHANGE'}}">
+        <view class="event-header">
+          <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
+          <view class="p-avatar-small default-avatar" wx:else></view>
+          <view class="event-title" style="{{currentEvent.isMyTurn ? 'color: #90EE90; font-weight: bold;' : ''}}">
+            {{currentEvent.isMyTurn ? '🎯 轮到你了!' : currentEvent.playerNick + ' 的回合'}}
+          </view>
+        </view>
+      </block>
+      <!-- 场景7: 通知 -->
+      <block wx:if="{{currentEvent.type === 'NOTIFICATION'}}">
+        <view class="event-header">
+          <image class="p-avatar-small" wx:if="{{currentEvent.playerAvatar}}" src="{{currentEvent.playerAvatar}}" />
+          <view class="event-title">
+            {{currentEvent.icon || '🔔'}} {{currentEvent.playerNick ? currentEvent.playerNick + ' ' : ''}}{{currentEvent.message}}
+          </view>
+        </view>
+      </block>
+    </view>
+  </view>
+</template>

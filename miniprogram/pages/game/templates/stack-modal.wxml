@@ -1,0 +1,14 @@
+<template name="stack-modal">
+  <view class="stack-modal-mask" wx:if="{{stackModalVisible}}" bindtap="closeStackModal">
+    <view class="stack-modal-content" catchtap="true" style="background:transparent; border:none; box-shadow:none; width:90%; max-height:none; align-items: center;">
+      <view class="stack-modal-header" style="background:rgba(0,0,0,0.6); border-radius: 10rpx; margin-bottom: 40rpx; width: fit-content; padding: 10rpx 40rpx;">
+        堆叠列表 ({{stackModalCards.length}})
+      </view>
+      <view class="stack-list-grid" style="width: 100%; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 20rpx; padding: 20rpx 0;">
+        <view wx:for="{{stackModalCards}}" wx:key="uid" class="hand-card" style="margin-bottom: 0;">
+          <view class="card-sprite-native {{'card-' + item.id}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}};"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>

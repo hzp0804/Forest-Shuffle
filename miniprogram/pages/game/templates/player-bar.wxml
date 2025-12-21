@@ -1,0 +1,25 @@
+<template name="player-bar">
+  <scroll-view scroll-x scroll-into-view="player-{{gameState.activePlayer}}" scroll-with-animation>
+    <view class="players-bar">
+      <view wx:for="{{players}}" wx:key="index" id="player-{{item.openId}}">
+        <view class="player-slot {{item.isEmpty ? 'is-empty' : ''}} {{item.openId === selectedPlayerOpenId ? (item.openId === openId ? 'selected-me' : 'selected-other') : ''}} {{item.openId === (gameState.activePlayer || lastActivePlayer) ? 'is-active' : ''}}" bindtap="onPlayerTap" data-openid="{{item.openId}}">
+          <block wx:if="{{!item.isEmpty}}">
+            <view class="p-avatar-wrap">
+              <image class="p-avatar" src="{{item.avatarUrl || '/images/default_avatar.png'}}" mode="aspectFill" />
+            </view>
+            <view class="p-info">
+              <view class="p-name">{{item.nickName}}</view>
+              <view class="p-stats">
+                <text class="stat-item">🃏{{item.handCount}}</text>
+                <text class="stat-item">🏆{{item.score}}</text>
+              </view>
+            </view>
+          </block>
+          <block wx:else>
+            <view class="empty-seat">+</view>
+          </block>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</template>

@@ -1,0 +1,52 @@
+<template name="hand-area">
+  <view class="spectator-bar" wx:if="{{isSpectator}}" style="width:100%; height:120rpx; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; position:fixed; bottom:0; padding-bottom:env(safe-area-inset-bottom);">
+    <text style="color:white; font-size:32rpx;">👀 当前为旁观模式</text>
+  </view>
+  <view class="hand-area {{handExpanded ? 'expanded' : 'collapsed'}}" wx:else bindtouchstart="onHandTouchStart" bindtouchend="onHandTouchEnd">
+    <view class="hand-header" bindtap="onToggleHandExpanded">
+      <view class="area-title" style="display:flex; align-items:center;">
+        手牌 ({{handLength}})
+        <view class="expand-icon {{handExpanded ? 'up' : 'down'}}"></view>
+      </view>
+      <view wx:if="{{gameState.activePlayer === openId}}" class="instruction-tip {{instructionState}}">
+        <block wx:if="{{instructionLines && instructionLines.cost && instructionLines.cost.text}}">
+          <view class="{{instructionLines.cost.class}}">{{instructionLines.cost.text}}</view>
+        </block>
+        <block wx:elif="{{instructionSegments && instructionSegments.length > 0}}">
+          <view>
+            <text wx:for="{{instructionSegments}}" wx:key="index" class="{{item.class}}" style="margin-right: 4rpx;">
+              {{item.text}}
+            </text>
+          </view>
+        </block>
+        <block wx:else>
+          <text>{{instructionText}}</text>
+        </block>
+      </view>
+    </view>
+    <scroll-view scroll-y class="hand-scroll" enhanced show-scrollbar="{{false}}" enable-flex bounces="{{false}}">
+      <view class="hand-grid">
+        <block wx:for="{{myHand}}" wx:key="uid">
+          <view class="hand-card {{item.effectConfig ? 'has-trigger' : ''}} {{item.bonusConfig ? 'has-reward' : ''}} {{item.uid === primarySelection ? 'primary-selected' + (bonusActive ? ' bonus-active' : '') : (item.selected ? 'payment-selected' : '')}}" bindtap="onHandTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
+            <view wx:if="{{item.uid === primarySelection}}" class="primary-flag">主牌</view>
+            <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
+          </view>
+        </block>
+        <!-- 手牌占位：模仿空地逻辑 -->
+        <block wx:for="{{[1,2,3,4,5,6,7,8,9,10]}}" wx:key="*this">
+          <view class="hand-card placeholder" wx:if="{{index >= (handLength || 0)}}">
+            <view class="card-body" style="background: transparent;">+</view>
+          </view>
+        </block>
+        <!-- 手牌行号 -->
+        <view class="hand-row-number hand-row-1-num">1</view>
+        <view class="hand-row-number hand-row-2-num" wx:if="{{handLength > 5 || handExpanded}}">
+          2
+        </view>
+        <view class="hand-row-number hand-row-3-num" wx:if="{{handLength > 10 && handExpanded}}">
+          3
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</template>
