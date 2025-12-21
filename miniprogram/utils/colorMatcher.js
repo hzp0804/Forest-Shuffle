@@ -24,10 +24,41 @@ const getCardColors = (card) => {
  */
 const isColorMatched = (primaryCard, paymentCards) => {
   if (!paymentCards || paymentCards.length === 0) return true;
-  let targetColor = primaryCard.tree_symbol[0] // 主卡颜色
-  return paymentCards.every(payCard => { // 费用卡全都包含主卡颜色
-    return payCard.tree_symbol.includes(targetColor)
+
+  // 主牌的颜色符号可能是一个字符串数组，也可能是一个字符串(如果是旧数据)
+  // enrichCardWithSpecies 应该保证它是数组
+  let targetColors = primaryCard.tree_symbol;
+  if (!Array.isArray(targetColors)) {
+    targetColors = [targetColors];
+  }
+
+  // 对于双面卡，特定面只有一个颜色，enrichCardWithSpecies 应该已经处理好只保留该面的颜色
+  // 如果还有多个颜色，默认取第一个作为该面的主颜色
+  const targetColor = targetColors[0];
+
+  if (!targetColor) {
+    console.warn("⚠️ isColorMatched: 主牌没有颜色定义", primaryCard.name, primaryCard.tree_symbol);
+    return false;
+  }
+
+  const result = paymentCards.every(payCard => { // 费用卡全都包含主卡颜色
+    let payCardColors = payCard.tree_symbol;
+    if (!Array.isArray(payCardColors)) {
+      payCardColors = [payCardColors];
+    }
+    const match = payCardColors.includes(targetColor);
+    // console.log(`🔍 颜色匹配: 支付卡[${payCard.name}] 颜色:`, payCardColors, "目标颜色:", targetColor, "匹配:", match);
+    return match;
   });
+
+  if (!result) {
+    // 简化日志，只打印关键信息以避免控制台刷屏
+    // console.log("❌ 颜色匹配失败. 主牌:", primaryCard.name, "目标色:", targetColor, "支付卡:", paymentCards.map(c => `${c.name}(${c.tree_symbol})`));
+  } else {
+    console.log("✅ 颜色匹配成功. 主牌:", primaryCard.name, "目标色:", targetColor);
+  }
+
+  return result;
 };
 
 module.exports = {

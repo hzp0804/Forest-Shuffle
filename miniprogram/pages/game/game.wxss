@@ -813,7 +813,7 @@
   /* Android compatibility: Use margins instead of gap */
   padding: 0;
   width: 660rpx;
-  margin: 20rpx auto;
+  margin: 10rpx auto;
 }
 
 /* 移除 after 伪元素，避免干扰 space-between */
@@ -1787,4 +1787,36 @@
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+/* Card Indicators */
+.hand-card.has-trigger,
+.hand-card.has-reward {
+  position: relative;
+}
+
+.hand-card.has-trigger::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 8rpx;
+  background: #2ecc71;
+  z-index: 20;
+  box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
+  border-bottom-right-radius: 4rpx;
+}
+
+.hand-card.has-reward::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 45%;
+  height: 8rpx;
+  background: #2ecc71;
+  z-index: 20;
+  box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
+  border-bottom-left-radius: 4rpx;
 }

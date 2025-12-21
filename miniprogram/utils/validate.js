@@ -237,6 +237,10 @@ const validatePlay = (params) => {
   if (hasBonus && !isMoleMode && !isSaplingMode) {
     const isBonusMatched = isColorMatched(primaryCard, paymentCards);
     const bonusText = primaryCard.bonus || "奖励";
+    // 调试日志: 输出 isCostSatisfied 和 isBonusMatched 的状态
+    console.log(`🛠️ Bonus Check: cost=${isCostSatisfied}, colorMatch=${isBonusMatched}, text=${bonusText}`);
+
+    // 只有在费用满足且颜色匹配时才激活奖励
     const isBonusActive = isCostSatisfied && isBonusMatched;
     lines.bonus = {
       text: `【奖励】${bonusText}`,

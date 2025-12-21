@@ -84,7 +84,7 @@
             <scroll-view class="clearing-scroll" scroll-x enable-flex scroll-into-view="{{clearingScrollId}}" scroll-left="{{clearingScrollLeft}}" scroll-with-animation>
                <view class="clearing-row">
                   <block wx:for="{{clearing}}" wx:key="uid">
-                     <view id="clearing-{{index}}" class="hand-card clearing-card {{index === selectedClearingIdx ? 'selected' : ''}}" bindtap="onClearingCardTap" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
+                     <view id="clearing-{{index}}" class="hand-card clearing-card {{item.effectConfig ? 'has-trigger' : ''}} {{item.bonusConfig ? 'has-reward' : ''}} {{index === selectedClearingIdx ? 'selected' : ''}}" bindtap="onClearingCardTap" bindlongpress="onShowDetail" data-idx="{{index}}" data-type="clearing">
                         <view wx:if="{{item.bgImg}}" class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
                         <view wx:else class="card-header" style="background-color: {{item.color || '#4caf50'}}">
                            <text class="card-name">{{item.name}}</text>
@@ -389,7 +389,7 @@
          <scroll-view scroll-y class="hand-scroll" enable-flex>
             <view class="hand-grid">
                <block wx:for="{{playerStates[openId].hand}}" wx:key="uid">
-                  <view class="hand-card {{item.uid === primarySelection ? 'primary-selected' + (playerStates[openId].bonusActive ? ' bonus-active' : '') : (item.selected ? 'payment-selected' : '')}}" bindtap="onHandTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
+                  <view class="hand-card {{item.effectConfig ? 'has-trigger' : ''}} {{item.bonusConfig ? 'has-reward' : ''}} {{item.uid === primarySelection ? 'primary-selected' + (playerStates[openId].bonusActive ? ' bonus-active' : '') : (item.selected ? 'payment-selected' : '')}}" bindtap="onHandTap" bindlongpress="onShowDetail" data-uid="{{item.uid}}" data-type="hand">
                      <view wx:if="{{item.uid === primarySelection}}" class="primary-flag">主牌</view>
                      <view class="card-sprite-native {{item.cssClass}}" style="background-image: url('{{item.bgImg}}'); background-size: {{item.bgSize}}"></view>
                   </view>

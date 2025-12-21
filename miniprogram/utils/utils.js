@@ -292,6 +292,7 @@ const handleHandTap = (uid, currentData) => {
   let bonusActive = false;
   if (instructionLines && instructionLines.bonus && instructionLines.bonus.class === "text-success") {
     bonusActive = true;
+    console.log("🎉 奖励条件已满足:", instructionLines.bonus.text);
   }
 
   const updates = {

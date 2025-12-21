@@ -667,12 +667,21 @@ Page({
 
       // 允许选择插槽，即使费用未满足（error 状态）
       // 只在出牌时才真正校验
+      // 检查奖励是否激活
+      let bonusActive = false;
+      if (res.instructionLines && res.instructionLines.bonus && res.instructionLines.bonus.class === "text-success") {
+        bonusActive = true;
+        console.log("🎉 奖励条件已满足 (Slot Selected):", res.instructionLines.bonus.text);
+      }
+
+
       this.setData({
         selectedSlot: nextSlot,
         instructionState: res.instructionState,
         instructionText: res.instructionText,
         instructionSegments: res.instructionSegments || null,
-        instructionLines: res.instructionLines || null
+        instructionLines: res.instructionLines || null,
+        [`playerStates.${openId}.bonusActive`]: bonusActive
       });
     } else {
       // 未选主牌：不允许选择插槽，直接返回
