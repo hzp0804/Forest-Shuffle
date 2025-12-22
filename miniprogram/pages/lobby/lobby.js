@@ -99,10 +99,18 @@ Page({
 
   onShow() {
     this.fetchRoomList();
+    // 开启房间列表轮询（每5秒刷新一次）
+    this.roomListPolling = setInterval(() => {
+      this.fetchRoomList();
+    }, 5000);
   },
 
   onHide() {
     this.stopRoomPolling();
+    if (this.roomListPolling) {
+      clearInterval(this.roomListPolling);
+      this.roomListPolling = null;
+    }
   },
 
   onPullDownRefresh() {
@@ -113,6 +121,11 @@ Page({
 
   onUnload() {
     this.stopRoomPolling();
+    // 停止房间列表轮询
+    if (this.roomListPolling) {
+      clearInterval(this.roomListPolling);
+      this.roomListPolling = null;
+    }
     if (this.roomWatcher) {
       this.roomWatcher.close();
     }
@@ -999,12 +1012,28 @@ Page({
       .orderBy("createTime", "desc")
       .limit(50) // Increase limit slightly to see more history
       .get()
+      .get()
       .then((res) => {
         const list = (res.data || []).map((room) => {
           const count = (room.players || []).filter((p) => p).length;
-          if (room.players && room.players[0] && room.players[0].openId) {
-            room.players[0].avatarUrl = Utils.getAvatarPath(room.players[0].openId, room.players[0].avatarUrl);
+          // Fix: 房主应该是创建者(hostOpenId)，而不是固定取座位1(players[0])
+          // 尝试在 players 中找到 host
+          let hostPlayer = null;
+          if (room.hostOpenId && room.players) {
+            hostPlayer = room.players.find(p => p && p.openId === room.hostOpenId);
           }
+          // 如果找不到(比如房主退出了或者数据异常)，回退到取第一个人
+          if (!hostPlayer && room.players && room.players.length > 0) {
+            hostPlayer = room.players.find(p => p); // Find first non-null
+          }
+
+          if (hostPlayer && hostPlayer.openId) {
+            hostPlayer.avatarUrl = Utils.getAvatarPath(hostPlayer.openId, hostPlayer.avatarUrl);
+            // 将 hostAvatar 附加到 room 对象上供列表展示
+            room.hostAvatarUrl = hostPlayer.avatarUrl;
+            room.hostNickName = hostPlayer.nickName;
+          }
+
           return { ...room, playerCount: count };
         });
 

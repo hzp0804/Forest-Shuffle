@@ -1,7 +1,4 @@
-/**
- * 数据库辅助函数
- * 用于清理卡牌数据中的冗余静态字段，减少数据库存储
- */
+const { getCardInfoById } = require('./getCardInfoById');
 
 /**
  * 清理单张卡牌的静态数据
@@ -41,14 +38,61 @@ function cleanCard(card) {
 }
 
 /**
- * 清理森林数据
+ * 清理森林数据，并在清理前进行统一排序
+ * 排序规则：普通树木 -> 灌木 -> 树苗，同类按名称排序，名称相同按ID排序
  * @param {Array} forest - 森林数组
- * @returns {Array} 清理后的森林数组
+ * @returns {Array} 清理并排序后的森林数组
  */
 function cleanForest(forest) {
   if (!Array.isArray(forest)) return [];
 
-  return forest.map(treeGroup => {
+  // 获取卡片名称的辅助函数
+  const getName = (obj) => {
+    if (!obj) return '';
+    if (obj.name) return obj.name;
+    if (obj.id) {
+      const info = getCardInfoById(obj.id);
+      return info ? info.name : '';
+    }
+    return '';
+  };
+
+  // 1. 先进行排序
+  const sorted = [...forest].sort((a, b) => {
+    if (!a || !a.center) return 1;
+    if (!b || !b.center) return -1;
+
+    const nameA = getName(a.center);
+    const nameB = getName(b.center);
+
+    // 定义特殊类型的优先级 (0: 普通树木, 1: 灌木, 2: 树苗)
+    const getPriority = (name) => {
+      if (name === '树苗') return 2;
+      if (name === '灌木') return 1;
+      return 0;
+    };
+
+    const priorityA = getPriority(nameA);
+    const priorityB = getPriority(nameB);
+
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
+
+    // 同类型按名称排序
+    const nameCompare = nameA.localeCompare(nameB, 'zh-CN');
+    if (nameCompare !== 0) return nameCompare;
+
+    // 名称相同按 ID 排序，保证确定性
+    const idA = a._id || '';
+    const idB = b._id || '';
+    if (idA < idB) return -1;
+    if (idA > idB) return 1;
+    return 0;
+  });
+
+  // 2. 再清理数据
+  return sorted.map(treeGroup => {
     if (!treeGroup) return null;
 
     const cleaned = {

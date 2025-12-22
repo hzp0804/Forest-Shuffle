@@ -470,7 +470,7 @@ const DbHelper = {
       const { selected, speciesDetails, bgImg, bgSize, cssClass, ...rest } = c;
       return rest;
     });
-  }
+  },
 };
 
 module.exports = {

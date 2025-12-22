@@ -117,14 +117,16 @@
             <view class="room-item" bindtap="onJoinRoom" data-code="{{item.roomCode}}">
               <view class="room-content-left">
                 <view class="avatar-container">
-                  <image class="room-host-avatar" src="{{item.players[0].avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
+                  <image class="room-host-avatar" src="{{item.hostAvatarUrl || item.players[0].avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
                   <view class="room-status-badge {{item.status}}">
                     {{item.status === 'playing' ? '进行中' : '等待中'}}
                   </view>
                 </view>
                 <view class="room-info-text">
                   <text class="room-code">NO.{{item.roomCode}}</text>
-                  <text class="room-host">房主: {{item.players[0].nickName}}</text>
+                  <text class="room-host">
+                    房主: {{item.hostNickName || item.players[0].nickName || '房主'}}
+                  </text>
                 </view>
               </view>
               <view class="room-content-right">
