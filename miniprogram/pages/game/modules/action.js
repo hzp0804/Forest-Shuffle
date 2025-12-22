@@ -227,17 +227,25 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
   // ========== 步骤3.5: 棕熊效果-将空地卡牌放入洞穴 ==========
   const shouldClearingToCave = rewards.clearingToCaveFlag || false;
 
+  console.log('🐻 检查棕熊效果:', { shouldClearingToCave });
+
   if (shouldClearingToCave) {
-    const currentClearing = updates['gameState.clearing'] || page.data.clearing || [];
+    let currentClearing = [];
+    if (updates['gameState.clearing'] && Array.isArray(updates['gameState.clearing'])) {
+      currentClearing = updates['gameState.clearing'];
+    } else {
+      currentClearing = page.data.clearing || [];
+    }
+
     if (currentClearing.length > 0) {
       // 将空地卡牌放入当前玩家的洞穴
-      const currentCave = myState.cave || [];
+      const currentCave = updates[`gameState.playerStates.${openId}.cave`] || myState.cave || [];
       const newCave = [...currentCave, ...currentClearing];
 
-      updates[`gameState.playerStates.${openId}.cave`] = newCave;
+      updates[`gameState.playerStates.${openId}.cave`] = DbHelper.cleanHand(newCave);
       updates['gameState.clearing'] = [];
 
-      console.log(`🐻 棕熊效果:将空地上的 ${currentClearing.length} 张卡牌放入洞穴`);
+      console.log(`🐻 棕熊效果执行: 将空地上的 ${currentClearing.length} 张卡牌放入洞穴`);
 
       // 创建洞穴收入事件
       const caveEvent = {
@@ -250,6 +258,8 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
         timestamp: Date.now() + 150
       };
       allEvents.push(caveEvent);
+    } else {
+      console.log('🐻 棕熊效果跳过: 空地无牌');
     }
   }
 

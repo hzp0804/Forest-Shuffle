@@ -4,6 +4,8 @@ const SpecialActionUtils = require("../../../utils/specialAction.js");
 const { submitGameUpdate } = require("./core.js");
 const { finalizeAction } = require("./action.js");
 
+const db = wx.cloud.database();
+
 /**
  * 处理大蟾蜍叠放行动
  */
@@ -57,6 +59,23 @@ async function handleTuckAction(page) {
   if (remaining.length > 0) {
     updates[`gameState.pendingActions`] = remaining;
     updates[`gameState.actionMode`] = remaining[0].type;
+    updates[`gameState.actionText`] = remaining[0].actionText || remaining[0].text || null;
+
+    // 构造下个行动的通知
+    const nextAction = remaining[0];
+    const { openId, players } = page.data;
+    const player = players.find(p => p.openId === openId);
+
+    updates['gameState.notificationEvent'] = db.command.set({
+      type: 'NOTIFICATION',
+      playerOpenId: openId,
+      playerNick: player?.nickName || '玩家',
+      playerAvatar: player?.avatarUrl || '',
+      icon: '⚡',
+      message: `即将执行: ${nextAction.actionText || nextAction.text || '特殊行动'}`,
+      timestamp: Date.now() + 100
+    });
+
     submitGameUpdate(page, updates, "特殊行动", `将 ${cardToTuck.name} 叠放在大蟾蜍下`);
   } else {
     updates[`gameState.pendingActions`] = [];
@@ -129,6 +148,23 @@ async function handleRaccoonAction(page) {
   if (remaining.length > 0) {
     updates[`gameState.pendingActions`] = remaining;
     updates[`gameState.actionMode`] = remaining[0].type;
+    updates[`gameState.actionText`] = remaining[0].actionText || remaining[0].text || null;
+
+    // 构造下个行动的通知
+    const nextAction = remaining[0];
+    const { openId, players } = page.data;
+    const player = players.find(p => p.openId === openId);
+
+    updates['gameState.notificationEvent'] = db.command.set({
+      type: 'NOTIFICATION',
+      playerOpenId: openId,
+      playerNick: player?.nickName || '玩家',
+      playerAvatar: player?.avatarUrl || '',
+      icon: '⚡',
+      message: `即将执行: ${nextAction.actionText || nextAction.text || '特殊行动'}`,
+      timestamp: Date.now() + 200
+    });
+
     submitGameUpdate(page, updates, "特殊行动", result.logMsg);
   } else {
     updates[`gameState.pendingActions`] = [];
@@ -202,6 +238,23 @@ async function handleClearingPickAction(page) {
   if (remaining.length > 0) {
     updates[`gameState.pendingActions`] = remaining;
     updates[`gameState.actionMode`] = remaining[0].type;
+    updates[`gameState.actionText`] = remaining[0].actionText || remaining[0].text || null;
+
+    // 构造下个行动的通知
+    const nextAction = remaining[0];
+    const { openId, players } = page.data;
+    const player = players.find(p => p.openId === openId);
+
+    updates['gameState.notificationEvent'] = db.command.set({
+      type: 'NOTIFICATION',
+      playerOpenId: openId,
+      playerNick: player?.nickName || '玩家',
+      playerAvatar: player?.avatarUrl || '',
+      icon: '⚡',
+      message: `即将执行: ${nextAction.actionText || nextAction.text || '特殊行动'}`,
+      timestamp: Date.now() + 200
+    });
+
     submitGameUpdate(page, updates, "特殊行动", result.logMsg);
   } else {
     updates[`gameState.pendingActions`] = [];

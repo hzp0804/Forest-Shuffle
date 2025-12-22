@@ -284,6 +284,8 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
   }
 
   // 9. 构造更新数据
+  const myState = playerStates[openId];
+  const allEvents = []; // 用于收集所有事件
 
   const updates = {
     [`gameState.playerStates.${openId}.hand`]: DbHelper.cleanHand(finalHand),
@@ -301,9 +303,11 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
       playerAvatar: page.data.players.find(p => p.openId === openId)?.avatarUrl || '',
       mainCard: Utils.enrichCard(primaryCard),
       subCards: paymentCards.map(c => Utils.enrichCard(c)),
+      triggers: reward.triggers || [],
       timestamp: Date.now()
     }
   };
+
 
   // 10. 确定下一步:检查是否有行动队列
   if (reward.actions && reward.actions.length > 0) {
@@ -326,6 +330,22 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
       primarySelection: null,
       selectedSlot: null,
       selectedClearingIdx: -1
+    });
+
+    // 构造下个行动的通知
+    const nextAction = reward.actions[0];
+    const { openId, players } = page.data;
+    const player = players.find(p => p.openId === openId);
+
+    // 显式创建通知事件,告知所有玩家即将进行的行动
+    updates['gameState.notificationEvent'] = db.command.set({
+      type: 'NOTIFICATION',
+      playerOpenId: openId,
+      playerNick: player?.nickName || '玩家',
+      playerAvatar: player?.avatarUrl || '',
+      icon: '⚡',
+      message: `即将执行: ${nextAction.actionText || nextAction.text || '特殊行动'}`,
+      timestamp: Date.now() + 200 // 增加延迟确保顺序
     });
 
     submitGameUpdate(page, updates, "出牌成功", `打出了 ${primaryCard.name}`);

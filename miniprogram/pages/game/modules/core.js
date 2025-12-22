@@ -16,7 +16,22 @@ async function submitGameUpdate(page, updates, successMsg, logMsg) {
 
   // Fix: 使用 db.command.set 避免对象更新时的自动扁平化导致的 "Cannot create field ... in element null" 错误
   const _ = db.command;
-  ['gameState.lastEvent', 'gameState.deckRevealEvent', 'gameState.rewardDrawEvent', 'gameState.extraTurnEvent', 'gameState.turnAction'].forEach(key => {
+
+  // 如果有日志消息且没有显式设置 notificationEvent,则自动生成一个通知事件
+  if (logMsg && updates['gameState.notificationEvent'] === undefined) {
+    const { openId, players } = page.data;
+    const player = players.find(p => p.openId === openId);
+    updates['gameState.notificationEvent'] = _.set({
+      type: 'NOTIFICATION',
+      playerOpenId: openId,
+      playerNick: player?.nickName || '玩家',
+      playerAvatar: player?.avatarUrl || '',
+      message: logMsg.replace(`${player?.nickName || '玩家'} `, ''), // 避免名字重复
+      timestamp: Date.now()
+    });
+  }
+
+  ['gameState.lastEvent', 'gameState.deckRevealEvent', 'gameState.rewardDrawEvent', 'gameState.extraTurnEvent', 'gameState.notificationEvent', 'gameState.turnAction'].forEach(key => {
     if (updates[key] !== undefined) {
       updates[key] = _.set(updates[key]);
     }

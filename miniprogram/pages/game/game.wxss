@@ -407,6 +407,7 @@
 .clearing-card.selected {
   box-shadow: 0 0 0 6rpx #2ecc71, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
   z-index: 10;
+  transform: translateY(-8rpx);
 }
 
 .hand-card.placeholder {
@@ -942,6 +943,7 @@
 .hand-card.primary-selected {
   box-shadow: 0 0 0 6rpx #2ecc71, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
   z-index: 10;
+  transform: translateY(-8rpx);
 }
 
 .hand-card.primary-selected::after {
@@ -968,6 +970,7 @@
 .hand-card.payment-selected {
   box-shadow: 0 0 0 6rpx #f1c40f, 0 16rpx 32rpx rgba(0, 0, 0, 0.5);
   z-index: 5;
+  transform: translateY(-8rpx);
 }
 
 /* 移除重复的 .hand-card.selected */
