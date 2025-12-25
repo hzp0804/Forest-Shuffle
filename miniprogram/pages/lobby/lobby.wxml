@@ -118,7 +118,7 @@
       </wxs>
         <view class="room-list" wx:if="{{roomList && roomList.length > 0}}">
           <block wx:for="{{roomList}}" wx:key="_id">
-            <view class="room-item" bindtap="onJoinRoom" data-code="{{item.roomCode}}">
+            <view class="room-item">
               <view class="room-content-left">
                 <view class="avatar-container">
                   <image class="room-host-avatar" src="{{item.hostAvatarUrl || item.players[0].avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
