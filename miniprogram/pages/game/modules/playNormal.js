@@ -4,7 +4,11 @@ const { validatePlay } = require("../../../utils/validate.js");
 const RoundUtils = require("../../../utils/round.js");
 const DbHelper = require("../../../utils/dbHelper.js");
 const { calculatePlayRewards, processRewardDraw } = require("./playReward.js");
-const { submitGameUpdate, createExtraTurnEvent, createClearingNotification } = require("./core.js");
+const {
+  submitGameUpdate,
+  createExtraTurnEvent,
+  createClearingNotification,
+} = require("./core.js");
 const db = wx.cloud.database();
 
 /**
@@ -12,7 +16,14 @@ const db = wx.cloud.database();
  * 从手牌中提取主牌和支付牌,并进行基础校验
  */
 function preparePlayData(page) {
-  const { gameState, primarySelection, playerStates, openId, clearing, selectedSlot } = page.data;
+  const {
+    gameState,
+    primarySelection,
+    playerStates,
+    openId,
+    clearing,
+    selectedSlot,
+  } = page.data;
 
   const myState = playerStates[openId];
   const hand = [...(myState.hand || [])];
@@ -20,22 +31,22 @@ function preparePlayData(page) {
   const newClearing = [...(clearing || [])];
   const deck = [...(page.data.deck || [])]; // Get deck too
 
-  const primaryIdx = hand.findIndex(c => c.uid === primarySelection);
+  const primaryIdx = hand.findIndex((c) => c.uid === primarySelection);
   if (primaryIdx === -1) {
     console.error("Selected card not in hand");
     return null;
   }
 
   const primaryCardRaw = hand[primaryIdx];
-  const isTree = (primaryCardRaw.type || '').toLowerCase() === 'tree';
+  const isTree = (primaryCardRaw.type || "").toLowerCase() === "tree";
 
   // 确定当前出牌的物理位置（侧边），用于富化双属性卡片数据
-  let activeSide = 'center';
+  let activeSide = "center";
   if (!isTree && selectedSlot) activeSide = selectedSlot.side;
   let primaryCard = Utils.enrichCardWithSpecies(primaryCardRaw, activeSide);
 
   // 特殊模式修正：如果是树苗模式，强制打出为树苗
-  if (gameState.actionMode === 'ACTION_PLAY_SAPLINGS') {
+  if (gameState.actionMode === "ACTION_PLAY_SAPLINGS") {
     primaryCard = {
       ...primaryCard,
       name: "树苗",
@@ -46,13 +57,18 @@ function preparePlayData(page) {
       scoreConfig: null,
       effectConfig: null,
       bonusConfig: null,
-      isSapling: true
+      isSapling: true,
     };
   }
 
-  const paymentCards = hand.filter(c => c.selected && c.uid !== primarySelection);
-  const cardsToRemove = new Set([primarySelection, ...paymentCards.map(c => c.uid)]);
-  const newHand = hand.filter(c => !cardsToRemove.has(c.uid));
+  const paymentCards = hand.filter(
+    (c) => c.selected && c.uid !== primarySelection
+  );
+  const cardsToRemove = new Set([
+    primarySelection,
+    ...paymentCards.map((c) => c.uid),
+  ]);
+  const newHand = hand.filter((c) => !cardsToRemove.has(c.uid));
 
   return {
     hand,
@@ -65,7 +81,7 @@ function preparePlayData(page) {
     isTree,
     activeSide,
     deck,
-    cardsToRemove
+    cardsToRemove,
   };
 }
 
@@ -79,29 +95,42 @@ function placeCardInForest(forest, primaryCard, selectedSlot, isTree) {
     forest.push({
       _id: Math.random().toString(36).substr(2, 9),
       center: primaryCard,
-      slots: { top: null, bottom: null, left: null, right: null }
+      slots: { top: null, bottom: null, left: null, right: null },
     });
     return forest;
   }
 
   // 打出槽位卡片
-  const tIdx = forest.findIndex(t => t._id === selectedSlot.treeId);
+  const tIdx = forest.findIndex((t) => t._id === selectedSlot.treeId);
   const tTree = { ...forest[tIdx] };
-  tTree.slots = tTree.slots || { top: null, bottom: null, left: null, right: null };
+  tTree.slots = tTree.slots || {
+    top: null,
+    bottom: null,
+    left: null,
+    right: null,
+  };
 
   const existingCard = tTree.slots[selectedSlot.side];
 
   // 检查是否有共享槽位效果 (如刺荨麻)
   const allSlots = Object.values(tTree.slots || {});
-  const enabler = allSlots.find(c => c && c.effectConfig && c.effectConfig.type === 'CAPACITY_SHARE_SLOT');
-  const isStackMode = enabler && enabler.effectConfig.tag && primaryCard.tags && primaryCard.tags.includes(enabler.effectConfig.tag);
+  const enabler = allSlots.find(
+    (c) => c && c.effectConfig && c.effectConfig.type === "CAPACITY_SHARE_SLOT"
+  );
+  const isStackMode =
+    enabler &&
+    enabler.effectConfig.tag &&
+    primaryCard.tags &&
+    primaryCard.tags.includes(enabler.effectConfig.tag);
 
   if (existingCard) {
     // 槽位已有卡片 - 堆叠逻辑
     const ec = existingCard.effectConfig;
     const targetName = primaryCard.name;
-    const isCapacityIncrease = ec && ec.type === 'CAPACITY_INCREASE' && ec.target === targetName;
-    const isCapacityUnlimited = ec && ec.type === 'CAPACITY_UNLIMITED' && ec.target === targetName;
+    const isCapacityIncrease =
+      ec && ec.type === "CAPACITY_INCREASE" && ec.target === targetName;
+    const isCapacityUnlimited =
+      ec && ec.type === "CAPACITY_UNLIMITED" && ec.target === targetName;
     const isSelfStacking = isCapacityIncrease || isCapacityUnlimited;
 
     if (existingCard.max || isStackMode || isSelfStacking) {
@@ -111,7 +140,10 @@ function placeCardInForest(forest, primaryCard, selectedSlot, isTree) {
 
       if (currentList.length >= currentMax) {
         wx.hideLoading();
-        wx.showToast({ title: `该插槽最多容纳${currentMax}张卡牌`, icon: "none" });
+        wx.showToast({
+          title: `该插槽最多容纳${currentMax}张卡牌`,
+          icon: "none",
+        });
         return null;
       }
 
@@ -123,7 +155,7 @@ function placeCardInForest(forest, primaryCard, selectedSlot, isTree) {
       } else if (isStackMode) {
         newSlotConfig = {
           accepts: { tags: [enabler.effectConfig.tag] },
-          capacity: 99
+          capacity: 99,
         };
       }
 
@@ -131,7 +163,7 @@ function placeCardInForest(forest, primaryCard, selectedSlot, isTree) {
         ...primaryCard,
         list: newList,
         max: currentMax,
-        slotConfig: newSlotConfig
+        slotConfig: newSlotConfig,
       };
     } else {
       wx.hideLoading();
@@ -142,7 +174,10 @@ function placeCardInForest(forest, primaryCard, selectedSlot, isTree) {
     // 槽位为空
     const pec = primaryCard.effectConfig;
     const pTargetName = primaryCard.name;
-    const isPrimarySelfStacking = pec && (pec.type === 'CAPACITY_INCREASE' || pec.type === 'CAPACITY_UNLIMITED') && pec.target === pTargetName;
+    const isPrimarySelfStacking =
+      pec &&
+      (pec.type === "CAPACITY_INCREASE" || pec.type === "CAPACITY_UNLIMITED") &&
+      pec.target === pTargetName;
 
     if (isStackMode) {
       tTree.slots[selectedSlot.side] = {
@@ -151,16 +186,17 @@ function placeCardInForest(forest, primaryCard, selectedSlot, isTree) {
         max: 99,
         slotConfig: {
           accepts: { tags: [enabler.effectConfig.tag] },
-          capacity: 99
-        }
+          capacity: 99,
+        },
       };
     } else if (isPrimarySelfStacking) {
-      const maxCapacity = pec.type === 'CAPACITY_UNLIMITED' ? 99 : (pec.value || 1);
+      const maxCapacity =
+        pec.type === "CAPACITY_UNLIMITED" ? 99 : pec.value || 1;
       tTree.slots[selectedSlot.side] = {
         ...primaryCard,
         list: [primaryCard],
         max: maxCapacity,
-        slotConfig: null
+        slotConfig: null,
       };
     } else {
       tTree.slots[selectedSlot.side] = primaryCard;
@@ -168,11 +204,15 @@ function placeCardInForest(forest, primaryCard, selectedSlot, isTree) {
   }
 
   // 处理刺荨麻效果：将同树其他槽位中符合条件的卡片转换为堆叠模式
-  if (primaryCard.effectConfig && primaryCard.effectConfig.type === 'CAPACITY_SHARE_SLOT') {
+  if (
+    primaryCard.effectConfig &&
+    primaryCard.effectConfig.type === "CAPACITY_SHARE_SLOT"
+  ) {
     const targetTag = primaryCard.effectConfig.tag;
-    const slotsToConvert = targetTag === 'BUTTERFLY' ? ['top'] : ['top', 'bottom', 'left', 'right'];
+    const slotsToConvert =
+      targetTag === "BUTTERFLY" ? ["top"] : ["top", "bottom", "left", "right"];
 
-    slotsToConvert.forEach(side => {
+    slotsToConvert.forEach((side) => {
       if (side !== selectedSlot.side && tTree.slots[side]) {
         const card = tTree.slots[side];
         if (card.tags && card.tags.includes(targetTag) && !card.max) {
@@ -182,8 +222,8 @@ function placeCardInForest(forest, primaryCard, selectedSlot, isTree) {
             max: 99,
             slotConfig: {
               accepts: { tags: [targetTag] },
-              capacity: 99
-            }
+              capacity: 99,
+            },
           };
         }
       }
@@ -197,8 +237,15 @@ function placeCardInForest(forest, primaryCard, selectedSlot, isTree) {
 /**
  * 处理普通出牌的完整逻辑
  */
-async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
-  const { gameState, primarySelection, playerStates, openId, selectedSlot, turnAction } = page.data;
+async function handleNormalPlay(page, source = "PLAYER_ACTION") {
+  const {
+    gameState,
+    primarySelection,
+    playerStates,
+    openId,
+    selectedSlot,
+    turnAction,
+  } = page.data;
 
   wx.showLoading({ title: "出牌中..." });
 
@@ -218,7 +265,7 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
     return;
   }
 
-  const selectedCount = hand.filter(c => c.selected).length;
+  const selectedCount = hand.filter((c) => c.selected).length;
   const validation = validatePlay({
     openId,
     playerStates,
@@ -228,7 +275,7 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
     selectedSlot,
     primaryCard,
     myHand: hand,
-    selectedCount
+    selectedCount,
   });
 
   if (!validation.valid) {
@@ -238,7 +285,12 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
   }
 
   // 3. 执行出牌 (将卡片放入森林)
-  const updatedForest = placeCardInForest(forest, primaryCard, selectedSlot, isTree);
+  const updatedForest = placeCardInForest(
+    forest,
+    primaryCard,
+    selectedSlot,
+    isTree
+  );
   if (!updatedForest) {
     // placeCardInForest 如果返回 null (比如插槽已满) 会自己提示 toast
     return;
@@ -246,28 +298,56 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
   forest = updatedForest;
 
   // 4. 将支付的牌放入空地
-  paymentCards.forEach(c => {
+  paymentCards.forEach((c) => {
     newClearing.push({ ...c, selected: false });
   });
 
   // 5. 计算奖励
-  const { reward } = calculatePlayRewards(page, primaryCard, selectedSlot, paymentCards, forest, source, gameState);
+  const { reward } = calculatePlayRewards(
+    page,
+    primaryCard,
+    selectedSlot,
+    paymentCards,
+    forest,
+    source,
+    gameState
+  );
 
   // 6. 处理抽牌奖励 (修改: 不立即执行,改为累积到 accumulatedRewards)
   let rewardDrawEvent = null;
   let finalHand = newHand; // 不再执行 processRewardDraw, 所以手牌不变
-  let finalDeck = deck;    // 牌堆也不变
+  let finalDeck = deck; // 牌堆也不变
 
   // if (reward.drawCount > 0) { ... } // 移除这段立即抽牌逻辑
 
-  // 6.5. 打出树木时累积翻牌计数
-  console.log('🔍 检查是否为树木:', { isTree, cardName: primaryCard.name, cardType: primaryCard.type });
-  if (isTree) {
+  // 6.5. 打出树木时累积翻牌计数（灌木不算树木，不触发翻牌）
+  // 判断逻辑：必须是树木类型(type=TREE)，且带有树木标签，且不是灌木
+  const { TAGS } = require("../../../data/constants");
+  const hasTreeTag =
+    primaryCard.tags && primaryCard.tags.includes(CARD_TYPES.TREE);
+  const isShrub = primaryCard.tags && primaryCard.tags.includes(TAGS.SHRUB);
+  const isRealTree = isTree && hasTreeTag && !isShrub;
+
+  console.log("🔍 检查是否为真正的树木:", {
+    isTree,
+    hasTreeTag,
+    isShrub,
+    isRealTree,
+    cardName: primaryCard.name,
+    cardType: primaryCard.type,
+    tags: primaryCard.tags,
+  });
+
+  if (isRealTree) {
     const oldCount = page.pendingRevealCount || 0;
     page.pendingRevealCount = oldCount + 1;
-    console.log('🌲 打出树木,累积翻牌计数:', { 之前: oldCount, 之后: page.pendingRevealCount, 卡牌: primaryCard.name });
+    console.log("🌲 打出树木,累积翻牌计数:", {
+      之前: oldCount,
+      之后: page.pendingRevealCount,
+      卡牌: primaryCard.name,
+    });
   } else {
-    console.log('⚠️ 不是树木,不累积翻牌计数');
+    console.log("⚠️ 不是树木(或是灌木),不累积翻牌计数");
   }
 
   // 7. 处理空地自动清空
@@ -297,22 +377,23 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
     [`gameState.extraTurnEvent`]: extraTurnEvent,
     [`gameState.notificationEvent`]: db.command.set(notificationEvent),
     [`gameState.lastEvent`]: {
-      type: 'PLAY_CARD',
+      type: "PLAY_CARD",
       playerOpenId: openId,
-      playerNick: page.data.players.find(p => p.openId === openId)?.nickName || '玩家',
-      playerAvatar: page.data.players.find(p => p.openId === openId)?.avatarUrl || '',
+      playerNick:
+        page.data.players.find((p) => p.openId === openId)?.nickName || "玩家",
+      playerAvatar:
+        page.data.players.find((p) => p.openId === openId)?.avatarUrl || "",
       mainCard: Utils.enrichCard(primaryCard),
-      subCards: paymentCards.map(c => Utils.enrichCard(c)),
+      subCards: paymentCards.map((c) => Utils.enrichCard(c)),
       triggers: reward.triggers || [],
-      timestamp: Date.now()
-    }
+      timestamp: Date.now(),
+    },
   };
-
 
   // 10. 确定下一步:检查是否有行动队列
   if (reward.actions && reward.actions.length > 0) {
     // 有行动队列,进入行动模式
-    console.log('🎁 触发行动队列:', reward.actions);
+    console.log("🎁 触发行动队列:", reward.actions);
 
     updates[`gameState.pendingActions`] = reward.actions;
     updates[`gameState.actionMode`] = reward.actions[0].type;
@@ -322,30 +403,32 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
       extraTurn: reward.extraTurn,
       revealCount: 0,
       removeClearingFlag: reward.removeClearingFlag || false,
-      clearingToCaveFlag: reward.clearingToCaveFlag || false
+      clearingToCaveFlag: reward.clearingToCaveFlag || false,
     };
 
     // 清除本地状态
     page.setData({
       primarySelection: null,
       selectedSlot: null,
-      selectedClearingIdx: -1
+      selectedClearingIdx: -1,
     });
 
     // 构造下个行动的通知
     const nextAction = reward.actions[0];
     const { openId, players } = page.data;
-    const player = players.find(p => p.openId === openId);
+    const player = players.find((p) => p.openId === openId);
 
     // 显式创建通知事件,告知所有玩家即将进行的行动
-    updates['gameState.notificationEvent'] = db.command.set({
-      type: 'NOTIFICATION',
+    updates["gameState.notificationEvent"] = db.command.set({
+      type: "NOTIFICATION",
       playerOpenId: openId,
-      playerNick: player?.nickName || '玩家',
-      playerAvatar: player?.avatarUrl || '',
-      icon: '⚡',
-      message: `即将执行: ${nextAction.actionText || nextAction.text || '特殊行动'}`,
-      timestamp: Date.now() + 200 // 增加延迟确保顺序
+      playerNick: player?.nickName || "玩家",
+      playerAvatar: player?.avatarUrl || "",
+      icon: "⚡",
+      message: `即将执行: ${
+        nextAction.actionText || nextAction.text || "特殊行动"
+      }`,
+      timestamp: Date.now() + 200, // 增加延迟确保顺序
     });
 
     submitGameUpdate(page, updates, "出牌成功", `打出了 ${primaryCard.name}`);
@@ -356,18 +439,21 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
       extraTurn: reward.extraTurn,
       revealCount: 0,
       removeClearingFlag: reward.removeClearingFlag || false,
-      clearingToCaveFlag: reward.clearingToCaveFlag || false
+      clearingToCaveFlag: reward.clearingToCaveFlag || false,
     };
 
     // 清除本地状态
     page.setData({
       primarySelection: null,
       selectedSlot: null,
-      selectedClearingIdx: -1
+      selectedClearingIdx: -1,
     });
 
     // 调用 finalizeAction 处理翻牌和回合切换
-    console.log('📞 准备调用 finalizeAction, pendingRevealCount:', page.pendingRevealCount);
+    console.log(
+      "📞 准备调用 finalizeAction, pendingRevealCount:",
+      page.pendingRevealCount
+    );
     const { finalizeAction } = require("./action.js");
     await finalizeAction(page, updates, `打出了 ${primaryCard.name}`);
   }
@@ -376,5 +462,5 @@ async function handleNormalPlay(page, source = 'PLAYER_ACTION') {
 module.exports = {
   preparePlayData,
   placeCardInForest,
-  handleNormalPlay
+  handleNormalPlay,
 };
