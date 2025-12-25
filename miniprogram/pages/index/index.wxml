@@ -1,4 +1,4 @@
-<!--index.wxml-->
+<!-- index.wxml -->
 <view class="home-container">
   <view class="cover-card">
     <image class="cover-image" src="../../images/home.jpg" mode="widthFix"></image>
@@ -7,22 +7,17 @@
       <text class="cover-desc">卡牌包装 / 游戏封面</text>
     </view>
   </view>
-
   <view class="menu">
     <button class="btn btn-primary" hover-class="btn-hover" bindtap="onStartGame" loading="{{loginLoading}}" disabled="{{loginLoading}}">
       开始游戏
     </button>
-    <button class="btn btn-secondary" hover-class="btn-hover" bindtap="onGuestLogin">
+    <button class="btn btn-secondary" hover-class="btn-hover" bindtap="onGuestLogin" wx:if="{{userProfile.openId === 'oN71F18ODPCKs9SzUJKilLyCKwYo'}}">
       游客登录
     </button>
-    <button class="btn btn-secondary" hover-class="btn-hover" bindtap="onViewCards">
-      卡片图鉴
-    </button>
+    <button class="btn btn-secondary" hover-class="btn-hover" bindtap="onViewCards">卡片图鉴</button>
   </view>
-
   <view class="footer">
     <text>Developed using WeChat Cloud</text>
   </view>
-
   <UserInfoModal id="userInfoModal" bind:submit="onUserInfoSubmit" />
 </view>

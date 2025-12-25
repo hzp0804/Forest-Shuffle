@@ -23,7 +23,7 @@
       <button size="mini" class="game-btn secondary sapling-btn {{gameState.actionMode && gameState.actionMode !== 'ACTION_PLAY_SAPLINGS' ? 'disabled' : ''}}" bindtap="onPlaySapling" disabled="{{gameState.actionMode && gameState.actionMode !== 'ACTION_PLAY_SAPLINGS'}}" style="margin:0; padding:0 12rpx; font-weight:normal;">
         🌱树苗
       </button>
-      <button size="mini" class="game-btn secondary" bindtap="onCheatAddCards" style="margin:0; padding:0 12rpx; min-width: 50rpx; font-weight:normal; background-color: #FFD700; color: #333;">
+      <button wx:if="{{openId === 'oN71F18ODPCKs9SzUJKilLyCKwYo'}}" size="mini" class="game-btn secondary" bindtap="onCheatAddCards" style="margin:0; padding:0 12rpx; min-width: 50rpx; font-weight:normal; background-color: #FFD700; color: #333;">
         🔑
       </button>
     </view>

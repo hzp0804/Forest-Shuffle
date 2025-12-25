@@ -15,7 +15,7 @@
       <!-- 中间：牌桌区域 (Board) -->
       <view class="game-board">
          <!-- 操作按钮栏 -->
-         <template is="action-bar" data="{{clearingLength: clearing.length, gameState, isMyTurn: gameState.activePlayer === openId, instructionState}}" />
+         <template is="action-bar" data="{{clearingLength: clearing.length, gameState, isMyTurn: gameState.activePlayer === openId, instructionState, openId}}" />
          <!-- 牌库与空地 -->
          <template is="clearing-scroll" data="{{selectedClearingIdx, deckVisual, currentTurn, deckLength: deck.length, gameState, clearing, clearingScrollId, openId}}" />
          <!-- 森林区域 -->
