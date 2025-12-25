@@ -14,7 +14,7 @@ const GameModules = require("./modules/index.js");
 
 /**
  * 将森林数据按树木名称分组
- * @param {Array} forest 
+ * @param {Array} forest
  * @returns {Array} grouped array: [{name: 'Oak', list: [tree1, tree2]}, ...]
  */
 const groupForest = (forest) => {
@@ -22,9 +22,9 @@ const groupForest = (forest) => {
   const groups = [];
   const map = new Map();
 
-  forest.forEach(tree => {
+  forest.forEach((tree) => {
     if (!tree.center) return;
-    const name = tree.center.name || 'Unknown';
+    const name = tree.center.name || "Unknown";
     if (!map.has(name)) {
       const newGroup = { name, list: [] };
       map.set(name, newGroup);
@@ -68,6 +68,8 @@ Page({
     handExpanded: false,
     forestScrollTop: 0,
     currentForestIndex: 0,
+    // 关闭多余的播报，只保留回合提示
+    enableVoice: false,
   },
 
   // ==================== 生命周期 ====================
@@ -79,21 +81,27 @@ Page({
       try {
         profile = wx.getStorageSync("userProfile");
         if (profile) app.globalData.userProfile = profile;
-      } catch (e) { }
+      } catch (e) {}
     }
     if (!profile || (!profile.openId && !profile.uid)) {
       wx.showToast({ title: "请先登录", icon: "none" });
-      setTimeout(() => { wx.reLaunch({ url: "/pages/index/index" }); }, 1500);
+      setTimeout(() => {
+        wx.reLaunch({ url: "/pages/index/index" });
+      }, 1500);
       return;
     }
     const openId = profile.openId || profile.uid;
-    this.setData({ roomId: options.roomId, openId, selectedPlayerOpenId: openId });
+    this.setData({
+      roomId: options.roomId,
+      openId,
+      selectedPlayerOpenId: openId,
+    });
 
     // 初始化本地同步状态
     this.localState = {
       lastEventTime: 0,
-      activePlayer: '',
-      turnCount: -1
+      activePlayer: "",
+      turnCount: -1,
     };
 
     // 清空得分缓存
@@ -178,9 +186,9 @@ Page({
     GameModules.onForestSwiperChange(this, e);
   },
 
-  onForestTouchStart(e) { },
-  onForestTouchMove(e) { },
-  onForestTouchEnd(e) { },
+  onForestTouchStart(e) {},
+  onForestTouchMove(e) {},
+  onForestTouchEnd(e) {},
 
   closeStackModal() {
     this.setData({ stackModalVisible: false });
@@ -203,23 +211,24 @@ Page({
   // ==================== 出牌逻辑 ====================
 
   async onConfirmPlay(e) {
-    const source = (typeof e === 'string') ? e : 'PLAYER_ACTION';
+    const source = typeof e === "string" ? e : "PLAYER_ACTION";
     const { gameState, turnAction } = this.data;
 
     // 处理特殊行动模式
-    if (gameState && gameState.actionMode === 'ACTION_TUCK_HAND_CARD') {
+    if (gameState && gameState.actionMode === "ACTION_TUCK_HAND_CARD") {
       return await GameModules.handleTuckAction(this);
     }
 
-    if (gameState && gameState.actionMode === 'ACTION_RACCOON') {
+    if (gameState && gameState.actionMode === "ACTION_RACCOON") {
       return await GameModules.handleRaccoonAction(this);
     }
 
-    if (gameState && (
-      gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' ||
-      gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND' ||
-      gameState.actionMode === 'ACTION_PICK_FROM_CLEARING_TO_CAVE'
-    )) {
+    if (
+      gameState &&
+      (gameState.actionMode === "ACTION_PICK_FROM_CLEARING" ||
+        gameState.actionMode === "PICK_FROM_CLEARING_TO_HAND" ||
+        gameState.actionMode === "ACTION_PICK_FROM_CLEARING_TO_CAVE")
+    ) {
       return await GameModules.handleClearingPickAction(this);
     }
 
@@ -294,7 +303,12 @@ Page({
 
   // 由 draw 模块调用
   processDrawWithWinter(deck, count, startWinterCount) {
-    return GameModules.processDrawWithWinter(this, deck, count, startWinterCount);
+    return GameModules.processDrawWithWinter(
+      this,
+      deck,
+      count,
+      startWinterCount
+    );
   },
 
   executeDrawFromDeck() {
@@ -311,14 +325,21 @@ Page({
       [`gameState.deck`]: require("../../utils/dbHelper.js").cleanDeck(newDeck),
       [`gameState.winterCardCount`]: winterCount,
       [`gameState.isGameOver`]: true,
-      [`gameState.gameEndReason`]: 'WINTER_CARD',
+      [`gameState.gameEndReason`]: "WINTER_CARD",
       [`gameState.gameEndTime`]: Date.now(),
-      [`gameState.lastEvent`]: events
+      [`gameState.lastEvent`]: events,
     };
-    GameModules.submitGameUpdate(this, updates, null, `抽到第3张冬季卡，游戏结束`);
+    GameModules.submitGameUpdate(
+      this,
+      updates,
+      null,
+      `抽到第3张冬季卡，游戏结束`
+    );
 
     setTimeout(() => {
-      wx.navigateTo({ url: `/pages/game-over/game-over?roomId=${this.data.roomId}` });
+      wx.navigateTo({
+        url: `/pages/game-over/game-over?roomId=${this.data.roomId}`,
+      });
     }, 3000);
   },
 
@@ -333,5 +354,5 @@ Page({
 
   createExtraTurnEvent() {
     return GameModules.createExtraTurnEvent(this);
-  }
+  },
 });

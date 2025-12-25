@@ -1,28 +1,17 @@
-const {
-  getCardInfoById
-} = require("./getCardInfoById");
-const {
-  getCardCost
-} = require("./cost");
-const {
-  calculateTotalScore
-} = require("./score/index");
-const {
-  CARD_TYPES,
-  IMG_URLS
-} = require("../data/constants");
-const {
-  SAPLING_DATA
-} = require("../data/speciesData");
+const { getCardInfoById } = require("./getCardInfoById");
+const { getCardCost } = require("./cost");
+const { calculateTotalScore } = require("./score/index");
+const { CARD_TYPES, IMG_URLS } = require("../data/constants");
+const { SAPLING_DATA } = require("../data/speciesData");
 const { calculateReward } = require("./reward.js");
 
-const { getCardColors, isColorMatched } = require('./colorMatcher');
-const { checkInstruction } = require('./instructionHelper');
+const { getCardColors, isColorMatched } = require("./colorMatcher");
+const { checkInstruction } = require("./instructionHelper");
 
 const LOCAL_AVATARS = [
   "oN71F16b4hwLLo7_EMo_SMh6hSfE",
   "oN71F18ODPCKs9SzUJKilLyCKwYo",
-  "oN71F1yhDUhpwDC2daqzdbx5VHFk"
+  "oN71F1yhDUhpwDC2daqzdbx5VHFk",
 ];
 
 const getAvatarPath = (openId, originalUrl) => {
@@ -38,28 +27,25 @@ const enrichCard = (card) => {
   const info = getCardInfoById(id);
 
   // 树苗的特殊处理已经在 getCardInfoById 中完成，这里直接使用
-  if (id === 'sapling') {
+  if (id === "sapling") {
     return {
       ...card,
       ...info, // info 已经包含了所有树苗的信息（包括视觉）
-      id
+      id,
     };
   }
 
-  const {
-    speciesDetails: _,
-    ...cardWithoutSpeciesDetails
-  } = card;
+  const { speciesDetails: _, ...cardWithoutSpeciesDetails } = card;
 
   const enriched = {
     ...info,
     ...cardWithoutSpeciesDetails,
-    id
+    id,
   };
 
   // 只有当 list 存在时才递归富化
   if (card.list && Array.isArray(card.list)) {
-    enriched.list = card.list.map(c => enrichCard(c));
+    enriched.list = card.list.map((c) => enrichCard(c));
   }
 
   return enriched;
@@ -68,26 +54,31 @@ const enrichCard = (card) => {
 const enrichCardWithSpecies = (card, side) => {
   if (!card) return null;
   const enriched = enrichCard(card);
-  if (!enriched.speciesDetails || enriched.speciesDetails.length === 0) return enriched;
+  if (!enriched.speciesDetails || enriched.speciesDetails.length === 0)
+    return enriched;
 
   let index = 0;
-  if (enriched.type === 'hCard' || enriched.type === 'h_card') { // Ensure loose type check
-    if (side === 'right') index = 1;
-  } else if (enriched.type === 'vCard' || enriched.type === 'v_card') {
-    if (side === 'bottom') index = 1;
+  if (enriched.type === "hCard" || enriched.type === "h_card") {
+    // Ensure loose type check
+    if (side === "right") index = 1;
+  } else if (enriched.type === "vCard" || enriched.type === "v_card") {
+    if (side === "bottom") index = 1;
   }
 
   let speciesData = enriched.speciesDetails[index];
 
-  // Robustness Fallback: If targeted species data is missing (e.g. data error), 
-  // try using the first species. This handles cases like "Double Hare" where 
+  // Robustness Fallback: If targeted species data is missing (e.g. data error),
+  // try using the first species. This handles cases like "Double Hare" where
   // maybe only one species entry exists or the second one failed lookup.
   if (!speciesData && enriched.speciesDetails.length > 0) {
     speciesData = enriched.speciesDetails[0];
   }
 
   let specificTreeSymbol = enriched.tree_symbol;
-  if (Array.isArray(enriched.tree_symbol) && enriched.tree_symbol.length > index) {
+  if (
+    Array.isArray(enriched.tree_symbol) &&
+    enriched.tree_symbol.length > index
+  ) {
     specificTreeSymbol = [enriched.tree_symbol[index]];
   } else if (!Array.isArray(enriched.tree_symbol)) {
     specificTreeSymbol = [enriched.tree_symbol];
@@ -100,25 +91,30 @@ const enrichCardWithSpecies = (card, side) => {
       ...speciesData,
       tree_symbol: specificTreeSymbol,
       id: enriched.id,
-      uid: enriched.uid
+      uid: enriched.uid,
     };
   } else {
     finalCard = {
       ...enriched,
-      tree_symbol: specificTreeSymbol
+      tree_symbol: specificTreeSymbol,
     };
   }
 
   // 递归处理堆叠卡片的 list 字段
   // 堆叠的卡片也需要根据所在槽位的 side 提取对应物种的信息
   if (card.list && Array.isArray(card.list)) {
-    finalCard.list = card.list.map(c => enrichCardWithSpecies(c, side));
+    finalCard.list = card.list.map((c) => enrichCardWithSpecies(c, side));
   }
 
   return finalCard;
 };
 
-const enrichHand = (hand, myOpenId, currentOpenId, selectedUids = new Set()) => {
+const enrichHand = (
+  hand,
+  myOpenId,
+  currentOpenId,
+  selectedUids = new Set()
+) => {
   if (!Array.isArray(hand)) return [];
   return hand.map((card) => ({
     ...enrichCard(card),
@@ -139,31 +135,31 @@ const enrichForest = (forest) => {
           top: null,
           bottom: null,
           left: null,
-          right: null
+          right: null,
         },
       };
     }
     return {
       _id: node._id,
-      center: enrichCardWithSpecies(node.center, 'center'),
+      center: enrichCardWithSpecies(node.center, "center"),
       slots: {
-        top: enrichCardWithSpecies(node.slots?.top, 'top'),
-        bottom: enrichCardWithSpecies(node.slots?.bottom, 'bottom'),
-        left: enrichCardWithSpecies(node.slots?.left, 'left'),
-        right: enrichCardWithSpecies(node.slots?.right, 'right'),
+        top: enrichCardWithSpecies(node.slots?.top, "top"),
+        bottom: enrichCardWithSpecies(node.slots?.bottom, "bottom"),
+        left: enrichCardWithSpecies(node.slots?.left, "left"),
+        right: enrichCardWithSpecies(node.slots?.right, "right"),
       },
     };
   });
 
   // 按树木名称排序,相同的树木排在一起，灌木放在后面，树苗放到最后
   enrichedForest.sort((a, b) => {
-    const nameA = a.center?.name || '';
-    const nameB = b.center?.name || '';
+    const nameA = a.center?.name || "";
+    const nameB = b.center?.name || "";
 
     // 定义特殊类型的优先级 (0: 普通树木, 1: 灌木, 2: 树苗)
     const getPriority = (name) => {
-      if (name === '树苗') return 2;
-      if (name === '灌木') return 1;
+      if (name === "树苗") return 2;
+      if (name === "灌木") return 1;
       return 0;
     };
 
@@ -176,7 +172,7 @@ const enrichForest = (forest) => {
     }
 
     // 同类型按名称排序
-    return nameA.localeCompare(nameB, 'zh-CN');
+    return nameA.localeCompare(nameB, "zh-CN");
   });
 
   return enrichedForest;
@@ -191,7 +187,7 @@ const toggleHandSelection = (hand, uid, currentPrimary) => {
       else if (!newSelected && nextPrimary === uid) nextPrimary = "";
       return {
         ...card,
-        selected: newSelected
+        selected: newSelected,
       };
     }
     return card;
@@ -204,7 +200,7 @@ const toggleHandSelection = (hand, uid, currentPrimary) => {
 
   return {
     newHand,
-    newPrimary: nextPrimary
+    newPrimary: nextPrimary,
   };
 };
 
@@ -215,13 +211,14 @@ const computeInstruction = (data) => {
     playerStates,
     selectedSlot,
     turnAction,
-    gameState
+    gameState,
   } = data;
 
-  if (!playerStates?.[openId]) return {
-    instructionState: "normal",
-    instructionText: "旁观模式"
-  };
+  if (!playerStates?.[openId])
+    return {
+      instructionState: "normal",
+      instructionText: "旁观模式",
+    };
 
   const myHand = playerStates[openId].hand || [];
   const selectedCount = myHand.filter((c) => c.selected).length;
@@ -230,8 +227,11 @@ const computeInstruction = (data) => {
   if (primarySelection) {
     const primaryCardRaw = myHand.find((c) => c.uid === primarySelection);
     if (primaryCardRaw) {
-      let activeSide = 'center';
-      if (primaryCardRaw.type === CARD_TYPES.H_CARD || primaryCardRaw.type === CARD_TYPES.V_CARD) {
+      let activeSide = "center";
+      if (
+        primaryCardRaw.type === CARD_TYPES.H_CARD ||
+        primaryCardRaw.type === CARD_TYPES.V_CARD
+      ) {
         activeSide = selectedSlot?.side;
       }
       primaryCard = enrichCardWithSpecies(primaryCardRaw, activeSide);
@@ -247,23 +247,20 @@ const computeInstruction = (data) => {
     selectedSlot,
     primaryCard,
     myHand,
-    selectedCount
+    selectedCount,
   });
 };
 
 const handleHandTap = (uid, currentData) => {
-  const {
-    openId,
-    playerStates,
-    primarySelection
-  } = currentData;
+  const { openId, playerStates, primarySelection } = currentData;
   if (!playerStates?.[openId]) return null;
 
   const myHand = playerStates[openId].hand || [];
-  const {
-    newHand,
-    newPrimary
-  } = toggleHandSelection(myHand, uid, primarySelection);
+  const { newHand, newPrimary } = toggleHandSelection(
+    myHand,
+    uid,
+    primarySelection
+  );
 
   // 检测主牌是否变动
   const primaryChanged = newPrimary !== primarySelection;
@@ -276,7 +273,7 @@ const handleHandTap = (uid, currentData) => {
       ...playerStates,
       [openId]: {
         ...playerStates[openId],
-        hand: newHand
+        hand: newHand,
       },
     },
   };
@@ -285,12 +282,16 @@ const handleHandTap = (uid, currentData) => {
     instructionState,
     instructionText,
     instructionSegments, // 确保从 checkInstruction 接收这些额外字段
-    instructionLines
+    instructionLines,
   } = computeInstruction(nextData);
 
   // 计算是否满足奖励条件
   let bonusActive = false;
-  if (instructionLines && instructionLines.bonus && instructionLines.bonus.class === "text-success") {
+  if (
+    instructionLines &&
+    instructionLines.bonus &&
+    instructionLines.bonus.class === "text-success"
+  ) {
     bonusActive = true;
     console.log("🎉 奖励条件已满足:", instructionLines.bonus.text);
   }
@@ -302,7 +303,7 @@ const handleHandTap = (uid, currentData) => {
     instructionState,
     instructionText,
     instructionSegments: instructionSegments || null,
-    instructionLines: instructionLines || null
+    instructionLines: instructionLines || null,
   };
 
   if (primaryChanged) {
@@ -317,7 +318,9 @@ const processGameData = (res, currentData) => {
   const viewingId = currentData.selectedPlayerOpenId || myOpenId;
 
   const currentHand = currentData.playerStates?.[myOpenId]?.hand || [];
-  const selectedUids = new Set(currentHand.filter((c) => c.selected).map((c) => c.uid));
+  const selectedUids = new Set(
+    currentHand.filter((c) => c.selected).map((c) => c.uid)
+  );
 
   const gameState = res.data.gameState || {};
   const playerStates = gameState.playerStates;
@@ -332,26 +335,36 @@ const processGameData = (res, currentData) => {
       }
 
       if (playerState?.hand) {
-        playerState.hand = enrichHand(playerState.hand, myOpenId, playerState._openid || openId, selectedUids);
+        playerState.hand = enrichHand(
+          playerState.hand,
+          myOpenId,
+          playerState._openid || openId,
+          selectedUids
+        );
       }
       if (playerState?.forest) {
         // 增强森林数据富化：确保 _id 是字符串以配合 WXML 比较
-        playerState.forest = enrichForest(playerState.forest).map(g => ({ ...g, _id: String(g._id) }));
+        playerState.forest = enrichForest(playerState.forest).map((g) => ({
+          ...g,
+          _id: String(g._id),
+        }));
       }
     });
   }
 
   const viewingPlayerState = playerStates?.[viewingId];
   const displayForest = viewingPlayerState?.forest || [];
-  const viewingPlayer = (res.data.players || []).find((p) => p && p.openId === viewingId);
+  const viewingPlayer = (res.data.players || []).find(
+    (p) => p && p.openId === viewingId
+  );
 
   const countForestCards = (forest) => {
     if (!Array.isArray(forest)) return 0;
     let count = 0;
-    forest.forEach(group => {
+    forest.forEach((group) => {
       if (group.center) count++;
       if (group.slots) {
-        ['top', 'bottom', 'left', 'right'].forEach(side => {
+        ["top", "bottom", "left", "right"].forEach((side) => {
           if (group.slots[side]) {
             // list 包含所有卡片（包括显示的），所以直接用 list.length
             count += group.slots[side].list ? group.slots[side].list.length : 1;
@@ -363,8 +376,9 @@ const processGameData = (res, currentData) => {
   };
 
   let totalCardCount = 0;
-  Object.values(playerStates || {}).forEach(pState => {
-    if (pState && pState.forest) totalCardCount += countForestCards(pState.forest);
+  Object.values(playerStates || {}).forEach((pState) => {
+    if (pState && pState.forest)
+      totalCardCount += countForestCards(pState.forest);
   });
 
   const cardsChanged = totalCardCount !== (currentData.lastCardCount || 0);
@@ -372,34 +386,44 @@ const processGameData = (res, currentData) => {
 
   // 如果有 turnOrder，按照 turnOrder 的顺序重新排列玩家
   const turnOrder = gameState.turnOrder || [];
-  const sortedUsers = turnOrder.length > 0
-    ? turnOrder.map(openId => users.find(p => p && p.openId === openId)).filter(Boolean)
-    : users;
+  const sortedUsers =
+    turnOrder.length > 0
+      ? turnOrder
+          .map((openId) => users.find((p) => p && p.openId === openId))
+          .filter(Boolean)
+      : users;
 
-  const enrichedPlayers = sortedUsers.map((p) => {
-    if (!p) return null;
-    const pState = playerStates?.[p.openId];
-    let score = 0;
-    if (cardsChanged) {
-      const scoreData = calculateTotalScore(pState, p.openId, playerStates, p.nickName);
-      score = scoreData.total || 0;
-    } else {
-      const cached = require('./score/index').getCachedScore(p.openId);
-      score = cached?.total || 0;
-    }
-    return {
-      ...p,
-      avatarUrl: getAvatarPath(p.openId, p.avatarUrl),
-      score: score,
-      handCount: pState?.hand?.length || 0,
-    };
-  }).filter(Boolean);
+  const enrichedPlayers = sortedUsers
+    .map((p) => {
+      if (!p) return null;
+      const pState = playerStates?.[p.openId];
+      let score = 0;
+      if (cardsChanged) {
+        const scoreData = calculateTotalScore(
+          pState,
+          p.openId,
+          playerStates,
+          p.nickName
+        );
+        score = scoreData.total || 0;
+      } else {
+        const cached = require("./score/index").getCachedScore(p.openId);
+        score = cached?.total || 0;
+      }
+      return {
+        ...p,
+        avatarUrl: getAvatarPath(p.openId, p.avatarUrl),
+        score: score,
+        handCount: pState?.hand?.length || 0,
+      };
+    })
+    .filter(Boolean);
 
   const nextData = {
     ...currentData,
     playerStates,
     gameState,
-    primarySelection: currentData.primarySelection
+    primarySelection: currentData.primarySelection,
   };
   const activePlayerId = gameState.activePlayer || res.data.activePlayer;
   const isMyTurn = activePlayerId ? activePlayerId === myOpenId : true;
@@ -429,7 +453,7 @@ const processGameData = (res, currentData) => {
     deckVisual: {
       bgImg: IMG_URLS[CARD_TYPES.V_CARD],
       bgSize: "700% 700%",
-      cssClass: "card-sapling"
+      cssClass: "card-sapling",
     },
     clearing: (gameState.clearing || []).map(enrichCard),
     playerStates,
@@ -445,19 +469,22 @@ const processGameData = (res, currentData) => {
     instructionSegments: instructionSegments || null,
     instructionLines: instructionLines || null,
     turnAction: gameState.turnAction || {
-      drawnCount: 0
+      drawnCount: 0,
     },
     currentTurn: gameState.turnCount || 1,
     lastCardCount: totalCardCount,
     gameState: gameState,
     isSpectator: !playerStates?.[myOpenId],
+    enableVoice: res.data.settings
+      ? res.data.settings.enableVoice ?? false
+      : false,
   };
 };
 
 const DbHelper = {
   cleanHand(hand) {
     if (!Array.isArray(hand)) return [];
-    return hand.map(c => {
+    return hand.map((c) => {
       // 保留核心数据，移除UI状态
       // 如果原来的逻辑需要保留uid，则保留。通常手牌需要uid来唯一标识
       const { selected, speciesDetails, bgImg, bgSize, cssClass, ...rest } = c;
@@ -466,7 +493,7 @@ const DbHelper = {
   },
   cleanClearing(clearing) {
     if (!Array.isArray(clearing)) return [];
-    return clearing.map(c => {
+    return clearing.map((c) => {
       const { selected, speciesDetails, bgImg, bgSize, cssClass, ...rest } = c;
       return rest;
     });
@@ -486,5 +513,5 @@ module.exports = {
   getCardColors,
   isColorMatched,
   getAvatarPath,
-  DbHelper
+  DbHelper,
 };

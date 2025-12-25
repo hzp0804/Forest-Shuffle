@@ -62,6 +62,7 @@ Page({
     createForm: {
       cardCount: 233, // 默认一套牌:230张普通卡 + 3张冬季卡
       winterStartOffset: 30,
+      enableVoice: false,
     },
     seats: [
       { id: 1, label: "座位1", occupant: null },
@@ -192,6 +193,12 @@ Page({
     });
   },
 
+  onVoiceSwitchChange(e) {
+    this.setData({
+      "createForm.enableVoice": e.detail.value,
+    });
+  },
+
   async onCreateRoom() {
     if (!this.ensureProfileOrBack()) return;
     const { createForm, userProfile } = this.data;
@@ -274,6 +281,7 @@ Page({
         settings: {
           totalCardCount: cardCount,
           winterStartOffset,
+          enableVoice: createForm.enableVoice ?? false,
         },
         createTime: db.serverDate(),
         updateTime: db.serverDate(),

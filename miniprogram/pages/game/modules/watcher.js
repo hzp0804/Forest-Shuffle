@@ -51,7 +51,7 @@ function initGameWatcher(page) {
         wx.showToast({
           title: "连接断开,正在重连...",
           icon: "none",
-          duration: 2000
+          duration: 2000,
         });
 
         // 3秒后尝试重新建立连接
@@ -80,7 +80,7 @@ function stopWatcher(page) {
     isProcessingEvent: false,
     currentEvent: null,
     pendingTurnToast: false,
-    pendingActionToast: null
+    pendingActionToast: null,
   });
 
   // 清空得分缓存,防止进入其他房间时带入旧数据
@@ -97,17 +97,22 @@ function stopWatcher(page) {
 function processGameUpdate(page, serverData) {
   try {
     const gameState = serverData.gameState || {};
-    const processedData = Utils.processGameData({ data: serverData }, page.data);
+    const processedData = Utils.processGameData(
+      { data: serverData },
+      page.data
+    );
 
     const currentActive = gameState.activePlayer || serverData.activePlayer;
     const currentTurnCount = gameState.turnCount || 0;
 
     // 使用同步的 localState 进行对比，避免 page.data 异步更新导致的重复判断
-    const lastActive = page.localState ? page.localState.activePlayer : '';
+    const lastActive = page.localState ? page.localState.activePlayer : "";
     const lastTurn = page.localState ? page.localState.turnCount : -1;
 
-    const isFirstSync = (lastActive === '');
-    const turnChanged = !isFirstSync && (currentActive !== lastActive || currentTurnCount !== lastTurn);
+    const isFirstSync = lastActive === "";
+    const turnChanged =
+      !isFirstSync &&
+      (currentActive !== lastActive || currentTurnCount !== lastTurn);
 
     let turnChangeEvent = null;
 
@@ -125,18 +130,20 @@ function processGameUpdate(page, serverData) {
       processedData.lastActivePlayer = currentActive;
 
       page.pendingRevealCount = 0;
-      console.log('🔄 回合切换，翻牌计数器已重置为 0');
+      console.log("🔄 回合切换，翻牌计数器已重置为 0");
       processedData.lastTurnCount = currentTurnCount;
 
-      const activePlayer = page.data.players.find(p => p.openId === currentActive);
+      const activePlayer = page.data.players.find(
+        (p) => p.openId === currentActive
+      );
       if (activePlayer) {
         turnChangeEvent = {
-          type: 'TURN_CHANGE',
+          type: "TURN_CHANGE",
           playerOpenId: currentActive,
-          playerNick: activePlayer.nickName || '玩家',
-          playerAvatar: activePlayer.avatarUrl || '',
+          playerNick: activePlayer.nickName || "玩家",
+          playerAvatar: activePlayer.avatarUrl || "",
           isMyTurn: currentActive === page.data.openId,
-          timestamp: Date.now() + 1000
+          timestamp: Date.now() + 1000,
         };
       }
     }
@@ -146,7 +153,10 @@ function processGameUpdate(page, serverData) {
       processedData.lastTurnCount = currentTurnCount;
     }
 
-    if (currentActive === page.data.openId && page.data.lastNotifiedTurnCount !== currentTurnCount) {
+    if (
+      currentActive === page.data.openId &&
+      page.data.lastNotifiedTurnCount !== currentTurnCount
+    ) {
       processedData.lastNotifiedTurnCount = currentTurnCount;
     }
 
@@ -157,21 +167,29 @@ function processGameUpdate(page, serverData) {
     const extraTurnEvent = gameState.extraTurnEvent;
     const notificationEvent = gameState.notificationEvent;
 
-    let nextLastEventTime = page.localState ? page.localState.lastEventTime : (page.data.lastEventTime || 0);
+    let nextLastEventTime = page.localState
+      ? page.localState.lastEventTime
+      : page.data.lastEventTime || 0;
     let added = false;
 
     const tryAddEvent = (evt) => {
       if (evt && evt.timestamp > nextLastEventTime) {
-        addToEventQueue(page, evt);
         nextLastEventTime = Math.max(nextLastEventTime, evt.timestamp);
         if (page.localState) page.localState.lastEventTime = nextLastEventTime;
+
+        // 如果关闭了播报，跳过加入事件队列
+        if (page.data.enableVoice === false) {
+          return;
+        }
+
+        addToEventQueue(page, evt);
         added = true;
       }
     };
 
     if (lastEvent) {
       const events = Array.isArray(lastEvent) ? lastEvent : [lastEvent];
-      events.forEach(evt => tryAddEvent(evt));
+      events.forEach((evt) => tryAddEvent(evt));
     }
     tryAddEvent(deckRevealEvent);
     tryAddEvent(rewardDrawEvent);
@@ -186,14 +204,17 @@ function processGameUpdate(page, serverData) {
     processedData.lastEventTime = nextLastEventTime;
 
     // 3. 空地滚动处理
-    const targetScrollId = ClearingUtils.getScrollTarget(page.data.clearing, processedData.clearing);
+    const targetScrollId = ClearingUtils.getScrollTarget(
+      page.data.clearing,
+      processedData.clearing
+    );
     page.setData(processedData, () => {
       if (targetScrollId) {
         ClearingUtils.executeScroll(page, targetScrollId);
       }
       if (added || processedData.pendingTurnToast) {
         // 调用 page 上的 processNextEvent，如果它已被移出，则需要在这里引入或传递
-        if (typeof page.processNextEvent === 'function') {
+        if (typeof page.processNextEvent === "function") {
           page.processNextEvent();
         }
       }
@@ -210,5 +231,5 @@ function addToEventQueue(page, event) {
 module.exports = {
   initGameWatcher,
   stopWatcher,
-  processGameUpdate
+  processGameUpdate,
 };

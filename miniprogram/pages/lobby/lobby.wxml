@@ -94,6 +94,10 @@
           <text class="label">冬季卡放置</text>
           <input class="input" type="number" placeholder="牌堆底部前多少张内开始随机抽取" value="{{createForm.winterStartOffset}}" bindinput="onWinterStartInput" />
         </view>
+        <view class="form-item row-layout" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24rpx;">
+          <text class="label" style="margin-bottom: 0;">操作播报</text>
+          <switch type="switch" checked="{{createForm.enableVoice}}" bindchange="onVoiceSwitchChange" color="#5a7d61" />
+        </view>
         <button class="action-btn primary" bindtap="onCreateRoom">创建房间</button>
         <text class="hint">房间号将自动生成</text>
       </view>
