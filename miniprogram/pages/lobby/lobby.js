@@ -28,7 +28,7 @@ const normalizeStoredProfile = (profile) => {
   const normalized = {
     ...profile,
     openId, // Ensure openId field exists
-    authorized: true
+    authorized: true,
   };
   // Also updating stored object structure
   if (!profile.openId || !profile.authorized) {
@@ -83,7 +83,10 @@ Page({
     // 判断是否已登录（只要有 openId 且有昵称认为已登录）
     if (globalProfile && globalProfile.openId && globalProfile.nickName) {
       const profile = { ...globalProfile };
-      profile.avatarUrl = Utils.getAvatarPath(profile.openId, profile.avatarUrl);
+      profile.avatarUrl = Utils.getAvatarPath(
+        profile.openId,
+        profile.avatarUrl
+      );
       this.setData({ userProfile: profile });
     } else {
       wx.showToast({ title: "请先在首页登录", icon: "none", duration: 2000 });
@@ -168,8 +171,8 @@ Page({
     if (!isNaN(val) && val > MAX_DECK_SIZE) {
       wx.showToast({
         title: `最多${MAX_DECK_SIZE}张`,
-        icon: 'none',
-        duration: 2000
+        icon: "none",
+        duration: 2000,
       });
       this.setData({
         "createForm.cardCount": MAX_DECK_SIZE,
@@ -191,16 +194,13 @@ Page({
 
   async onCreateRoom() {
     if (!this.ensureProfileOrBack()) return;
-    const {
-      createForm,
-      userProfile
-    } = this.data;
+    const { createForm, userProfile } = this.data;
     const cardCount = Number(createForm.cardCount) || BASE_DECK_SIZE;
     const winterStartOffset = Number(createForm.winterStartOffset) || 0;
 
     wx.showLoading({
       title: "创建房间中...",
-      mask: true
+      mask: true,
     });
 
     const db = wx.cloud.database();
@@ -208,32 +208,39 @@ Page({
 
     try {
       // 1. 清理该用户已创建的其他未开始房间（进行中不删）
-      const oldRoomsRes = await db.collection("rooms").where({
-        hostOpenId: userProfile.openId,
-        status: "waiting",
-      }).get();
+      const oldRoomsRes = await db
+        .collection("rooms")
+        .where({
+          hostOpenId: userProfile.openId,
+          status: "waiting",
+        })
+        .get();
 
       const closePromises = (oldRoomsRes.data || []).map((r) =>
-        db.collection("rooms").doc(r._id).update({
-          data: {
-            status: "closed"
-          },
-        })
+        db
+          .collection("rooms")
+          .doc(r._id)
+          .update({
+            data: {
+              status: "closed",
+            },
+          })
       );
       await Promise.all(closePromises);
 
       // 2. 生成 001 开始的 3 位房间号 (按顺序查找可用)
       // 查询当前活跃房间
-      const activeRes = await db.collection("rooms")
+      const activeRes = await db
+        .collection("rooms")
         .where({
-          status: _.in(['waiting', 'playing'])
+          status: _.in(["waiting", "playing"]),
         })
         .field({
-          roomCode: true
+          roomCode: true,
         })
         .get();
 
-      const usedCodes = new Set(activeRes.data.map(r => r.roomCode));
+      const usedCodes = new Set(activeRes.data.map((r) => r.roomCode));
       let codeInt = 1;
       let finalCode = "001";
       while (codeInt <= 999) {
@@ -273,7 +280,7 @@ Page({
       };
 
       const res = await db.collection("rooms").add({
-        data: roomData
+        data: roomData,
       });
       wx.hideLoading();
 
@@ -287,28 +294,27 @@ Page({
 
       wx.showToast({
         title: "创建成功",
-        icon: "success"
+        icon: "success",
       });
 
       // 开启监听
       this.initRoomWatcher(res._id);
-
     } catch (err) {
       wx.hideLoading();
       if (
         err.errMsg &&
-        (err.errMsg.includes("not exists") ||
-          err.errMsg.includes("not found"))
+        (err.errMsg.includes("not exists") || err.errMsg.includes("not found"))
       ) {
         wx.showModal({
           title: "提示",
-          content: '请在云开发控制台创建 "rooms" 集合，并在"数据权限"中设置为"所有用户可读，创建者可写"（开发阶段）或使用云函数创建。',
+          content:
+            '请在云开发控制台创建 "rooms" 集合，并在"数据权限"中设置为"所有用户可读，创建者可写"（开发阶段）或使用云函数创建。',
           showCancel: false,
         });
       } else {
         wx.showToast({
           title: "创建失败",
-          icon: "none"
+          icon: "none",
         });
       }
     }
@@ -719,10 +725,10 @@ Page({
         ...s,
         occupant: p
           ? {
-            openId: p.openId,
-            nickName: p.nickName,
-            avatarUrl: Utils.getAvatarPath(p.openId, p.avatarUrl),
-          }
+              openId: p.openId,
+              nickName: p.nickName,
+              avatarUrl: Utils.getAvatarPath(p.openId, p.avatarUrl),
+            }
           : null,
       };
     });
@@ -813,9 +819,12 @@ Page({
     const sourceKeys = Object.keys(sourceData);
 
     // 1. 计算单套牌中普通卡的数量(排除冬季卡)
-    const normalCards = sourceKeys.filter(key => {
+    const normalCards = sourceKeys.filter((key) => {
       const cardDef = sourceData[key];
-      return cardDef && cardDef.type !== require("../../data/constants").CARD_TYPES.W_CARD;
+      return (
+        cardDef &&
+        cardDef.type !== require("../../data/constants").CARD_TYPES.W_CARD
+      );
     });
     const oneSetCount = normalCards.length; // 应该是 230 张
 
@@ -857,7 +866,7 @@ Page({
 
     // 4. 构建剩余散牌(使用预过滤的普通卡列表)
     if (remainder > 0) {
-      let extraSet = normalCards.map(key => ({ id: key }));
+      let extraSet = normalCards.map((key) => ({ id: key }));
 
       // Fisher-Yates shuffle
       for (let i = extraSet.length - 1; i > 0; i--) {
@@ -903,7 +912,7 @@ Page({
       bottomPart.push({
         id: WINTER_CARD_ID,
         uid: `${WINTER_CARD_ID}_${w}_${Math.random().toString(36).slice(2)}`,
-        type: "Winter" // 显式标记类型
+        type: "Winter", // 显式标记类型
       });
     }
 
@@ -965,12 +974,13 @@ Page({
       winterCount: 0,
       logs: [],
       // 特殊行动相关字段
-      pendingActions: [],  // 待处理的特殊行动队列
-      actionMode: null,    // 当前行动模式：null | 'MOLE' | 'FREE_PLAY_BAT' | 'RACCOON' 等
-      accumulatedRewards: { // 累积的奖励（在所有行动结束后统一执行）
+      pendingActions: [], // 待处理的特殊行动队列
+      actionMode: null, // 当前行动模式：null | 'MOLE' | 'FREE_PLAY_BAT' | 'RACCOON' 等
+      accumulatedRewards: {
+        // 累积的奖励（在所有行动结束后统一执行）
         drawCount: 0,
-        extraTurn: false
-      }
+        extraTurn: false,
+      },
     };
 
     // 9. 写入数据库
@@ -1012,7 +1022,6 @@ Page({
       .orderBy("createTime", "desc")
       .limit(50) // Increase limit slightly to see more history
       .get()
-      .get()
       .then((res) => {
         const list = (res.data || []).map((room) => {
           const count = (room.players || []).filter((p) => p).length;
@@ -1020,15 +1029,20 @@ Page({
           // 尝试在 players 中找到 host
           let hostPlayer = null;
           if (room.hostOpenId && room.players) {
-            hostPlayer = room.players.find(p => p && p.openId === room.hostOpenId);
+            hostPlayer = room.players.find(
+              (p) => p && p.openId === room.hostOpenId
+            );
           }
           // 如果找不到(比如房主退出了或者数据异常)，回退到取第一个人
           if (!hostPlayer && room.players && room.players.length > 0) {
-            hostPlayer = room.players.find(p => p); // Find first non-null
+            hostPlayer = room.players.find((p) => p); // Find first non-null
           }
 
           if (hostPlayer && hostPlayer.openId) {
-            hostPlayer.avatarUrl = Utils.getAvatarPath(hostPlayer.openId, hostPlayer.avatarUrl);
+            hostPlayer.avatarUrl = Utils.getAvatarPath(
+              hostPlayer.openId,
+              hostPlayer.avatarUrl
+            );
             // 将 hostAvatar 附加到 room 对象上供列表展示
             room.hostAvatarUrl = hostPlayer.avatarUrl;
             room.hostNickName = hostPlayer.nickName;
