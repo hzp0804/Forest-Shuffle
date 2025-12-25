@@ -1060,7 +1060,7 @@ const SPECIES_DATA = {
   [SPECIES_NAMES.PARNASSIUS_PHOEBUS]: {
     name: "小阿波罗绢蝶",
     nb: 4,
-    tags: [TAGS.BUTTERFLY, TAGS.MOUNTAIN],
+    tags: [TAGS.BUTTERFLY, TAGS.MOUNTAIN, TAGS.INSECT],
     cost: 0,
     type: CARD_TYPES.V_CARD,
     effect: "",

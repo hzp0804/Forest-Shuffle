@@ -551,6 +551,7 @@
   box-sizing: border-box;
   margin: 0 auto;
   /* 居中显示 */
+  padding-bottom: 60rpx;
 }
 
 .forest-card {

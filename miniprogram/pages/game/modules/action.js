@@ -48,8 +48,34 @@ async function onConfirmSpecialAction(page) {
       page.pendingDrawCount = actionResult.drawCount;
     }
 
-    // 执行状态清理和最终结算
-    await finalizeAction(page, updates, logMsg);
+    // 检查是否有后续行动
+    const currentPending = page.data.gameState.pendingActions || [];
+    const remainingActions = currentPending.slice(1);
+
+    if (remainingActions.length > 0) {
+      console.log('🔄 还有后续特殊行动，继续执行:', remainingActions[0]);
+
+      const nextAction = remainingActions[0];
+      updates['gameState.pendingActions'] = remainingActions;
+      updates['gameState.actionMode'] = nextAction.type;
+      updates['gameState.actionText'] = nextAction.actionText || null;
+
+      // 创建通知
+      updates['gameState.notificationEvent'] = db.command.set({
+        type: 'NOTIFICATION',
+        playerOpenId: openId,
+        playerNick: myState.nickName || '玩家',
+        playerAvatar: myState.avatarUrl || '',
+        icon: '⚡',
+        message: `即将执行: ${nextAction.actionText || nextAction.text || '下一步行动'}`,
+        timestamp: Date.now()
+      });
+
+      await submitGameUpdate(page, updates, "行动步骤完成", logMsg);
+    } else {
+      // 执行状态清理和最终结算
+      await finalizeAction(page, updates, logMsg);
+    }
 
   } catch (e) {
     console.error(e);

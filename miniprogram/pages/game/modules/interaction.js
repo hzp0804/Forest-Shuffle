@@ -91,7 +91,7 @@ function onSlotTap(page, e) {
     });
     // 同步取消选中到数据库
     db.collection("rooms").doc(page.data.roomId).update({
-      data: { [`gameState.playerStates.${page.data.openId}.selectedSlot`]: null }
+      data: { [`gameState.playerStates.${page.data.openId}.selectedSlot`]: db.command.set(null) }
     });
     return;
   }
@@ -239,7 +239,7 @@ function onSlotTap(page, e) {
 
     // 同步选中槽位到数据库，方便观看者实时看到
     db.collection("rooms").doc(page.data.roomId).update({
-      data: { [`gameState.playerStates.${openId}.selectedSlot`]: nextSlot }
+      data: { [`gameState.playerStates.${openId}.selectedSlot`]: db.command.set(nextSlot) }
     });
   } else {
     // 未选主牌：不允许选择插槽，直接返回

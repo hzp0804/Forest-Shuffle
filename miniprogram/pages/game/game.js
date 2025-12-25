@@ -178,6 +178,10 @@ Page({
     GameModules.onForestSwiperChange(this, e);
   },
 
+  onForestTouchStart(e) { },
+  onForestTouchMove(e) { },
+  onForestTouchEnd(e) { },
+
   closeStackModal() {
     this.setData({ stackModalVisible: false });
   },

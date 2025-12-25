@@ -390,70 +390,68 @@ async function handleNormalPlay(page, source = "PLAYER_ACTION") {
     },
   };
 
-  // 10. 确定下一步:检查是否有行动队列
-  if (reward.actions && reward.actions.length > 0) {
-    // 有行动队列,进入行动模式
-    console.log("🎁 触发行动队列:", reward.actions);
+  // 10. 确定下一步: 处理行动队列
 
-    updates[`gameState.pendingActions`] = reward.actions;
-    updates[`gameState.actionMode`] = reward.actions[0].type;
-    updates[`gameState.actionText`] = reward.actions[0].actionText || null;
-    updates[`gameState.accumulatedRewards`] = {
-      drawCount: 0,
-      extraTurn: reward.extraTurn,
-      revealCount: 0,
-      removeClearingFlag: reward.removeClearingFlag || false,
-      clearingToCaveFlag: reward.clearingToCaveFlag || false,
-    };
+  // 10.1 识别并维护旧的行动队列
+  // 如果当前是在特殊行动模式下打牌(如PLAY_FREE)，意味着消耗了一个 pendingAction
+  const isSpecialPlayMode = ['ACTION_MOLE', 'ACTION_PLAY_SAPLINGS', 'PLAY_FREE'].includes(gameState.actionMode);
+  let remainingActions = [];
+  if (isSpecialPlayMode && gameState.pendingActions && gameState.pendingActions.length > 0) {
+    // 移除头部（当前执行的这个）
+    remainingActions = gameState.pendingActions.slice(1);
+    console.log('🔄 检测到剩余待执行行动:', remainingActions);
+  }
 
-    // 清除本地状态
-    page.setData({
-      primarySelection: null,
-      selectedSlot: null,
-      selectedClearingIdx: -1,
-    });
+  // 10.2 合并新产生的行动 (新行动优先执行)
+  const newActions = [...(reward.actions || []), ...remainingActions];
+
+  // 10.3 合并累积奖励
+  const oldRewards = gameState.accumulatedRewards || { drawCount: 0, extraTurn: false, removeClearingFlag: false, clearingToCaveFlag: false };
+
+  const mergedRewards = {
+    drawCount: (oldRewards.drawCount || 0) + (reward.drawCount || 0),
+    extraTurn: oldRewards.extraTurn || reward.extraTurn,
+    revealCount: 0,
+    removeClearingFlag: oldRewards.removeClearingFlag || reward.removeClearingFlag || false,
+    clearingToCaveFlag: oldRewards.clearingToCaveFlag || reward.clearingToCaveFlag || false
+  };
+
+  updates[`gameState.accumulatedRewards`] = mergedRewards;
+
+  // 清除本地交互状态
+  page.setData({
+    primarySelection: null,
+    selectedSlot: null,
+    selectedClearingIdx: -1
+  });
+
+  if (newActions.length > 0) {
+    // 还有后续行动，进入/更新 行动模式
+    console.log('🎁 触发/继续行动队列:', newActions);
+
+    updates[`gameState.pendingActions`] = newActions;
+    updates[`gameState.actionMode`] = newActions[0].type;
+    updates[`gameState.actionText`] = newActions[0].actionText || null;
 
     // 构造下个行动的通知
-    const nextAction = reward.actions[0];
+    const nextAction = newActions[0];
     const { openId, players } = page.data;
-    const player = players.find((p) => p.openId === openId);
+    const player = players.find(p => p.openId === openId);
 
-    // 显式创建通知事件,告知所有玩家即将进行的行动
-    updates["gameState.notificationEvent"] = db.command.set({
-      type: "NOTIFICATION",
+    updates['gameState.notificationEvent'] = db.command.set({
+      type: 'NOTIFICATION',
       playerOpenId: openId,
-      playerNick: player?.nickName || "玩家",
-      playerAvatar: player?.avatarUrl || "",
-      icon: "⚡",
-      message: `即将执行: ${
-        nextAction.actionText || nextAction.text || "特殊行动"
-      }`,
-      timestamp: Date.now() + 200, // 增加延迟确保顺序
+      playerNick: player?.nickName || '玩家',
+      playerAvatar: player?.avatarUrl || '',
+      icon: '⚡',
+      message: `即将执行: ${nextAction.actionText || nextAction.text || '特殊行动'}`,
+      timestamp: Date.now() + 200
     });
 
     submitGameUpdate(page, updates, "出牌成功", `打出了 ${primaryCard.name}`);
   } else {
     // 没有行动队列,直接结束回合
-    updates[`gameState.accumulatedRewards`] = {
-      drawCount: reward.drawCount || 0,
-      extraTurn: reward.extraTurn,
-      revealCount: 0,
-      removeClearingFlag: reward.removeClearingFlag || false,
-      clearingToCaveFlag: reward.clearingToCaveFlag || false,
-    };
-
-    // 清除本地状态
-    page.setData({
-      primarySelection: null,
-      selectedSlot: null,
-      selectedClearingIdx: -1,
-    });
-
-    // 调用 finalizeAction 处理翻牌和回合切换
-    console.log(
-      "📞 准备调用 finalizeAction, pendingRevealCount:",
-      page.pendingRevealCount
-    );
+    console.log('📞 准备调用 finalizeAction, pendingRevealCount:', page.pendingRevealCount);
     const { finalizeAction } = require("./action.js");
     await finalizeAction(page, updates, `打出了 ${primaryCard.name}`);
   }
