@@ -2,7 +2,7 @@
 const DECK_TYPES = {
   BASIC: "basic",
   ALPINE: "alpine",
-  EDGE: "edge"
+  EDGE: "edge",
 };
 
 // 卡片类型
@@ -10,7 +10,7 @@ const CARD_TYPES = {
   TREE: "tree", // 单卡（林缘扩展 / 林地边缘）
   V_CARD: "vCard", // 垂直附属卡
   H_CARD: "hCard", // 水平附属卡
-  W_CARD: "wCard" // 冬季卡
+  W_CARD: "wCard", // 冬季卡
 };
 
 // 标签
@@ -132,7 +132,7 @@ const SPECIES_NAMES = {
   EUROPEAN_WILDCAT: "欧洲野猫",
   COMMON_PIPISTRELLE: "伏翼",
   MOSQUITO: "大蚊",
-  EUROPEAN_POLECAT: "欧洲林鼬"
+  EUROPEAN_POLECAT: "欧洲林鼬",
 };
 
 const IMG_URLS = {
@@ -145,6 +145,9 @@ const IMG_URLS = {
 
 const GAME_CONFIG = {
   BASE_DECK_SIZE: 233, // 一套牌:230张普通卡 + 3张冬季卡
+  BASIC_DECK_SIZE: 161, // 基础牌组
+  ALPINE_DECK_SIZE: 36, // 阿尔卑斯扩展
+  EDGE_DECK_SIZE: 36, // 林缘扩展
   WINTER_CARD_COUNT: 3, // 冬季卡数量
   MAX_DECK_SIZE: 693, // 最大牌库:230*3 + 3 = 693张
 };
@@ -162,6 +165,6 @@ module.exports = {
     "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzk1NzVDRCIvPjx0ZXh0IHg9IjUwIiB5PSI2NSIgZm9udC1zaXplPSI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+Qjg==PC90ZXh0Pjwvc3ZnPg==", // Owl 🦉 (Corrected)
     "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzY0QjVGNiIvPjx0ZXh0IHg9IjUwIiB5PSI2NSIgZm9udC1zaXplPSI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+QmzwvdGV4dD48L3N2Zz4=", // Bear 🐻
     "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI0YwNjI5MiIvPjx0ZXh0IHg9IjUwIiB5PSI2NSIgZm9udC1zaXplPSI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+QlzwvdGV4dD48L3N2Zz4=", // Butterfly 🦋
-    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzkwQTQAESIvPjx0ZXh0IHg9IjUwIiB5PSI2NSIgZm9udC1zaXplPSI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+QlTwvdGV4dD48L3N2Zz4=" // Wolf 🐺
-  ]
+    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzkwQTQAESIvPjx0ZXh0IHg9IjUwIiB5PSI2NSIgZm9udC1zaXplPSI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+QlTwvdGV4dD48L3N2Zz4=", // Wolf 🐺
+  ],
 };

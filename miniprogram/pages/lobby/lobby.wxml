@@ -44,6 +44,12 @@
             <text class="setting-icon">❄️</text>
             <text class="setting-text">冬季卡倒数 {{roomSettings.winterStartOffset || 30}} 张</text>
           </view>
+          <view class="setting-item">
+            <text class="setting-icon">🧩</text>
+            <text class="setting-text">
+              扩展: {{roomSettings.enableAlpine ? '山地 ' : ''}}{{roomSettings.enableEdge ? '林缘 ' : ''}}{{(!roomSettings.enableAlpine && !roomSettings.enableEdge) ? '无' : ''}}
+            </text>
+          </view>
         </view>
         <view class="divider" style="margin: 24rpx 0; border-bottom: 2rpx dashed #e0e6df;"></view>
         <view class="seat-section">
@@ -93,6 +99,14 @@
         <view class="form-item">
           <text class="label">冬季卡放置</text>
           <input class="input" type="number" placeholder="牌堆底部前多少张内开始随机抽取" value="{{createForm.winterStartOffset}}" bindinput="onWinterStartInput" />
+        </view>
+        <view class="form-item row-layout" style="display: flex; align-items: center; justify-content: space-between;">
+          <text class="label" style="margin-bottom: 0;">山地扩展</text>
+          <switch type="switch" checked="{{createForm.enableAlpine}}" bindchange="onAlpineSwitchChange" color="#5a7d61" />
+        </view>
+        <view class="form-item row-layout" style="display: flex; align-items: center; justify-content: space-between;">
+          <text class="label" style="margin-bottom: 0;">林缘扩展</text>
+          <switch type="switch" checked="{{createForm.enableEdge}}" bindchange="onEdgeSwitchChange" color="#5a7d61" />
         </view>
         <view class="form-item row-layout" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24rpx;">
           <text class="label" style="margin-bottom: 0;">操作播报</text>

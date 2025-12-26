@@ -63,6 +63,8 @@ Page({
       cardCount: 233, // 默认一套牌:230张普通卡 + 3张冬季卡
       winterStartOffset: 30,
       enableVoice: false,
+      enableAlpine: true,
+      enableEdge: true,
     },
     seats: [
       { id: 1, label: "座位1", occupant: null },
@@ -199,6 +201,44 @@ Page({
     });
   },
 
+  updateCardCountByExtensions() {
+    const { enableAlpine, enableEdge } = this.data.createForm;
+    let count = GAME_CONFIG.BASIC_DECK_SIZE;
+    if (enableAlpine) count += GAME_CONFIG.ALPINE_DECK_SIZE;
+    if (enableEdge) count += GAME_CONFIG.EDGE_DECK_SIZE;
+
+    this.setData({
+      "createForm.cardCount": count,
+    });
+
+    wx.showToast({
+      title: `卡牌数量已更新为 ${count} 张`,
+      icon: "none",
+    });
+  },
+
+  onAlpineSwitchChange(e) {
+    this.setData(
+      {
+        "createForm.enableAlpine": e.detail.value,
+      },
+      () => {
+        this.updateCardCountByExtensions();
+      }
+    );
+  },
+
+  onEdgeSwitchChange(e) {
+    this.setData(
+      {
+        "createForm.enableEdge": e.detail.value,
+      },
+      () => {
+        this.updateCardCountByExtensions();
+      }
+    );
+  },
+
   async onCreateRoom() {
     if (!this.ensureProfileOrBack()) return;
     const { createForm, userProfile } = this.data;
@@ -282,6 +322,8 @@ Page({
           totalCardCount: cardCount,
           winterStartOffset,
           enableVoice: createForm.enableVoice ?? false,
+          enableAlpine: createForm.enableAlpine ?? true,
+          enableEdge: createForm.enableEdge ?? true,
         },
         createTime: db.serverDate(),
         updateTime: db.serverDate(),
@@ -826,15 +868,27 @@ Page({
     const sourceData = cardData.CARDS_DATA || {};
     const sourceKeys = Object.keys(sourceData);
 
-    // 1. 计算单套牌中普通卡的数量(排除冬季卡)
+    // 1. 计算单套牌中普通卡的数量(排除冬季卡及未开启的扩展)
+    const { DECK_TYPES, CARD_TYPES } = require("../../data/constants");
+
+    // 获取配置，默认为 true 以防旧数据未设置
+    const enableAlpine = roomSettings.enableAlpine !== false;
+    const enableEdge = roomSettings.enableEdge !== false;
+
     const normalCards = sourceKeys.filter((key) => {
       const cardDef = sourceData[key];
-      return (
-        cardDef &&
-        cardDef.type !== require("../../data/constants").CARD_TYPES.W_CARD
-      );
+      if (!cardDef) return false;
+
+      // 排除冬季卡
+      if (cardDef.type === CARD_TYPES.W_CARD) return false;
+
+      // 过滤扩展包
+      if (!enableAlpine && cardDef.deck === DECK_TYPES.ALPINE) return false;
+      if (!enableEdge && cardDef.deck === DECK_TYPES.EDGE) return false;
+
+      return true;
     });
-    const oneSetCount = normalCards.length; // 应该是 230 张
+    const oneSetCount = normalCards.length;
 
     if (oneSetCount === 0) {
       console.error("Fatal: No cards found in CARDS_DATA");
