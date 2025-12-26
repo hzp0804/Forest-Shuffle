@@ -120,6 +120,20 @@ Page({
       userProfile.nickName &&
       userProfile.avatarUrl
     ) {
+      // 异步更新最后登录时间
+      const db = wx.cloud.database();
+      db.collection("userList")
+        .where({
+          _openid: userProfile.openId,
+        })
+        .update({
+          data: {
+            lastLoginTime: db.serverDate(),
+            updateTime: db.serverDate(),
+          },
+        })
+        .catch((err) => console.error("Update login time failed", err));
+
       wx.navigateTo({
         url: "/pages/lobby/lobby",
       });
@@ -204,6 +218,7 @@ Page({
             avatarUrl,
             nickName,
             updateTime: now,
+            lastLoginTime: now,
           },
         });
       } else {
@@ -214,6 +229,7 @@ Page({
             nickName,
             createTime: now,
             updateTime: now,
+            lastLoginTime: now,
           },
         });
       }
