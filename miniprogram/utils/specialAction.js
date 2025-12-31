@@ -127,13 +127,43 @@ const SpecialActionUtils = {
 
       case 'ACTION_CLEARING_TO_CAVE':
       case 'CLEARING_TO_CAVE': {
-        // 蜂群效果：将符合条件的空地牌放入洞穴 (树、灌木、植物)
-        const tags = actionConfig?.tags || [];
+        // 蜂群效果:将符合条件的空地牌放入洞穴 (树、灌木、植物)
+        const configTags = actionConfig?.tags || [];
         const clearingCards = clearing || [];
+        
+        console.log('🐝 蜂群效果开始执行:', {
+          空地卡牌数量: clearingCards.length,
+          配置标签: configTags,
+          空地卡牌: clearingCards.map(c => ({ name: c.name, type: c.type, tags: c.tags }))
+        });
+        
+        // 过滤符合条件的卡牌:
+        // 1. 类型为 TREE 的卡牌
+        // 2. 标签中包含 PLANT 或 SHRUB 的卡牌
         const toCave = clearingCards.filter(c => {
-          if (c.type === CARD_TYPES.TREE) return true;
-          if (c.tags && c.tags.some(t => tags.includes(t))) return true;
+          // 检查是否为树木类型
+          if (c.type === CARD_TYPES.TREE) {
+            console.log(`  ✅ ${c.name} - 树木类型匹配`);
+            return true;
+          }
+          
+          // 检查标签(过滤掉 CARD_TYPES,只保留真正的 TAGS)
+          if (c.tags && c.tags.length > 0) {
+            const validTags = configTags.filter(tag => tag !== CARD_TYPES.TREE);
+            console.log(`  🔍 检查 ${c.name} 的标签:`, { cardTags: c.tags, validTags });
+            if (c.tags.some(t => validTags.includes(t))) {
+              console.log(`  ✅ ${c.name} - 标签匹配`);
+              return true;
+            }
+          }
+          
+          console.log(`  ❌ ${c.name} - 不匹配`);
           return false;
+        });
+        
+        console.log('🐝 蜂群效果过滤结果:', {
+          符合条件的卡牌: toCave.map(c => c.name),
+          数量: toCave.length
         });
 
         if (toCave.length > 0) {
@@ -143,9 +173,9 @@ const SpecialActionUtils = {
             [`gameState.clearing`]: DbHelper.cleanClearing(newClearing),
             [`gameState.playerStates.${openId}.cave`]: DbHelper.cleanHand(newCave),
           };
-          result.logMsg = `完成了蜂群行动：${toCave.length}张符合条件的牌进洞穴`;
+          result.logMsg = `完成了蜂群行动:${toCave.length}张符合条件的牌进洞穴`;
         } else {
-          result.logMsg = `完成了蜂群行动：空地没有符合条件的牌`;
+          result.logMsg = `完成了蜂群行动:空地没有符合条件的牌`;
         }
         break;
       }

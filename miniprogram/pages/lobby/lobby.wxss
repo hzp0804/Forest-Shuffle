@@ -446,6 +446,11 @@
   background: linear-gradient(135deg, #ff9c6e, #ff4d4f);
 }
 
+.room-status-badge.game-over {
+  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+}
+
+
 .room-info-text {
   display: flex;
   flex-direction: column;

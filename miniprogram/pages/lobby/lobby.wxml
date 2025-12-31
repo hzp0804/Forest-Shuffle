@@ -136,8 +136,8 @@
               <view class="room-content-left">
                 <view class="avatar-container">
                   <image class="room-host-avatar" src="{{item.hostAvatarUrl || item.players[0].avatarUrl || defaultAvatar}}" mode="aspectFill"></image>
-                  <view class="room-status-badge {{item.status}}">
-                    {{item.status === 'playing' ? '进行中' : '等待中'}}
+                  <view class="room-status-badge {{item.status}} {{item.gameState && item.gameState.isGameOver ? 'game-over' : ''}}">
+                    {{item.gameState && item.gameState.isGameOver ? '已结束' : (item.status === 'playing' ? '进行中' : '等待中')}}
                   </view>
                 </view>
                 <view class="room-info-text">
@@ -153,7 +153,7 @@
                   <text class="max-count">/6</text>
                 </view>
                 <view class="action-buttons">
-                  <view wx:if="{{userProfile.openId === item.hostOpenId}}" class="icon-btn delete-btn" catchtap="onDeleteRoom" data-id="{{item._id}}">
+                  <view wx:if="{{userProfile.openId === item.hostOpenId && !(item.gameState && item.gameState.isGameOver)}}" class="icon-btn delete-btn" catchtap="onDeleteRoom" data-id="{{item._id}}">
                     <text>✕</text>
                   </view>
                   <view class="join-btn" catchtap="onJoinRoom" data-code="{{item.roomCode}}">

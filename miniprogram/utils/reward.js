@@ -151,9 +151,17 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
       break;
 
     case REWARD_TYPES.ACTION_CLEARING_TO_CAVE:
+    case REWARD_TYPES.CLEARING_TO_CAVE:
+      // 蜂群效果:将符合条件的空地牌放入洞穴
+      result.text = isBonus ? (card.bonus || '空地牌进洞穴') : (card.effect || '空地牌进洞穴');
+      result.actions.push({
+        ...config,
+        actionText: result.text
+      });
+      break;
+
     case REWARD_TYPES.ACTION_PICK_FROM_CLEARING:
     case REWARD_TYPES.PICK_FROM_CLEARING_TO_HAND:
-    case REWARD_TYPES.CLEARING_TO_CAVE:
       result.actions.push(config);
       break;
 

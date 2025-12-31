@@ -1,4 +1,4 @@
-const Utils = require("../../../utils/utils");
+﻿const Utils = require("../../../utils/utils");
 const ClearingUtils = require("../../../utils/clearing.js");
 
 /**
@@ -177,10 +177,24 @@ function processGameUpdate(page, serverData) {
         nextLastEventTime = Math.max(nextLastEventTime, evt.timestamp);
         if (page.localState) page.localState.lastEventTime = nextLastEventTime;
 
-        // 如果关闭了播报，跳过加入事件队列
-        if (page.data.enableVoice === false) {
+
+
+
+
+        // 冬季卡事件不受播报设置影响，始终显示
+        const isWinterEvent = !!evt.isWinterReveal;
+        
+        // 如果关闭了播报，跳过加入事件队列（但冬季卡除外）
+        if (page.data.enableVoice === false && !isWinterEvent) {
           return;
         }
+        
+        if (isWinterEvent) {
+          console.log('❄️ 冬季卡事件将被添加到队列 (不受播报设置影响)');
+        }
+
+
+
 
         addToEventQueue(page, evt);
         added = true;

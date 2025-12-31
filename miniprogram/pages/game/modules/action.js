@@ -365,10 +365,7 @@ function handleGameOver(page, newDeck, winterCount, events) {
     [`gameState.lastEvent`]: events
   };
   submitGameUpdate(page, updates, null, `抽到第3张冬季卡，游戏结束`);
-
-  setTimeout(() => {
-    wx.navigateTo({ url: `/pages/game-over/game-over?roomId=${page.data.roomId}` });
-  }, 3000);
+  console.log('✅ 游戏已终止');
 }
 
 /**

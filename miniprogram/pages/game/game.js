@@ -214,6 +214,12 @@ Page({
     const source = typeof e === "string" ? e : "PLAYER_ACTION";
     const { gameState, turnAction } = this.data;
 
+    // 检查游戏是否已结束
+    if (gameState?.isGameOver) {
+      wx.showToast({ title: "游戏已结束", icon: "none" });
+      return;
+    }
+
     // 处理特殊行动模式
     if (gameState && gameState.actionMode === "ACTION_TUCK_HAND_CARD") {
       return await GameModules.handleTuckAction(this);
@@ -243,20 +249,36 @@ Page({
   },
 
   onConfirmTake() {
+    if (this.data.gameState?.isGameOver) {
+      wx.showToast({ title: "游戏已结束", icon: "none" });
+      return;
+    }
     GameModules.onConfirmTake(this);
   },
 
   onPlaySapling() {
+    if (this.data.gameState?.isGameOver) {
+      wx.showToast({ title: "游戏已结束", icon: "none" });
+      return;
+    }
     GameModules.onPlaySapling(this);
   },
 
   // ==================== 特殊行动 ====================
 
   async onConfirmSpecialAction() {
+    if (this.data.gameState?.isGameOver) {
+      wx.showToast({ title: "游戏已结束", icon: "none" });
+      return;
+    }
     await GameModules.onConfirmSpecialAction(this);
   },
 
   onEndTurn() {
+    if (this.data.gameState?.isGameOver) {
+      wx.showToast({ title: "游戏已结束", icon: "none" });
+      return;
+    }
     GameModules.onEndTurn(this);
   },
 
@@ -335,12 +357,7 @@ Page({
       null,
       `抽到第3张冬季卡，游戏结束`
     );
-
-    setTimeout(() => {
-      wx.navigateTo({
-        url: `/pages/game-over/game-over?roomId=${this.data.roomId}`,
-      });
-    }, 3000);
+    console.log('✅ 游戏已终止');
   },
 
   // 由 core 模块调用

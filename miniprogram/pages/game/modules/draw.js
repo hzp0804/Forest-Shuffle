@@ -21,6 +21,7 @@ function processDrawWithWinter(page, deck, count, startWinterCount) {
 
     if (isWinter) {
       winterCount++;
+      console.log(`❄️ 抽到冬季卡! 当前计数: ${winterCount}/3`);
 
       // 冬季卡展示事件
       events.push({
@@ -35,6 +36,7 @@ function processDrawWithWinter(page, deck, count, startWinterCount) {
       });
 
       if (winterCount >= 3) {
+        console.log('🎮 游戏结束! 抽到第3张冬季卡');
         gameOver = true;
         break;
       }
@@ -50,7 +52,14 @@ function processDrawWithWinter(page, deck, count, startWinterCount) {
  * 执行从牌堆抽牌
  */
 function executeDrawFromDeck(page) {
-  const { deck, playerStates, openId, turnAction } = page.data;
+  const { deck, playerStates, openId, turnAction, gameState } = page.data;
+  
+  // 检查游戏是否已结束
+  if (gameState?.isGameOver) {
+    wx.showToast({ title: "游戏已结束", icon: "none" });
+    return;
+  }
+  
   const curTotal = (turnAction?.drawnCount || 0) + (turnAction?.takenCount || 0);
 
   if (playerStates[openId].hand.length >= 10) {
@@ -66,6 +75,12 @@ function executeDrawFromDeck(page) {
 
   // 如果游戏结束（抽到第3张冬季卡）
   if (gameOver) {
+    console.log('🎮 执行游戏结束逻辑:', {
+      winterCount,
+      eventsCount: events.length,
+      deckRemaining: newDeck.length
+    });
+    
     const updates = {
       [`gameState.deck`]: DbHelper.cleanDeck(newDeck),
       [`gameState.winterCardCount`]: winterCount,
@@ -76,9 +91,7 @@ function executeDrawFromDeck(page) {
     };
     page.submitGameUpdate(updates, null, `抽到第3张冬季卡，游戏结束`);
 
-    setTimeout(() => {
-      wx.navigateTo({ url: `/pages/game-over/game-over?roomId=${page.data.roomId}` });
-    }, 2500);
+    console.log('✅ 游戏已终止，不进行页面跳转');
     return;
   }
 
