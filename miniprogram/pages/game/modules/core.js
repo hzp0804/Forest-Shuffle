@@ -72,8 +72,16 @@ async function submitGameUpdate(page, updates, successMsg, logMsg) {
       [`playerStates.${openId}.hand`]: playerStates[openId].hand || []
     };
 
+    // 乐观更新行动模式和提示文案
+    if (updates['gameState.actionMode'] !== undefined) {
+      nextLocalData['gameState.actionMode'] = updates['gameState.actionMode'];
+    }
+    if (updates['gameState.actionText'] !== undefined) {
+      nextLocalData['gameState.actionText'] = updates['gameState.actionText'];
+    }
+
     // 提交成功后也确保同步字段被清空 (updates 已经包含了数据库清除，这里是本地状态同步)
-    updates[`gameState.playerStates.${openId}.selectedSlot`] = null;
+    nextLocalData[`gameState.playerStates.${openId}.selectedSlot`] = null;
 
     // 如果有 TurnAction 更新,立即应用到本地,并重算指引
     if (nextTurnAction) {

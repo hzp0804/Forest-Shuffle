@@ -162,7 +162,12 @@ function calculateReward(card, slot, paymentCards, context = {}, isBonus = false
 
     case REWARD_TYPES.ACTION_PICK_FROM_CLEARING:
     case REWARD_TYPES.PICK_FROM_CLEARING_TO_HAND:
-      result.actions.push(config);
+      const pickText = isBonus ? (card.bonus || '从空地拿一张牌') : (card.effect || '从空地拿一张牌');
+      result.text = pickText;
+      result.actions.push({
+        ...config,
+        actionText: pickText
+      });
       break;
 
     case REWARD_TYPES.ACTION_PICK_FROM_CLEARING_TO_CAVE:

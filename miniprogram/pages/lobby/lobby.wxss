@@ -5,7 +5,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 32rpx;
+  gap: 16rpx;
 }
 
 .user-card {
@@ -21,11 +21,11 @@
 .room-info {
   background: #ffffff;
   border-radius: 24rpx;
-  padding: 32rpx;
+  padding: 24rpx; /* 减小内边距 */
   box-shadow: 0 4rpx 20rpx rgba(100, 120, 100, 0.08); /* 柔和的绿色系阴影 */
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: 12rpx; /* 减小各板块间距 */
 }
 
 .lobby-forms {
@@ -39,9 +39,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24rpx;
   background: #fcfdfb;
-  padding: 20rpx;
+  padding: 12rpx 20rpx; /* 减小垂直内边距 */
   border-radius: 16rpx;
   border: 1rpx solid #eef2eb;
 }
@@ -71,9 +70,9 @@
 .room-settings {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: 8rpx; /* 减小列表项间距 */
   background: #f6f8f4;
-  padding: 20rpx;
+  padding: 16rpx 20rpx; /* 减小整体内边距 */
   border-radius: 16rpx;
   border: 1rpx solid #e0e6df;
 }
@@ -81,17 +80,46 @@
 .setting-item {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: 16rpx;
 }
 
 .setting-icon {
   font-size: 32rpx;
+  width: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.setting-text {
+.setting-label {
+  font-size: 28rpx;
+  color: #8aa092;
+  font-weight: 500;
+  width: 100rpx; /* 增加宽度，防止换行 */
+  flex-shrink: 0;
+  text-align: justify;
+  text-align-last: justify;
+  white-space: nowrap; /* 强制不换行 */
+  margin-right: 0;
+  display: block; /* 确保分散对齐生效 */
+}
+
+.setting-colon {
+  font-size: 28rpx;
+  color: #8aa092;
+  font-weight: 500;
+  margin: 0 4rpx; /* 控制冒号两侧间距 */
+  flex-shrink: 0;
+}
+
+.setting-value {
   font-size: 28rpx;
   color: #334536;
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1.4;
+  flex: 1;
+  word-break: break-all; 
 }
 
 /* Seat Grid Styling */
@@ -208,6 +236,7 @@
   word-break: break-all;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

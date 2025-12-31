@@ -76,7 +76,7 @@ async function handleTuckAction(page) {
       timestamp: Date.now() + 100
     });
 
-    submitGameUpdate(page, updates, "特殊行动", `将 ${cardToTuck.name} 叠放在大蟾蜍下`);
+    await submitGameUpdate(page, updates, "特殊行动", `将 ${cardToTuck.name} 叠放在大蟾蜍下`);
   } else {
     updates[`gameState.pendingActions`] = [];
     updates[`gameState.actionMode`] = null;
@@ -165,7 +165,7 @@ async function handleRaccoonAction(page) {
       timestamp: Date.now() + 200
     });
 
-    submitGameUpdate(page, updates, "特殊行动", result.logMsg);
+    await submitGameUpdate(page, updates, "特殊行动", result.logMsg);
   } else {
     updates[`gameState.pendingActions`] = [];
     updates[`gameState.actionMode`] = null;
@@ -255,7 +255,7 @@ async function handleClearingPickAction(page) {
       timestamp: Date.now() + 200
     });
 
-    submitGameUpdate(page, updates, "特殊行动", result.logMsg);
+    await submitGameUpdate(page, updates, "特殊行动", result.logMsg);
   } else {
     updates[`gameState.pendingActions`] = [];
     updates[`gameState.actionMode`] = null;

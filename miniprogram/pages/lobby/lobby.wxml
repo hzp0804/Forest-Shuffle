@@ -35,25 +35,31 @@
         </view>
         <view class="room-settings" wx:if="{{roomSettings}}">
           <view class="setting-item">
-            <text class="setting-icon">🎴</text>
-            <text class="setting-text">
-              牌库 {{roomSettings.totalCardCount || ((roomSettings.setCount || 1) * baseDeckSize)}} 张
-            </text>
+            <view class="setting-icon">🎴</view>
+            <view class="setting-label">牌库</view>
+            <view class="setting-colon">:</view>
+            <view class="setting-value">
+              {{roomSettings.totalCardCount || ((roomSettings.setCount || 1) * baseDeckSize)}} 张
+            </view>
           </view>
           <view class="setting-item">
-            <text class="setting-icon">❄️</text>
-            <text class="setting-text">冬季卡倒数 {{roomSettings.winterStartOffset || 30}} 张</text>
+            <view class="setting-icon">❄️</view>
+            <view class="setting-label">冬季卡</view>
+            <view class="setting-colon">:</view>
+            <view class="setting-value">倒数 {{roomSettings.winterStartOffset || 30}} 张</view>
           </view>
           <view class="setting-item">
-            <text class="setting-icon">🧩</text>
-            <text class="setting-text">
-              扩展: {{roomSettings.enableAlpine ? '山地 ' : ''}}{{roomSettings.enableEdge ? '林缘 ' : ''}}{{(!roomSettings.enableAlpine && !roomSettings.enableEdge) ? '无' : ''}}
-            </text>
+            <view class="setting-icon">🧩</view>
+            <view class="setting-label">扩展</view>
+            <view class="setting-colon">:</view>
+            <view class="setting-value">
+              {{roomSettings.enableAlpine ? '山地 ' : ''}}{{roomSettings.enableEdge ? '林缘 ' : ''}}{{(!roomSettings.enableAlpine && !roomSettings.enableEdge) ? '无' : ''}}
+            </view>
           </view>
         </view>
-        <view class="divider" style="margin: 24rpx 0; border-bottom: 2rpx dashed #e0e6df;"></view>
+        <view class="divider" style="border-bottom: 2rpx dashed #e0e6df;"></view>
         <view class="seat-section">
-          <text class="section-label" style="display:block; margin-bottom: 16rpx; font-weight:600; color:#334536; font-size:28rpx;">
+          <text class="section-label" style="display:block; font-weight:600; color:#334536; font-size:28rpx;">
             座位表
           </text>
           <view class="seat-grid">

@@ -112,6 +112,21 @@ const validatePlay = (params) => {
     if (gameState.actionMode === 'ACTION_MOLE' || gameState.actionMode === 'ACTION_PLAY_SAPLINGS') {
       // 跳过特殊模式处理，继续执行正常的费用验证逻辑
       // 不在这里 return，让代码继续往下走到费用计算部分
+    } else if (
+      gameState.actionMode === 'ACTION_PICK_FROM_CLEARING' ||
+      gameState.actionMode === 'PICK_FROM_CLEARING_TO_HAND' ||
+      gameState.actionMode === 'ACTION_PICK_FROM_CLEARING_TO_CAVE'
+    ) {
+      // 从空地拿牌模式
+      const text = gameState.actionText || '请从空地选择一张牌';
+      const isSelected = params.selectedClearingIdx !== undefined && params.selectedClearingIdx >= 0;
+
+      return {
+        valid: isSelected,
+        error: isSelected ? null : '请先选择一张空地牌',
+        instructionState: isSelected ? "success" : "warning",
+        instructionText: text
+      };
     } else {
       // 其他特殊模式
       const text = gameState.actionText;

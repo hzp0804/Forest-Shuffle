@@ -212,6 +212,7 @@ const computeInstruction = (data) => {
     selectedSlot,
     turnAction,
     gameState,
+    selectedClearingIdx, // 选中的空地卡牌索引
   } = data;
 
   if (!playerStates?.[openId])
@@ -248,6 +249,7 @@ const computeInstruction = (data) => {
     primaryCard,
     myHand,
     selectedCount,
+    selectedClearingIdx, // 传递选中的空地卡牌索引
   });
 };
 

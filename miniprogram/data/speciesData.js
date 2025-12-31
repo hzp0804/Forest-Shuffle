@@ -1293,8 +1293,8 @@ const SPECIES_DATA = {
     type: CARD_TYPES.H_CARD,
     effect: "免费打出一张带有植物符号的牌",
     effectConfig: {
-      type: REWARD_TYPES.FREE_PLAY_SPECIFIC,
-      tag: TAGS.PLANT
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.PLANT]
     },
     bonus: "",
     points: "每张带有植物符号的牌得1分",
@@ -1627,8 +1627,8 @@ const SPECIES_DATA = {
     type: CARD_TYPES.V_CARD,
     effect: "免费打出一张带有鸟符号的牌",
     effectConfig: {
-      type: REWARD_TYPES.FREE_PLAY_SPECIFIC,
-      tag: TAGS.BIRD
+      type: REWARD_TYPES.PLAY_FREE,
+      tags: [TAGS.BIRD]
     },
     bonus: "",
     points: "每张有昆虫符号的牌得1分",
@@ -1669,7 +1669,7 @@ const SPECIES_DATA = {
     },
     bonus: "从空地上放两张牌到你的洞穴里",
     bonusConfig: {
-      type: REWARD_TYPES.CLEARING_TO_CAVE,
+      type: REWARD_TYPES.ACTION_PICK_FROM_CLEARING_TO_CAVE,
       count: 2
     },
     points: "获得3分",
