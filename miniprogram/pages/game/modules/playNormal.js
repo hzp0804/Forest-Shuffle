@@ -350,12 +350,9 @@ async function handleNormalPlay(page, source = "PLAYER_ACTION") {
     console.log("⚠️ 不是树木(或是灌木),不累积翻牌计数");
   }
 
-  // 7. 处理空地自动清空
+  // 7. 处理空地自动清空 (已移至 finalizeAction 统一处理，确保翻牌后再清空)
   let notificationEvent = null;
-  if (newClearing.length >= 10) {
-    newClearing.length = 0;
-    notificationEvent = createClearingNotification();
-  }
+
 
   // 8. 创建额外回合事件
   let extraTurnEvent = null;

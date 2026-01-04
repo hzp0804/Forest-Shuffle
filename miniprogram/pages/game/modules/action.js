@@ -188,16 +188,18 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
     allEvents.push(rewardDrawEvent);
   }
 
-  // ========== 步骤3: 翻牌到空地(根据树木数量) ==========
+  // ========== 步骤3: 准备空地数据与翻牌 ==========
+  let currentClearing = [];
+  if (actionUpdates['gameState.clearing'] && Array.isArray(actionUpdates['gameState.clearing'])) {
+    currentClearing = [...actionUpdates['gameState.clearing']];
+  } else {
+    currentClearing = [...(page.data.clearing || [])];
+  }
+
   const pendingReveal = Math.max(page.pendingRevealCount || 0, rewards.revealCount || 0);
 
   if (pendingReveal > 0) {
     console.log(`🎴 开始翻牌到空地: ${pendingReveal} 张`);
-
-    const isFreshUpdate = !!actionUpdates[`gameState.clearing`];
-    let newClearing = isFreshUpdate ?
-      [...actionUpdates[`gameState.clearing`]] :
-      [...(page.data.clearing || [])];
 
     // 执行翻牌
     const revealRes = processDrawWithWinter(page, newDeck, pendingReveal, currentWinterCount);
@@ -214,15 +216,7 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
     const revealedCards = revealRes.drawnCards;
 
     if (revealedCards.length > 0) {
-      revealedCards.forEach(c => newClearing.push({ ...c, selected: false }));
-
-      if (isFreshUpdate) {
-        updates[`gameState.clearing`] = DbHelper.cleanClearing(newClearing);
-      } else {
-        updates[`gameState.clearing`] = db.command.push({
-          each: DbHelper.cleanClearing(revealedCards)
-        });
-      }
+      revealedCards.forEach(c => currentClearing.push({ ...c, selected: false }));
 
       updates[`gameState.deck`] = DbHelper.cleanDeck(newDeck);
       updates[`gameState.winterCardCount`] = currentWinterCount;
@@ -238,39 +232,28 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
         timestamp: Date.now() + 100
       };
       allEvents.push(deckRevealEvent);
-      console.log(`✅ 翻牌完成: ${revealedCards.length} 张卡牌已放入空地`);
+      console.log(`✅ 翻牌完成: ${revealedCards.length} 张卡牌已放入空地 (现有: ${currentClearing.length})`);
     }
   }
 
-  // 统一处理事件列表
+  // 统一处理事件列表并重置翻牌计数器
   updates['gameState.lastEvent'] = allEvents;
   updates['gameState.rewardDrawEvent'] = null;
   updates['gameState.deckRevealEvent'] = null;
-
-  // 重置翻牌计数器
   page.pendingRevealCount = 0;
 
   // ========== 步骤3.5: 棕熊效果-将空地卡牌放入洞穴 ==========
   const shouldClearingToCave = rewards.clearingToCaveFlag || false;
 
-  console.log('🐻 检查棕熊效果:', { shouldClearingToCave });
-
   if (shouldClearingToCave) {
-    let currentClearing = [];
-    if (updates['gameState.clearing'] && Array.isArray(updates['gameState.clearing'])) {
-      currentClearing = updates['gameState.clearing'];
-    } else {
-      currentClearing = page.data.clearing || [];
-    }
-
+    console.log('🐻 棕熊效果检查:', { currentClearingCount: currentClearing.length });
     if (currentClearing.length > 0) {
       // 将空地卡牌放入当前玩家的洞穴
       const currentCave = updates[`gameState.playerStates.${openId}.cave`] || myState.cave || [];
       const newCave = [...currentCave, ...currentClearing];
 
       updates[`gameState.playerStates.${openId}.cave`] = DbHelper.cleanHand(newCave);
-      updates['gameState.clearing'] = [];
-
+      
       console.log(`🐻 棕熊效果执行: 将空地上的 ${currentClearing.length} 张卡牌放入洞穴`);
 
       // 创建洞穴收入事件
@@ -284,38 +267,33 @@ async function finalizeAction(page, actionUpdates = {}, logMsg = "") {
         timestamp: Date.now() + 150
       };
       allEvents.push(caveEvent);
-    } else {
-      console.log('🐻 棕熊效果跳过: 空地无牌');
+
+      // 重要: 此时空地已被清空
+      currentClearing = [];
     }
   }
 
   // ========== 步骤4: 清空空地判断 ==========
-  const currentClearing = updates['gameState.clearing'] || page.data.clearing || [];
   const shouldRemoveClearing = rewards.removeClearingFlag || false;
 
-  if (shouldRemoveClearing) {
-    // 雌性野猪效果:强制清空空地(不判断数量)
-    console.log('🐗 雌性野猪效果:强制清空空地');
-    updates['gameState.clearing'] = [];
+  if (shouldRemoveClearing || currentClearing.length >= 10) {
+    if (shouldRemoveClearing) {
+      console.log('🐗 雌性野猪效果:强制清空空地');
+    } else {
+      console.log(`🧹 空地达到 ${currentClearing.length} 张, 触发清空`);
+    }
+    
+    currentClearing = [];
 
     // 创建清空空地通知事件
     const clearEvent = createClearingNotification();
     clearEvent.timestamp = Date.now() + 200;
     allEvents.push(clearEvent);
-
-    // updates['gameState.notificationEvent'] = db.command.set(createClearingNotification());
-  } else if (currentClearing.length >= 10) {
-    // 正常情况:空地达到10张时清空
-    console.log(`🧹 空地达到 ${currentClearing.length} 张,触发清空`);
-    updates['gameState.clearing'] = [];
-
-    // 创建清空空地通知事件
-    const clearEvent = createClearingNotification();
-    clearEvent.timestamp = Date.now() + 200;
-    allEvents.push(clearEvent);
-
-    // updates['gameState.notificationEvent'] = db.command.set(createClearingNotification());
   }
+
+  // 最终更新合并后的空地数据
+  updates['gameState.clearing'] = DbHelper.cleanClearing(currentClearing);
+
 
   // ========== 步骤5: 判断是否新回合 ==========
   if (!rewards.extraTurn) {
