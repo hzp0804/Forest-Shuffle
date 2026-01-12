@@ -394,9 +394,19 @@ async function handleNormalPlay(page, source = "PLAYER_ACTION") {
   const isSpecialPlayMode = ['ACTION_MOLE', 'ACTION_PLAY_SAPLINGS', 'PLAY_FREE'].includes(gameState.actionMode);
   let remainingActions = [];
   if (isSpecialPlayMode && gameState.pendingActions && gameState.pendingActions.length > 0) {
-    // 移除头部（当前执行的这个）
-    remainingActions = gameState.pendingActions.slice(1);
-    console.log('🔄 检测到剩余待执行行动:', remainingActions);
+    const currentAction = gameState.pendingActions[0];
+    
+    // 检查当前action是否是无限模式（如大蚊的"免费打出任意数量的蝙蝠牌"）
+    // 如果是无限模式，执行完一次后需要把这个action保留在队列头部，让玩家可以继续操作
+    if (currentAction.isInfinite) {
+      // 无限模式：保留当前action，玩家可以继续打出更多牌，直到主动跳过
+      remainingActions = [...gameState.pendingActions];
+      console.log('🔄 isInfinite模式，保留当前行动让玩家继续:', currentAction);
+    } else {
+      // 普通模式：移除头部（当前执行的这个）
+      remainingActions = gameState.pendingActions.slice(1);
+      console.log('🔄 检测到剩余待执行行动:', remainingActions);
+    }
   }
 
   // 10.2 合并新产生的行动 (新行动优先执行)
