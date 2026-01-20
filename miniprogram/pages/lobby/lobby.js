@@ -46,7 +46,8 @@ const clearStoredProfile = () => {
 };
 
 const buildRoomCode = () => {
-  return Math.random().toString().slice(2, 5).padEnd(3, "0");
+  // 生成 6 位随机数字符串
+  return Math.floor(Math.random() * 900000 + 100000).toString();
 };
 
 Page({
@@ -275,32 +276,32 @@ Page({
       );
       await Promise.all(closePromises);
 
-      // 2. 生成 001 开始的 3 位房间号 (按顺序查找可用)
-      // 查询当前活跃房间
-      const activeRes = await db
-        .collection("rooms")
-        .where({
-          status: _.in(["waiting", "playing"]),
-        })
-        .field({
-          roomCode: true,
-        })
-        .get();
-
-      const usedCodes = new Set(activeRes.data.map((r) => r.roomCode));
-      let codeInt = 1;
-      let finalCode = "001";
-      while (codeInt <= 999) {
-        const s = String(codeInt).padStart(3, "0");
-        if (!usedCodes.has(s)) {
-          finalCode = s;
-          break;
-        }
-        codeInt++;
+      // 2. 生成 6 位随机房间号，并检查重复
+      let activeRes;
+      try {
+        activeRes = await db
+          .collection("rooms")
+          .where({
+            status: _.in(["waiting", "playing"]),
+          })
+          .field({
+            roomCode: true,
+          })
+          .limit(100) // 尽量获取更多已用代码以减少碰撞
+          .get();
+      } catch (e) {
+        console.error("查询活跃房间失败:", e);
+        activeRes = { data: [] };
       }
-      // 如果 999 满了，fallback 到随机
-      if (codeInt > 999) {
-        finalCode = Math.floor(Math.random() * 900 + 100).toString();
+
+      const usedCodes = new Set((activeRes.data || []).map((r) => r.roomCode));
+      let finalCode = buildRoomCode();
+      let retryCount = 0;
+      
+      // 如果生成的代码已被占用，且重试次数在 10 次以内，则重新生成
+      while (usedCodes.has(finalCode) && retryCount < 10) {
+        finalCode = buildRoomCode();
+        retryCount++;
       }
 
       // 3. 构建房间数据
