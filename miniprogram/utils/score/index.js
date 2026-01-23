@@ -50,6 +50,15 @@ function calculateTotalScore(playerState, openId, allPlayerStates, nickName) {
     }
   });
 
+  // 2. 计算洞穴卡牌的基础分（每张1分）
+  if (playerState.cave && Array.isArray(playerState.cave)) {
+    const caveScore = playerState.cave.length;
+    if (caveScore > 0) {
+      total += caveScore;
+      console.log(`🕳️ 洞穴卡牌基础分: ${caveScore}分 (${playerState.cave.length}张)`);
+    }
+  }
+
   // (Optional) 日志输出逻辑可在此处保留，同原 score.js
 
   const result = { total, breakdown };

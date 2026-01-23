@@ -178,7 +178,7 @@ const SPECIES_DATA = {
     points: "若没有其他森林的树木数量比你多，获得10分",
     scoreConfig: {
       type: SCORING_TYPES.MAJORITY,
-      target: CARD_TYPES.TREE,
+      tag: CARD_TYPES.TREE,  // 使用 tag 而不是 target，因为要统计的是树木类型的卡牌数量
       value: 10,
       valueOnFail: 0
     },
